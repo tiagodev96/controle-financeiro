@@ -7,6 +7,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     css: false,
+    // Integração compartilha o mesmo Supabase local (um household por teste).
+    // Paralelismo entre arquivos vira race: A trunca enquanto B insere. Único
+    // workaround robusto sem reescrever tudo com household isolado é serializar.
+    fileParallelism: false,
     include: [
       'src/**/*.test.ts',
       'src/**/*.test.tsx',
@@ -22,6 +26,12 @@ export default defineConfig({
         'src/types/**',
         'src/**/*.d.ts',
         'src/**/*.test.{ts,tsx}',
+        // Adapters de infra: o client/server do Supabase são chamadas diretas
+        // ao SDK sem lógica de domínio. Testá-los exigiria duplicar o SDK em
+        // mocks; cobertura efetiva vem dos testes de integração.
+        'src/lib/supabase/**',
+        // cn() helper do shadcn — wrapper de clsx+tailwind-merge, sem lógica.
+        'src/lib/utils.ts',
       ],
       thresholds: {
         global: {
