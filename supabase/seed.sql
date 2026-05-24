@@ -41,3 +41,15 @@ values
   ('22222222-2222-4222-8222-222222222001', '11111111-1111-4111-8111-111111111111', 'Conta principal EUR', 'EUR', 0, 1),
   ('22222222-2222-4222-8222-222222222002', '11111111-1111-4111-8111-111111111111', 'Conta principal BRL', 'BRL', 0, 2)
 on conflict (id) do nothing;
+
+-- 6 categorias default de despesa. IDs fixos pra testes E2E/integração.
+-- Cobre os usos mais comuns no início. Usuário pode editar/arquivar depois.
+insert into categories (id, household_id, name, kind, sort_order)
+values
+  ('33333333-3333-4333-8333-333333333001', '11111111-1111-4111-8111-111111111111', 'Mercado',     'expense', 1),
+  ('33333333-3333-4333-8333-333333333002', '11111111-1111-4111-8111-111111111111', 'Restaurante', 'expense', 2),
+  ('33333333-3333-4333-8333-333333333003', '11111111-1111-4111-8111-111111111111', 'Transporte',  'expense', 3),
+  ('33333333-3333-4333-8333-333333333004', '11111111-1111-4111-8111-111111111111', 'Moradia',     'expense', 4),
+  ('33333333-3333-4333-8333-333333333005', '11111111-1111-4111-8111-111111111111', 'Lazer',       'expense', 5),
+  ('33333333-3333-4333-8333-333333333006', '11111111-1111-4111-8111-111111111111', 'Outros',      'expense', 6)
+on conflict (id) do nothing;
