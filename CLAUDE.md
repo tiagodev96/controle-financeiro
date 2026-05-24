@@ -140,12 +140,13 @@ Adotamos **outside-in TDD** (estilo "testing trophy", não pirâmide):
 
 **Loop por feature:**
 
-1. Invocar `product-management:write-spec` → produz `docs/prds/<feature>.md` (problema, escopo, critérios de aceite).
-2. Invocar `engineering:testing-strategy` → define quais camadas de teste a feature exige, quais cenários.
-3. Escrever o(s) teste(s) E2E ou de integração da feature → rodar → red.
-4. Implementar o mínimo que faz passar → green.
+1. Invocar a skill `prd` para produzir `docs/prds/<feature>.md` (problema, escopo, critérios de aceite).
+2. Sem skill instalada para isso. O Claude desenha manualmente o plano de testes (quais camadas, quais cenários) e apresenta para aprovação antes de escrever o primeiro teste.
+3. Escrever o(s) teste(s) E2E ou de integração da feature, rodar, esperar red.
+4. Implementar o mínimo que faz passar, esperar green.
 5. Refatorar, extraindo lógica pra `src/lib/` com testes unitários próprios.
-6. Invocar `engineering:code-review` antes de commitar.
+6. Invocar a skill `review` antes de commitar (revisa o diff atual apontando problemas).
+7. Invocar a skill `commit` para criar os commits agrupados.
 
 **Stack de teste:**
 
@@ -169,21 +170,28 @@ Leia `docs/tdd.md` pra exemplo concreto do loop.
 
 ## Skills disponíveis e quando invocar
 
-Plugins instalados no Claude Code: `engineering`, `product-management`, `design`, `brightdata-plugin`.
+Estado real das skills nesta máquina (verificado em `~/.claude/skills/` e `~/.claude/plugins/installed_plugins.json`):
 
-| Momento | Skill |
+- **Skills locais instaladas**: `prd`, `debug`, `plan`, `review`, `commit`, `verify`, `simplify`, `update-config`, `keybindings-help`, `fewer-permission-prompts`, `loop`, `schedule`, `claude-api`, `run`, `init`, `security-review`.
+- **Plugins de marketplace instalados**: só o `obsidian@obsidian-skills` (skills `obsidian:*`).
+- **Skills mencionadas no passado mas que NÃO existem na máquina**: `product-management:write-spec`, `engineering:testing-strategy`, `engineering:architecture`, `engineering:code-review`, `engineering:debug`, `engineering:deploy-checklist`, `design:design-system`, `design:ux-copy`, `design:accessibility-review`, `brightdata-plugin:design-mirror`. Nada disso existe no marketplace oficial da Anthropic, então não tente instalar.
+
+| Momento | Skill ou ação |
 |---|---|
-| Início de feature nova (vai escrever código) | `product-management:write-spec` → gera PRD em `docs/prds/<feature>.md` |
-| Decidir o que testar e em qual camada | `engineering:testing-strategy` |
-| Antes de inventar uma arquitetura nova (escolha técnica não-óbvia) | `engineering:architecture` (gera ADR em `docs/adrs/`) |
-| Design de página/tela (antes de codar layout) | `design:design-system` + `brightdata-plugin:design-mirror` apontando pra Linear/Mercury/Wise/Nubank |
-| Microcopy de UI | `design:ux-copy` |
-| A11y antes de mergear feature visível | `design:accessibility-review` |
-| Code review antes de cada commit relevante | `engineering:code-review` |
-| Bug em produção/dev que não cede | `engineering:debug` |
-| Antes de deploy importante | `engineering:deploy-checklist` |
+| Início de feature nova (vai escrever código) | `prd` para gerar `docs/prds/<feature>.md` |
+| Decidir o que testar e em qual camada | Sem skill. O Claude desenha manualmente o plano (E2E, integração, unit) e apresenta para aprovação |
+| Antes de inventar arquitetura nova (escolha técnica não óbvia) | `plan` (modo planejamento, lê código, propõe etapas, lista riscos) |
+| Design de página ou tela (antes de codar layout) | Sem skill. Use referências visuais externas no prompt (links pra Linear, Wise, Nubank, etc) e descreva o resultado esperado |
+| Microcopy de UI | Sem skill. Pedir no prompt, validar com a vocabulário definido neste CLAUDE.md |
+| A11y antes de mergear feature visível | Sem skill. Pedir no prompt uma revisão manual focada em a11y |
+| Code review antes de cada commit relevante | `review` (revisa diff staged + unstaged apontando problemas) |
+| Verificação manual da feature funcionando | `verify` (roda o app e observa o comportamento real) |
+| Refactor de qualidade no código alterado | `simplify` |
+| Bug em produção ou dev que não cede | `debug` |
+| Criar commits ao final do trabalho | `commit` |
+| Antes de deploy importante | Sem skill. Rodar manualmente: `npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e` |
 
-Regra: **invoque a skill explicitamente** no prompt (ex.: "use engineering:testing-strategy pra desenhar como testar essa feature"). Não confie no auto-trigger.
+Regra: **invocar a skill explicitamente** no prompt (ex.: "use a skill prd pra produzir docs/prds/lancar-despesa.md"). Não confiar no auto-trigger.
 
 ---
 
