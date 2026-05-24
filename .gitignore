@@ -20,8 +20,10 @@
 /supabase/.branches
 /supabase/.temp
 
-# claude code local settings
-/.claude
+# claude code: local settings stay private, skills are project-shared
+/.claude/settings.local.json
+/.claude/cache
+**/__pycache__/
 
 # next.js
 /.next/
