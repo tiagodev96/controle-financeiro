@@ -60,7 +60,8 @@ create table accounts (
   is_archived boolean not null default false,
   sort_order int not null default 0,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (household_id, name)
 );
 create index idx_accounts_household on accounts(household_id);
 create trigger trg_accounts_updated before update on accounts

@@ -8,6 +8,33 @@ export type CategoryOption = {
   name: string;
 };
 
+export type CategoryFull = {
+  id: string;
+  name: string;
+  kind: 'expense' | 'income';
+  is_archived: boolean;
+  sort_order: number;
+};
+
+/**
+ * Lista todas categorias (ativas + arquivadas) do household, agnóstica de
+ * uso. Pra UI de CRUD em /categorias. Sem ranking — ordem é sort_order asc.
+ */
+export async function listAllCategoriesForHousehold(
+  supabase: SupabaseClient<Database>,
+  householdId: string,
+): Promise<CategoryFull[]> {
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name, kind, is_archived, sort_order')
+    .eq('household_id', householdId)
+    .neq('kind', 'transfer')
+    .order('sort_order', { ascending: true });
+
+  if (error) throw new Error(`listAllCategoriesForHousehold: ${error.message}`);
+  return (data ?? []) as CategoryFull[];
+}
+
 type ListOptions = {
   kind?: CategoryKind;
 };
