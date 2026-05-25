@@ -1,4 +1,3 @@
-/* Shared base for all preview cards. Each card uses its own body padding. */
 @import url('../colors_and_type.css');
 
 html, body {

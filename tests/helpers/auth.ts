@@ -20,14 +20,9 @@ type StoredCookie = {
   options: CookieOptions;
 };
 
-/**
- * Autentica um usuário de teste contra o Supabase local e injeta os cookies
- * de sessão no BrowserContext do Playwright. Usa o próprio createServerClient
- * com um cookie jar em memória para que o formato dos cookies (split em chunks,
- * naming sb-<ref>-auth-token, base64) seja exatamente o que o app espera.
- *
- * Pré-requisitos: Supabase local rodando e seed aplicado (usuário existe).
- */
+// Usa createServerClient com cookie jar em memória pra que o formato dos
+// cookies (chunks, naming sb-<ref>-auth-token, base64) bata exatamente com o
+// que o app espera. Pré-requisito: Supabase local rodando com seed aplicado.
 export async function loginAsTestUser(
   context: BrowserContext,
   {
@@ -71,8 +66,8 @@ export async function loginAsTestUser(
     httpOnly: options.httpOnly ?? false,
     secure: options.secure ?? false,
     sameSite: normalizeSameSite(options.sameSite),
-    // Sem expires aqui: o refresh_token do supabase já cuida da renovação,
-    // e cookies sem expires ficam como session cookies no browser do Playwright.
+    // Sem expires: refresh_token renova a sessão e cookies sem expires viram
+    // session cookies no browser do Playwright.
   }));
 
   await context.addCookies(cookies);

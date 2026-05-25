@@ -12,11 +12,6 @@ export type Session = {
   householdId: string;
 };
 
-/**
- * Retorna a sessão do usuário autenticado na request atual e o household ao
- * qual ele pertence. Lança UnauthorizedError se não houver sessão válida ou
- * profile correspondente — rotas protegidas devem chamar e deixar propagar.
- */
 export async function getSession(): Promise<Session> {
   const supabase = await getServerSupabase();
 

@@ -24,15 +24,11 @@ test.describe('Auth (login com email + senha)', () => {
       page.getByRole('alert').filter({ hasText: /email ou senha inválidos/i })
     ).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
-    // Email preserved.
     await expect(page.getByLabel(/email/i)).toHaveValue('tiago@example.com');
-    // Password resetada por segurança.
     await expect(page.getByLabel(/senha/i)).toHaveValue('');
   });
 
   test('E-A3 — visitar rota protegida sem sessão redireciona pra /login', async ({ page }) => {
-    // / (dashboard) hoje não tem try { getSession() } catch redirect.
-    // Sem middleware, renderiza pra anônimos. Com middleware, redireciona.
     await page.goto('/');
 
     await expect(page).toHaveURL('/login');

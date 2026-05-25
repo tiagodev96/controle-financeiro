@@ -2,16 +2,6 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/database';
 
-// Next.js 16: Middleware foi renomeado para Proxy. Arquivo: src/proxy.ts.
-//
-// Responsabilidades:
-//  1. Refrescar a sessão Supabase a cada request (getUser cuida do refresh).
-//  2. Redirecionar anônimos pra /login.
-//  3. Redirecionar autenticados que pousam em /login pra /.
-//
-// Roda em TODA request HTML/Action (matcher exclui assets estáticos).
-// Evitar lógica pesada aqui — getUser bate no auth server, é o único custo.
-
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -53,7 +43,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Exclui assets estáticos do Next, favicon, e qualquer arquivo com extensão
-  // (svg, png, js, css). Tudo o mais — incluindo Server Actions — passa pelo proxy.
   matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 };

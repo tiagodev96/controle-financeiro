@@ -32,8 +32,7 @@ describe('parseMoneyString', () => {
     });
 
     it('aceita 0 explícito', () => {
-      // 0 é valor inválido no schema, mas o parser só converte — quem
-      // valida amount > 0 é o Zod, não o parser.
+      // Quem rejeita amount=0 é o schema Zod, não o parser.
       expect(parseMoneyString('0')).toBe(0);
     });
   });

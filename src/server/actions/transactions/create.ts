@@ -13,11 +13,6 @@ import {
 const LAST_ACCOUNT_COOKIE = 'cf_last_account_id';
 const COOKIE_MAX_AGE_DAYS = 365;
 
-/**
- * Server Action chamada pelo formulário de Lançar despesa. Resolve sessão +
- * client Supabase, delega pra função core, e seta o cookie de "última conta
- * usada" em caso de sucesso pra pré-selecionar na próxima visita.
- */
 export async function createTransaction(
   input: CreateTransactionInput
 ): Promise<CreateTransactionResult> {

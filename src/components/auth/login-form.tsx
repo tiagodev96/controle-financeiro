@@ -25,8 +25,7 @@ export function LoginForm({ authEnabled }: Props) {
 
     if (!result.ok) {
       setError(result.error);
-      // Por segurança, reseta a senha (mantém email). Evita exposição
-      // prolongada em screenshot ou over-shoulder em caso de erro.
+      // Limpa a senha (mantém email) pra evitar exposição em screenshot/over-shoulder.
       setPassword('');
       setPending(false);
       return;

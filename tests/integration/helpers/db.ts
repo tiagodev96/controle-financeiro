@@ -6,11 +6,8 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 let adminClient: SupabaseClient<Database> | null = null;
 
-/**
- * Cliente Supabase com service role: bypassa RLS. Usar APENAS em helpers de
- * teste (TRUNCATE, seed específico). Nunca chamar dentro de um teste de
- * lógica de aplicação — esse deve usar um cliente autenticado como usuário.
- */
+// Bypassa RLS via service role. Usar APENAS em helpers de teste — testes de
+// lógica devem ir por cliente autenticado pra exercitar as policies.
 export function getAdminClient(): SupabaseClient<Database> {
   if (adminClient) return adminClient;
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
@@ -24,11 +21,6 @@ export function getAdminClient(): SupabaseClient<Database> {
   return adminClient;
 }
 
-/**
- * Apaga todas as transactions e installments do household alvo. Mantém
- * categorias e contas do seed intactas. Use antes de cada teste de integração
- * que insere transactions.
- */
 export async function truncateHouseholdTransactions(householdId: string): Promise<void> {
   const admin = getAdminClient();
   const { error } = await admin
@@ -40,10 +32,6 @@ export async function truncateHouseholdTransactions(householdId: string): Promis
   }
 }
 
-/**
- * Cria um household isolado pra testes de RLS cross-household. Retorna ids
- * pra cleanup. O caller é responsável por chamar deleteIsolatedHousehold.
- */
 export async function createIsolatedHousehold(): Promise<{
   householdId: string;
   categoryId: string;
@@ -75,7 +63,7 @@ export async function createIsolatedHousehold(): Promise<{
 
 export async function deleteIsolatedHousehold(householdId: string): Promise<void> {
   const admin = getAdminClient();
-  // ON DELETE CASCADE em households remove categories/transactions juntas.
+  // ON DELETE CASCADE em households arrasta categories e transactions.
   const { error } = await admin.from('households').delete().eq('id', householdId);
   if (error) {
     throw new Error(`deleteIsolatedHousehold failed: ${error.message}`);

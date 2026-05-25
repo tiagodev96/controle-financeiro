@@ -21,10 +21,6 @@ describe('listTopCategoriesForHousehold (integração)', () => {
   });
 
   it('I11 — ordena por uso desc; categorias sem uso vêm depois por sort_order', async () => {
-    // Cria 3 transactions em Restaurante e 1 em Mercado. Mercado tem sort_order=1,
-    // Restaurante=2, então Restaurante deve vir primeiro mesmo com sort_order
-    // pior, e Mercado segundo. As outras 4 categorias (sem uso) vêm na ordem
-    // do sort_order.
     const admin = getAdminClient();
     const baseTx = {
       household_id: SEED_DEMO_HOUSEHOLD_ID,
@@ -55,7 +51,6 @@ describe('listTopCategoriesForHousehold (integração)', () => {
     expect(ranking).toHaveLength(6);
     expect(ranking[0]?.name).toBe('Restaurante');
     expect(ranking[1]?.name).toBe('Mercado');
-    // As demais 4 (sem uso) vêm por sort_order: Transporte(3), Moradia(4), Lazer(5), Outros(6)
     expect(ranking.slice(2).map((c) => c.name)).toEqual([
       'Transporte',
       'Moradia',
@@ -77,7 +72,6 @@ describe('listTopCategoriesForHousehold (integração)', () => {
   it('I12 — retorna lista vazia quando household não tem categorias', async () => {
     const isolated = await createIsolatedHousehold();
     try {
-      // Apaga a única categoria criada pelo helper isolated
       const admin = getAdminClient();
       const { error: delError } = await admin
         .from('categories')

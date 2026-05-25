@@ -4,9 +4,6 @@ const MAX_DESCRIPTION_LENGTH = 200;
 const MS_PER_DAY = 86_400_000;
 const MAX_FUTURE_DAYS = 366;
 
-// Aceita só YYYY-MM-DD e exige que a string ISO recriada bata (rejeita
-// 2026-13-40 e similares). Não restringe ao passado: o usuário pode lançar
-// despesa com data futura próxima (boleto a vencer), mas não > ~1 ano.
 const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato YYYY-MM-DD')

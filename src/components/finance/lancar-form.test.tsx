@@ -89,7 +89,7 @@ describe('<LancarForm>', () => {
     await user.click(pendingButton);
     expect(createTransaction).toHaveBeenCalledTimes(1);
 
-    // Resolve pra evitar warnings de unmount com promise pendente.
+    // Resolve pra evitar warning de unmount com promise pendente.
     resolveAction({ ok: true, transaction: { id: 'txn-1' } });
     await waitFor(() => {
       expect(screen.queryByRole('button', { name: 'Lançando...' })).not.toBeInTheDocument();

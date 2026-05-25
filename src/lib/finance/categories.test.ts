@@ -1,8 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { listTopCategoriesForHousehold } from './categories';
 
-// Helpers que constroem chains para o cliente Supabase fake. A query de
-// categorias tem 3 .eq() seguidos; a de transactions tem 1 .eq() + 1 .not().
 function makeCategoriesChain(result: { data: unknown; error: { message: string } | null }) {
   const eq3 = vi.fn().mockResolvedValue(result);
   const eq2 = vi.fn().mockReturnValue({ eq: eq3 });

@@ -6,16 +6,9 @@ export type CategoryOption = {
   name: string;
 };
 
-/**
- * Retorna até `limit` categorias de despesa do household, ordenadas por uso
- * decrescente (count de transactions). Em empate, ordena por sort_order
- * crescente. Categorias arquivadas são excluídas.
- *
- * Implementação: duas queries (categorias + transactions) e join client-side.
- * Tentamos `categories.select('transactions(count)')` mas o agregado embutido
- * do PostgREST não respeita o filtro de household_id da categoria, retornando
- * 0 pra todos. Duas queries fica explícito e correto.
- */
+// Duas queries em vez de `categories.select('transactions(count)')`: o agregado
+// embutido do PostgREST não respeita o filtro de household_id da categoria e
+// retorna 0 pra todas.
 export async function listTopCategoriesForHousehold(
   supabase: SupabaseClient<Database>,
   householdId: string,

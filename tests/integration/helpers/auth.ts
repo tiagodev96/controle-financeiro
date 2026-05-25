@@ -20,12 +20,6 @@ type LoginOptions = {
   password?: string;
 };
 
-/**
- * Cria um cliente Supabase autenticado como o usuário de teste, com sessão
- * em memória (sem persistir cookie). Equivalente a uma sessão Next mockada
- * mas sem dependência de next/headers — testes de integração testam a função
- * core (createTransactionForSession) sem a casca Next.
- */
 export async function getAuthedClient(
   { email = DEFAULT_EMAIL, password = DEFAULT_PASSWORD }: LoginOptions = {}
 ): Promise<SupabaseClient<Database>> {

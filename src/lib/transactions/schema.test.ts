@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { createTransactionSchema } from './schema';
 
-// Data dinâmica em vez de hardcoded: o schema rejeita data > 1 ano no futuro
-// usando Date.now(), então uma constante fixa quebraria o teste em ~1 ano.
+// Data dinâmica: o schema rejeita data > 1 ano à frente via Date.now(), então
+// uma constante fixa quebraria o teste em ~1 ano.
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const validInput = {

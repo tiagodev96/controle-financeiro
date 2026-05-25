@@ -2,10 +2,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/database';
 
-/**
- * Cliente Supabase para uso em Server Components, Server Actions e Route Handlers.
- * Lê e escreve cookies da request via `next/headers`.
- */
 export async function getServerSupabase() {
   const cookieStore = await cookies();
 
@@ -18,14 +14,12 @@ export async function getServerSupabase() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
-          // Em Server Components puros (sem Action/Route Handler) o set falha.
-          // Engolimos esse caso porque o middleware refresca a sessão.
+          // Em Server Component puro o set falha; o proxy refresca a sessão.
           try {
             for (const { name, value, options } of cookiesToSet) {
               cookieStore.set(name, value, options);
             }
           } catch {
-            // intentional no-op
           }
         },
       },

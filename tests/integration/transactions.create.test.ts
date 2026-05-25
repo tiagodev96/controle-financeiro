@@ -15,8 +15,8 @@ import {
   deleteIsolatedHousehold,
 } from './helpers/db';
 
-// Data dinâmica em vez de hardcoded: o schema rejeita data > 1 ano no futuro
-// usando Date.now(), então uma constante fixa quebraria o teste em ~1 ano.
+// Data dinâmica: o schema rejeita data > 1 ano à frente via Date.now(), então
+// uma constante fixa quebraria o teste em ~1 ano.
 const TODAY = new Date().toISOString().slice(0, 10);
 
 const baseInput = {
@@ -57,7 +57,6 @@ describe('createTransactionForSession (integração)', () => {
       occurred_on: TODAY,
     });
 
-    // Confirma na fonte (admin client, bypassa RLS): linha existe mesmo
     const admin = getAdminClient();
     const { data, error } = await admin
       .from('transactions')
@@ -121,7 +120,6 @@ describe('createTransactionForSession (integração)', () => {
 
       expect(result.ok).toBe(false);
 
-      // Nada foi inserido no household de Tiago
       const admin = getAdminClient();
       const { count } = await admin
         .from('transactions')

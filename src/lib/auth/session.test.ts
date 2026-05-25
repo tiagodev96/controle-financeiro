@@ -15,8 +15,6 @@ type FakeClient = {
   from: ReturnType<typeof vi.fn>;
 };
 
-// Fábrica de um cliente Supabase fake. profileResult controla o retorno de
-// supabase.from('profiles').select(...).eq(...).single().
 function makeFakeClient(opts: {
   userResult: { data: { user: { id: string } | null }; error: Error | null };
   profileResult?: { data: { household_id: string } | null; error: Error | null };

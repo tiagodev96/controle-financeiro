@@ -97,7 +97,7 @@ describe('<MoneyInput>', () => {
     await user.keyboard('{Backspace}');
 
     expect(input).toHaveValue('0,00');
-    // onChange pode ou não ser chamado com 0; aceitamos os dois (idempotente).
+    // onChange é idempotente — pode ser chamado com 0 ou não.
     for (const call of spy.mock.calls) {
       expect(call[0]).toBeGreaterThanOrEqual(0);
     }
@@ -113,7 +113,6 @@ describe('<MoneyInput>', () => {
     await user.keyboard('a,. ');
 
     expect(input).toHaveValue('0,00');
-    // Nenhuma das calls de onChange deveria mudar o valor (continua 0).
     for (const call of spy.mock.calls) {
       expect(call[0]).toBe(0);
     }
