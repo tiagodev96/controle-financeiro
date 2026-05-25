@@ -92,59 +92,62 @@ export default async function DashboardPage() {
         <EmptyHero />
       ) : (
         <>
-          <section className="space-y-3">
-            <p className="text-[15px] text-fg3">Saldo atual</p>
-            <HeroNumber cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} />
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <CCY code={primaryCurrency} />
-              <Num cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} className="text-[11px] text-fg3" />
-              <span className="text-fg5">·</span>
-              <CCY code={secondaryCurrency} />
-              <Num cents={balanceByCurrency[secondaryCurrency]} currency={secondaryCurrency} className="text-[11px] text-fg3" />
+          <section className="grid gap-3 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+            <div className="rounded-md border border-border-soft bg-bg-surface p-5 lg:p-6 space-y-3">
+              <p className="text-[15px] text-fg3">Saldo atual</p>
+              <HeroNumber cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} />
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <CCY code={primaryCurrency} />
+                <Num cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} className="text-[11px] text-fg3" />
+                <span className="text-fg5">·</span>
+                <CCY code={secondaryCurrency} />
+                <Num cents={balanceByCurrency[secondaryCurrency]} currency={secondaryCurrency} className="text-[11px] text-fg3" />
+              </div>
             </div>
+            <SobraPrevistaCard stats={stats} currency={primaryCurrency} endOfMonthLabel={endOfMonthLabel(now)} />
           </section>
-
-          <SobraPrevistaCard stats={stats} currency={primaryCurrency} endOfMonthLabel={endOfMonthLabel(now)} />
 
           <StatTrio stats={stats} currency={primaryCurrency} />
 
-          <section className="space-y-3">
-            <header className="flex items-baseline justify-between">
-              <h2>Top categorias</h2>
-              <span className="mono text-[10px] text-fg4">{MONTHS_PT_SHORT[now.getMonth()]}</span>
-            </header>
-            <CategoryProgressList rows={topCats} currency={primaryCurrency} />
-          </section>
-        </>
-      )}
+          <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+            <section className="space-y-3">
+              <header className="flex items-baseline justify-between">
+                <h2>Top categorias</h2>
+                <span className="mono text-[10px] text-fg4">{MONTHS_PT_SHORT[now.getMonth()]}</span>
+              </header>
+              <CategoryProgressList rows={topCats} currency={primaryCurrency} />
+            </section>
 
-      {txns.length > 0 && (
-        <section className="space-y-4">
-          <header className="flex items-baseline justify-between">
-            <h2>Transações recentes</h2>
-            <Link href="/transacoes" className="mono text-[10px] text-fg3 hover:text-fg1">
-              ver todas
-            </Link>
-          </header>
-          {grouped.map(({ label, rows }) => (
-            <div key={label} className="space-y-1.5">
-              <p className="eyebrow px-1">{label}</p>
-              <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
-                {rows.map((t) => (
-                  <TxnRow
-                    key={t.id}
-                    description={t.description}
-                    category={t.categories?.name ?? '—'}
-                    amountCents={t.amount_cents}
-                    currency={t.currency}
-                    direction={t.direction}
-                    status={t.status === 'paid' ? 'paid' : 'pending'}
-                  />
+            {txns.length > 0 && (
+              <section className="space-y-4">
+                <header className="flex items-baseline justify-between">
+                  <h2>Transações recentes</h2>
+                  <Link href="/transacoes" className="mono text-[10px] text-fg3 hover:text-fg1">
+                    ver todas
+                  </Link>
+                </header>
+                {grouped.map(({ label, rows }) => (
+                  <div key={label} className="space-y-1.5">
+                    <p className="eyebrow px-1">{label}</p>
+                    <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
+                      {rows.map((t) => (
+                        <TxnRow
+                          key={t.id}
+                          description={t.description}
+                          category={t.categories?.name ?? '—'}
+                          amountCents={t.amount_cents}
+                          currency={t.currency}
+                          direction={t.direction}
+                          status={t.status === 'paid' ? 'paid' : 'pending'}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 ))}
-              </div>
-            </div>
-          ))}
-        </section>
+              </section>
+            )}
+          </div>
+        </>
       )}
     </section>
   );

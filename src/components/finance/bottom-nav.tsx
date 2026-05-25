@@ -28,7 +28,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border-soft bg-bg-base/92 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border-soft bg-bg-base/92 backdrop-blur-xl pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       <ul className="mx-auto grid max-w-110 grid-cols-5">
         {items.map(({ href, label, Icon }) => {
