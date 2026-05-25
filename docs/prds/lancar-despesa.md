@@ -53,7 +53,7 @@ O cookie `cf_last_account_id` (httpOnly false, pra ser legível no client) é se
 
 ## Riscos
 
-- **Auth não implementada bloqueia o E2E**: probabilidade alta, impacto alto. Mitigação: helper `loginAsTestUser` em `tests/helpers/auth.ts` que chama `supabase.auth.signInWithPassword({ email: 'tiago@example.com', password: 'password-local' })` antes de cada teste E2E que precisa de sessão. Quando o magic link for implementado de verdade, o helper fica como fallback de teste.
+- **Auth não implementada bloqueia o E2E**: probabilidade alta, impacto alto. Mitigação: helper `signInAsFixtureUser` em `tests/helpers/auth.ts` que chama `supabase.auth.signInWithPassword({ email: 'tiago@example.com', password: 'password-local' })` antes de cada teste E2E que precisa de sessão. Quando o magic link for implementado de verdade, o helper fica como fallback de teste.
 - **Schema Zod duplicado entre client e server**: probabilidade média, impacto baixo (manutenção). Mitigação já está no plano: schema único em `src/lib/transactions/schema.ts`, importado dos dois lados.
 - **Household sem categorias**: probabilidade alta no início, impacto médio (form com submit desabilitado). Mitigação: seed traz 6 categorias default + UI exibe CTA explícita pra criar mais.
 - **Race condition em duplo submit (usuário tapa 2x rapidamente)**: probabilidade média, impacto baixo (duplicata). Mitigação: desabilitar botão durante `useFormStatus().pending`.

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsTestUser } from '../helpers/auth';
+import { signInAsFixtureUser } from '../helpers/auth';
 
 test.describe('Auth (login com email + senha)', () => {
   test('E-A1 — login feliz com credenciais válidas do seed', async ({ page }) => {
@@ -37,7 +37,7 @@ test.describe('Auth (login com email + senha)', () => {
   });
 
   test('M-A2 — já autenticado em /login → redireciona pra /', async ({ page, context }) => {
-    await loginAsTestUser(context);
+    await signInAsFixtureUser(context);
 
     await page.goto('/login');
 

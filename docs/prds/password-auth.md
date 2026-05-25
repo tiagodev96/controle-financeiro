@@ -4,7 +4,7 @@
 
 ## Problema
 
-Hoje o app não tem como autenticar ninguém em produção. `/login` mostra um campo de email e um botão **disabled** com a copy "Em breve. O envio do link ainda não está ativo." Tudo que está mergeado depois da PRD `lancar-despesa` (form de despesa, server actions com RLS) só funciona porque o helper E2E `loginAsTestUser` injeta cookies de sessão direto via `signInWithPassword` contra o Supabase local. Sem fluxo real, o casal não consegue usar o app na Vercel — o MVP não sai de localhost.
+Hoje o app não tem como autenticar ninguém em produção. `/login` mostra um campo de email e um botão **disabled** com a copy "Em breve. O envio do link ainda não está ativo." Tudo que está mergeado depois da PRD `lancar-despesa` (form de despesa, server actions com RLS) só funciona porque o helper E2E `signInAsFixtureUser` injeta cookies de sessão direto via `signInWithPassword` contra o Supabase local. Sem fluxo real, o casal não consegue usar o app na Vercel — o MVP não sai de localhost.
 
 ## Usuário afetado
 
@@ -27,7 +27,7 @@ Sem proxy de tempo ou adoção. Latência de `signInWithPassword` é ~200ms — 
 - `/login` com sessão ativa **redireciona pra `/`** (single-account flow, sem "trocar de conta").
 - **Middleware** Next.js (`src/middleware.ts`) novo: refresh de sessão a cada request via `@supabase/ssr` e redirect `/login → /` quando já autenticado, redirect `(app)/* → /login` quando anônimo. Substitui o `try { getSession() } catch redirect('/login')` que hoje vive em cada page autenticada. Matcher explícito excluindo `_next/static`, `_next/image`, `favicon.ico` e qualquer rota de assets.
 - `tiago@example.com` (fixture user já existente no seed) **fica fora** da allowlist em produção. Em local/dev, a allowlist do `.env.local` inclui o fixture user pra desenvolvimento manual funcionar.
-- Helper `loginAsTestUser` em `tests/helpers/auth.ts` **renomeado pra `signInAsFixtureUser`** e com JSDoc atualizado: deixa explícito que o helper agora usa **exatamente o mesmo método** (`signInWithPassword`) do caminho de produção — diferença é só pular a UI pra reduzir flake no E2E. Sem mais bypass conceitual; é só economia de DOM. Mantém o caminho em `tests/helpers/auth.ts` (sem mover de pasta).
+- Helper `signInAsFixtureUser` em `tests/helpers/auth.ts` **renomeado pra `signInAsFixtureUser`** e com JSDoc atualizado: deixa explícito que o helper agora usa **exatamente o mesmo método** (`signInWithPassword`) do caminho de produção — diferença é só pular a UI pra reduzir flake no E2E. Sem mais bypass conceitual; é só economia de DOM. Mantém o caminho em `tests/helpers/auth.ts` (sem mover de pasta).
 - Documentação operacional em `docs/operations/provisioning.md` (arquivo novo, curto): passo a passo de como criar usuário novo no Supabase dashboard, definir senha forte, atualizar `AUTH_ALLOWED_EMAILS` no Vercel e em `.env.local`.
 
 ### Fora (explicitamente)

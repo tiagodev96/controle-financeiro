@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { loginAsTestUser } from '../helpers/auth';
+import { signInAsFixtureUser } from '../helpers/auth';
 
 test.describe('Lançar despesa', () => {
   test('E1 — lança despesa pendente com sucesso (happy path)', async ({ page, context }) => {
-    await loginAsTestUser(context);
+    await signInAsFixtureUser(context);
 
     await page.goto('/lancar');
 
@@ -20,7 +20,7 @@ test.describe('Lançar despesa', () => {
   });
 
   test('E2 — lança despesa marcada como "já pago" sem quebrar', async ({ page, context }) => {
-    await loginAsTestUser(context);
+    await signInAsFixtureUser(context);
 
     await page.goto('/lancar');
 
@@ -36,7 +36,7 @@ test.describe('Lançar despesa', () => {
   });
 
   test('E3 — household sem categorias mostra empty state com CTA', async ({ page, context }) => {
-    await loginAsTestUser(context, { email: 'empty@example.com' });
+    await signInAsFixtureUser(context, { email: 'empty@example.com' });
 
     await page.goto('/lancar');
 
@@ -53,7 +53,7 @@ test.describe('Lançar despesa', () => {
   });
 
   test('E4 — valor zero é rejeitado com mensagem inline e mantém o form', async ({ page, context }) => {
-    await loginAsTestUser(context);
+    await signInAsFixtureUser(context);
 
     await page.goto('/lancar');
 

@@ -1,20 +1,13 @@
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { getSession, UnauthorizedError } from '@/lib/auth/session';
 import { BottomNav } from '@/components/finance/bottom-nav';
 import { DesktopSidebar } from '@/components/finance/desktop-sidebar';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { Toaster } from '@/components/ui/sonner';
 import { THEME_COOKIE, resolveTheme } from '@/lib/theme/cookie';
 
+// O proxy (src/proxy.ts) já gateia rotas autenticadas — redireciona anônimos
+// pra /login. Aqui o layout só monta o shell visual.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  try {
-    await getSession();
-  } catch (err) {
-    if (err instanceof UnauthorizedError) redirect('/login');
-    throw err;
-  }
-
   const cookieStore = await cookies();
   const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
 

@@ -20,10 +20,20 @@ type StoredCookie = {
   options: CookieOptions;
 };
 
-// Usa createServerClient com cookie jar em memória pra que o formato dos
-// cookies (chunks, naming sb-<ref>-auth-token, base64) bata exatamente com o
-// que o app espera. Pré-requisito: Supabase local rodando com seed aplicado.
-export async function loginAsTestUser(
+/**
+ * signInAsFixtureUser — autentica via signInWithPassword direto contra o
+ * Supabase local e injeta os cookies de sessão no BrowserContext do
+ * Playwright. Pula a UI de /login.
+ *
+ * **Não é um bypass.** É equivalência funcional ao caminho de produção: a
+ * própria UI chama signInWithPassword via Server Action. A única diferença é
+ * onde o submit acontece (Node aqui, browser na UI real). Existe pra reduzir
+ * flake e DOM-noise em todos os E2E que precisam de sessão sem testar o
+ * fluxo de login em si.
+ *
+ * Pré-requisito: Supabase local rodando com seed aplicado.
+ */
+export async function signInAsFixtureUser(
   context: BrowserContext,
   {
     email = DEFAULT_EMAIL,
@@ -54,7 +64,7 @@ export async function loginAsTestUser(
 
   const { error } = await client.auth.signInWithPassword({ email, password });
   if (error) {
-    throw new Error(`loginAsTestUser: signIn failed para ${email}: ${error.message}`);
+    throw new Error(`signInAsFixtureUser: signIn failed para ${email}: ${error.message}`);
   }
 
   const url = new URL(baseURL);

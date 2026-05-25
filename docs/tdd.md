@@ -80,7 +80,7 @@ import { test, expect } from '@playwright/test';
 
 test('lança despesa rápida e aparece na lista', async ({ page }) => {
   await page.goto('/login');
-  await loginAsTestUser(page);             // helper que faz magic link mock
+  await signInAsFixtureUser(page);             // helper que faz magic link mock
 
   await page.goto('/lancar');
   await page.getByLabel('Valor').fill('12,50');
