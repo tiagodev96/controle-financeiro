@@ -80,7 +80,7 @@ describe('<LancarForm>', () => {
 
     await user.type(screen.getByLabelText('Valor'), '12,50');
     await user.type(screen.getByLabelText('Descrição'), 'Café');
-    await user.click(screen.getByRole('button', { name: 'Lançar despesa' }));
+    await user.click(screen.getByRole('button', { name: /lançar despesa/i }));
 
     const pendingButton = await screen.findByRole('button', { name: /lançando/i });
     expect(pendingButton).toBeDisabled();
@@ -106,10 +106,10 @@ describe('<LancarForm>', () => {
 
     await user.type(screen.getByLabelText('Valor'), '12,50');
     await user.type(screen.getByLabelText('Descrição'), 'x');
-    await user.click(screen.getByRole('button', { name: 'Lançar despesa' }));
+    await user.click(screen.getByRole('button', { name: /lançar despesa/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Conta arquivada');
-    expect(screen.getByRole('button', { name: 'Lançar despesa' })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /lançar despesa/i })).not.toBeDisabled();
   });
 
   it('C5 — após erro, mantém valores digitados e categoria selecionada', async () => {
@@ -123,7 +123,7 @@ describe('<LancarForm>', () => {
     await user.type(screen.getByLabelText('Valor'), '12,50');
     await user.type(screen.getByLabelText('Descrição'), 'Café no Starbucks');
     await user.click(screen.getByRole('button', { name: 'Restaurante' }));
-    await user.click(screen.getByRole('button', { name: 'Lançar despesa' }));
+    await user.click(screen.getByRole('button', { name: /lançar despesa/i }));
 
     await screen.findByRole('alert');
 
@@ -162,7 +162,7 @@ describe('<LancarForm>', () => {
     );
 
     await user.type(screen.getByLabelText('Descrição'), 'x');
-    await user.click(screen.getByRole('button', { name: 'Lançar despesa' }));
+    await user.click(screen.getByRole('button', { name: /lançar despesa/i }));
 
     expect(createTransaction).toHaveBeenCalledTimes(1);
     expect(createTransaction).toHaveBeenCalledWith(
@@ -181,7 +181,7 @@ describe('<LancarForm>', () => {
 
     await user.type(screen.getByLabelText('Valor'), '12,50');
     await user.type(screen.getByLabelText('Descrição'), 'Café');
-    await user.click(screen.getByRole('button', { name: 'Lançar despesa' }));
+    await user.click(screen.getByRole('button', { name: /lançar despesa/i }));
 
     expect(await screen.findByRole('status')).toHaveTextContent('Despesa lançada.');
     expect(push).not.toHaveBeenCalled();

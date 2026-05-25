@@ -13,7 +13,7 @@ test.describe('Lançar despesa', () => {
     await page.getByLabel(/descrição/i).fill('Pão na padaria');
     await page.getByRole('button', { name: 'Mercado' }).click();
 
-    await page.getByRole('button', { name: /^lançar despesa$/i }).click();
+    await page.getByRole('button', { name: /lançar despesa/i }).click();
 
     await expect(page.getByText(/despesa lançada/i)).toBeVisible();
     await expect(page).toHaveURL('/');
@@ -27,9 +27,9 @@ test.describe('Lançar despesa', () => {
     await page.getByLabel(/valor/i).fill('45,00');
     await page.getByLabel(/descrição/i).fill('Almoço pago no PIX');
     await page.getByRole('button', { name: 'Restaurante' }).click();
-    await page.getByLabel(/já pago/i).check();
+    await page.getByRole('button', { name: /já pago/i }).click();
 
-    await page.getByRole('button', { name: /^lançar despesa$/i }).click();
+    await page.getByRole('button', { name: /lançar despesa/i }).click();
 
     await expect(page.getByText(/despesa lançada/i)).toBeVisible();
     await expect(page).toHaveURL('/');
@@ -49,7 +49,7 @@ test.describe('Lançar despesa', () => {
     await expect(cta).toBeVisible();
     await expect(cta).toHaveAttribute('href', '/categorias');
 
-    await expect(page.getByRole('button', { name: /^lançar despesa$/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /lançar despesa/i })).toHaveCount(0);
   });
 
   test('E4 — valor zero é rejeitado com mensagem inline e mantém o form', async ({ page, context }) => {
@@ -60,7 +60,7 @@ test.describe('Lançar despesa', () => {
     await page.getByLabel(/descrição/i).fill('Tentativa inválida');
     await page.getByRole('button', { name: 'Mercado' }).click();
 
-    await page.getByRole('button', { name: /^lançar despesa$/i }).click();
+    await page.getByRole('button', { name: /lançar despesa/i }).click();
 
     await expect(
       page.getByRole('alert').filter({ hasText: /(inv[áa]lid|valor)/i }),

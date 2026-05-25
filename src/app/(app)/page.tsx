@@ -1,13 +1,12 @@
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { getServerSupabase } from '@/lib/supabase/server';
 import { getSession } from '@/lib/auth/session';
-import { StatCard } from '@/components/finance/stat-card';
+import { AppTopBar } from '@/components/finance/app-top-bar';
+import { HeroNumber, Num, type Currency } from '@/components/finance/num';
+import { CCY } from '@/components/finance/ccy';
 import { TxnRow } from '@/components/finance/txn-row';
-import { formatCentsToBRL } from '@/lib/money/format';
 
-const CURRENCY_SYMBOL = { BRL: 'R$', EUR: '€' } as const;
-
-type Currency = 'BRL' | 'EUR';
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
 
@@ -21,6 +20,25 @@ type TxnRowData = {
   occurred_on: string;
   categories: { name: string } | null;
 };
+
+const MONTHS_PT = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+];
+
+function monthEyebrow(d: Date): string {
+  return `${MONTHS_PT[d.getMonth()]} · ${d.getFullYear()}`;
+}
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -54,37 +72,33 @@ export default async function DashboardPage() {
   const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
   const grouped = groupByDay(txns);
   const hasData = txns.length > 0 || accounts.some((a) => a.balance_cents !== 0);
+  const primaryCurrency: Currency = 'EUR';
+  const secondaryCurrency: Currency = 'BRL';
 
   return (
-    <section className="space-y-7">
+    <section className="space-y-6">
+      <AppTopBar eyebrow={monthEyebrow(new Date())} title="Dashboard" />
+
       {!hasData ? (
         <EmptyHero />
       ) : (
-        <div className="grid gap-3">
-          {(['EUR', 'BRL'] as const)
-            .filter(
-              (cur) =>
-                balanceByCurrency[cur] !== 0 ||
-                accounts.some((a) => a.currency === cur),
-            )
-            .map((cur, idx) => (
-              <StatCard
-                key={cur}
-                label={idx === 0 ? 'Saldo atual' : `Saldo atual ${cur}`}
-                size={idx === 0 ? 'hero' : 'stat'}
-              >
-                <span>
-                  {CURRENCY_SYMBOL[cur]} {formatCentsToBRL(balanceByCurrency[cur])}
-                </span>
-              </StatCard>
-            ))}
-        </div>
+        <section className="space-y-3">
+          <p className="text-[15px] text-fg3">Saldo atual</p>
+          <HeroNumber cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} />
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <CCY code={primaryCurrency} />
+            <Num cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} className="text-[11px] text-fg3" />
+            <span className="text-fg5">·</span>
+            <CCY code={secondaryCurrency} />
+            <Num cents={balanceByCurrency[secondaryCurrency]} currency={secondaryCurrency} className="text-[11px] text-fg3" />
+          </div>
+        </section>
       )}
 
       {txns.length > 0 && (
         <section className="space-y-4">
           {grouped.map(({ label, rows }) => (
-            <div key={label} className="space-y-1">
+            <div key={label} className="space-y-1.5">
               <p className="eyebrow px-1">{label}</p>
               <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
                 {rows.map((t) => (
@@ -118,8 +132,9 @@ function EmptyHero() {
       </div>
       <Link
         href="/lancar"
-        className="inline-flex min-h-11 items-center justify-center rounded-md bg-brand px-5 py-2 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-5 py-2 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
+        <Plus className="size-4" strokeWidth={1.6} aria-hidden />
         Lançar primeira despesa
       </Link>
     </div>
