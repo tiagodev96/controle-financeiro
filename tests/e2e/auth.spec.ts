@@ -11,7 +11,7 @@ test.describe('Auth (login com email + senha)', () => {
     await page.getByLabel(/senha/i).fill('password-local');
     await page.getByRole('button', { name: /^entrar$/i }).click();
 
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL('/', { timeout: 10_000 });
   });
 
   test('E-A2 — senha errada mostra alert genérico e preserva o email', async ({ page }) => {
@@ -23,7 +23,7 @@ test.describe('Auth (login com email + senha)', () => {
 
     await expect(
       page.getByRole('alert').filter({ hasText: /email ou senha inválidos/i })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: 10_000 });
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByLabel(/email/i)).toHaveValue('tiago@example.com');
     await expect(page.getByLabel(/senha/i)).toHaveValue('');

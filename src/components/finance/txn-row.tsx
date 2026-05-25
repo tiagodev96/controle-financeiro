@@ -9,6 +9,7 @@ type Props = {
   currency?: 'BRL' | 'EUR';
   direction: 'income' | 'expense';
   status?: Status;
+  action?: React.ReactNode;
   className?: string;
 };
 
@@ -24,6 +25,7 @@ export function TxnRow({
   currency = 'BRL',
   direction,
   status,
+  action,
   className,
 }: Props) {
   const isIncome = direction === 'income';
@@ -47,6 +49,7 @@ export function TxnRow({
       >
         {sign}{SYMBOL[currency]} {formatCentsToBRL(amountCents)}
       </p>
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
