@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Controle Financeiro — Desktop states & modals & toasts & tablet</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg-base);
+      color: var(--fg1);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1380px; margin: 0 auto; padding: 48px 40px 0;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .header h1 {
+      margin: 0; font-family: var(--font-sans); font-size: 32px; font-weight: 600;
+      letter-spacing: -0.03em; color: var(--fg1);
+    }
+    .header .sub {
+      font-family: var(--font-mono); font-size: 12px; color: var(--fg3);
+      text-transform: uppercase; letter-spacing: 0.12em;
+    }
+    .header .tags {
+      display: flex; gap: 8px; margin-top: 10px;
+      font-family: var(--font-mono); font-size: 11px; color: var(--fg4);
+    }
+    .header .tags span {
+      padding: 2px 8px; background: var(--bg-inset);
+      border: 1px solid var(--border-soft); border-radius: 4px;
+      letter-spacing: 0.01em;
+    }
+    .theme-toggle {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--bg-inset); border: 1px solid var(--border-soft);
+      border-radius: 9999px; padding: 3px; margin-top: 12px; width: fit-content;
+    }
+    .theme-toggle button {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 30px; padding: 0 14px; border-radius: 9999px;
+      background: transparent; color: var(--fg3); border: 0;
+      font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.01em;
+    }
+    .theme-toggle button[aria-pressed="true"] {
+      background: var(--bg-surface); color: var(--fg1); font-weight: 600;
+      box-shadow: 0 1px 0 oklch(100% 0 0 / 0.04) inset, 0 1px 2px oklch(0% 0 0 / 0.2);
+    }
+    [data-theme="light"] .theme-toggle button[aria-pressed="true"] {
+      box-shadow: 0 1px 2px oklch(0% 0 0 / 0.06);
+    }
+
+    .section {
+      max-width: 1380px; margin: 0 auto; padding: 40px;
+    }
+    .section-label {
+      display: flex; flex-direction: column; gap: 4px;
+      margin-bottom: 18px;
+    }
+    .section-label .name { font-family: var(--font-sans); font-size: 16px; font-weight: 600; color: var(--fg1); letter-spacing: -0.005em; }
+    .section-label .meta { font-family: var(--font-mono); font-size: 11px; color: var(--fg4); }
+
+    .stage-host { display: flex; justify-content: center; }
+
+    /* Motion */
+    @keyframes cfFadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes cfModalIn {
+      from { transform: translate(-50%, -48%) scale(0.96); opacity: 0; }
+      to   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+    }
+    @keyframes cfToastIn {
+      from { transform: translateX(16px); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+    @keyframes cfShimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @keyframes cfToastProgress {
+      from { transform: scaleX(1); }
+      to   { transform: scaleX(0); }
+    }
+    @keyframes cfToastIndeterminate {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(250%); }
+    }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="header" data-screen-label="00 Desktop states header">
+    <span class="sub">Desktop · estados, modais, toasts · tablet</span>
+    <h1>Controle Financeiro — Desktop states</h1>
+    <div class="tags">
+      <span>Desktop 1280px</span>
+      <span>Tablet 1024px</span>
+      <span>Centered modals</span>
+      <span>Top-right toasts</span>
+    </div>
+    <div class="theme-toggle" role="group" aria-label="Tema">
+      <button id="t-dark" aria-pressed="true" onclick="setTheme('dark')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        Dark
+      </button>
+      <button id="t-light" aria-pressed="false" onclick="setTheme('light')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        Light
+      </button>
+      <button id="t-auto" aria-pressed="false" onclick="setTheme('auto')">Auto</button>
+    </div>
+  </header>
+
+  <script>
+    function setTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('cf-theme', t);
+      document.getElementById('t-dark' ).setAttribute('aria-pressed', t === 'dark');
+      document.getElementById('t-light').setAttribute('aria-pressed', t === 'light');
+      document.getElementById('t-auto' ).setAttribute('aria-pressed', t === 'auto');
+    }
+    setTheme(localStorage.getItem('cf-theme') || 'dark');
+  </script>
+
+  <section class="section" data-screen-label="01 Desktop states">
+    <div class="section-label">
+      <span class="name">Desktop · empty / loading / error</span>
+      <span class="meta">01 · toggle no header pra alternar entre os 4 estados</span>
+    </div>
+    <div class="stage-host"><div id="states-host"></div></div>
+  </section>
+
+  <section class="section" data-screen-label="02 Centered modals">
+    <div class="section-label">
+      <span class="name">Desktop · centered modals</span>
+      <span class="meta">02 · padrão desktop — modal centralizado, scrim + escala 220ms · NÃO bottom sheet</span>
+    </div>
+    <div class="stage-host"><div id="modals-host"></div></div>
+  </section>
+
+  <section class="section" data-screen-label="03 Toast stack">
+    <div class="section-label">
+      <span class="name">Desktop · toast stack</span>
+      <span class="meta">03 · top-right · auto-dismiss em sucesso/info · persistente em erro · stack vertical</span>
+    </div>
+    <div class="stage-host"><div id="toasts-host"></div></div>
+  </section>
+
+  <section class="section" data-screen-label="04 Tablet 1024">
+    <div class="section-label">
+      <span class="name">Tablet · 1024px</span>
+      <span class="meta">04 · sidebar compacto icon-only 64px · main reflowed mais apertado · sem painel direito</span>
+    </div>
+    <div class="stage-host"><div id="tablet-host"></div></div>
+  </section>
+
+  <script type="text/babel" src="browser-window.jsx"></script>
+  <script type="text/babel" src="components.jsx"></script>
+  <script type="text/babel" src="desktop.jsx"></script>
+  <script type="text/babel" src="desktop-states.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    /* global React, ReactDOM, ChromeWindow, DesktopStatesDemo, DesktopModalsDemo, DesktopToastsDemo, TabletApp */
+
+    const Section = ({ host, width, height, children, url, tab = 'Controle · CF' }) => (
+      <ChromeWindow width={width} height={height}
+        tabs={[{ title: tab, active: true }]} url={url}>
+        <div style={{ height: '100%', background: 'var(--bg-base)' }}>{children}</div>
+      </ChromeWindow>
+    );
+
+    try {
+      ReactDOM.createRoot(document.getElementById('states-host')).render(
+        <Section width={1280} height={780} url="controle.tiago.dev"><DesktopStatesDemo /></Section>
+      );
+      ReactDOM.createRoot(document.getElementById('modals-host')).render(
+        <Section width={1280} height={780} url="controle.tiago.dev/categorias"><DesktopModalsDemo /></Section>
+      );
+      ReactDOM.createRoot(document.getElementById('toasts-host')).render(
+        <Section width={1280} height={680} url="controle.tiago.dev"><DesktopToastsDemo /></Section>
+      );
+      ReactDOM.createRoot(document.getElementById('tablet-host')).render(
+        <Section width={1024} height={720} url="controle.tiago.dev" tab="Controle · CF · tablet"><TabletApp /></Section>
+      );
+    } catch (e) {
+      console.error('CF desktop-states render failed:', e);
+      document.body.insertAdjacentHTML('beforeend', '<pre style="padding:20px;color:red;font-family:monospace">' + (e.message || e) + '</pre>');
+    }
+  </script>
+</body>
+</html>

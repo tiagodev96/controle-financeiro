@@ -1,44 +1,50 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
-import { Home, Plus, Menu } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import {
+  LayoutDashboard,
+  Plus,
+  Receipt,
+  CreditCard,
+  Menu,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const items = [
-  { href: '/', label: 'Início', Icon: Home, kind: 'route' as const },
-  { href: '?sheet=lancar', label: 'Lançar', Icon: Plus, kind: 'sheet' as const, sheet: 'lancar' },
-  { href: '?sheet=mais', label: 'Mais', Icon: Menu, kind: 'sheet' as const, sheet: 'mais' },
+type Item = { href: string; label: string; Icon: LucideIcon };
+
+const items: Item[] = [
+  { href: '/', label: 'Dashboard', Icon: LayoutDashboard },
+  { href: '/lancar', label: 'Lançar', Icon: Plus },
+  { href: '/transacoes', label: 'Transações', Icon: Receipt },
+  { href: '/dividas', label: 'Dívidas', Icon: CreditCard },
+  { href: '/mais', label: 'Mais', Icon: Menu },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
-  const params = useSearchParams();
-  const openSheet = params.get('sheet');
 
   return (
     <nav
       aria-label="Navegação principal"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-border-soft bg-bg-base/92 backdrop-blur-xl pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="mx-auto grid max-w-md grid-cols-3">
-        {items.map((item) => {
-          const active =
-            item.kind === 'route'
-              ? pathname === '/' && !openSheet
-              : openSheet === item.sheet;
+      <ul className="mx-auto grid max-w-110 grid-cols-5">
+        {items.map(({ href, label, Icon }) => {
+          const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
           return (
-            <li key={item.label}>
+            <li key={href}>
               <Link
-                href={item.href}
+                href={href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors',
-                  active ? 'text-primary' : 'text-fg-muted hover:text-fg',
+                  active ? 'text-brand' : 'text-fg3 hover:text-fg1',
                 )}
               >
-                <item.Icon className="size-5" aria-hidden />
-                <span>{item.label}</span>
+                <Icon className="size-5.5" strokeWidth={1.6} aria-hidden />
+                <span>{label}</span>
               </Link>
             </li>
           );

@@ -27,26 +27,22 @@ export function TxnRow({
   className,
 }: Props) {
   const isIncome = direction === 'income';
-  const sign = isIncome ? '+' : '-';
+  // Sinal de negativo é U+2212 (não hífen) por decisão do design system.
+  const sign = isIncome ? '+' : '−';
 
   return (
-    <div
-      className={cn(
-        'flex items-center gap-3 py-2.5',
-        className,
-      )}
-    >
-      <div className="flex min-w-0 flex-1 flex-col">
-        <p className="truncate text-[15px] text-fg">{description}</p>
-        <div className="flex items-center gap-2 text-xs text-fg-muted">
+    <div className={cn('flex items-center gap-3 py-3', className)}>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <p className="truncate text-[15px] text-fg1">{description}</p>
+        <div className="flex items-center gap-2 text-xs text-fg3">
           <span className="truncate">{category}</span>
           {status && <StatusPill status={status} />}
         </div>
       </div>
       <p
         className={cn(
-          'num shrink-0 text-right text-[15px] font-medium',
-          isIncome ? 'text-success' : 'text-fg',
+          'num shrink-0 text-right text-[15px] font-semibold',
+          isIncome ? 'text-money-positive' : 'text-money-negative',
         )}
       >
         {sign}{SYMBOL[currency]} {formatCentsToBRL(amountCents)}

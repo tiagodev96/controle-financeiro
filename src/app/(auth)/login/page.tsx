@@ -6,7 +6,7 @@ export default function LoginPage() {
   return (
     <div className="space-y-8">
       <header className="space-y-2 text-center">
-        <p className="caption">Controle Financeiro</p>
+        <p className="eyebrow">controle <span className="text-brand">·</span> cf</p>
         <h1>Entrar</h1>
       </header>
       <LoginForm authEnabled={authEnabled} />

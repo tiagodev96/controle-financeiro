@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Inputs</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .label { font-family: var(--font-sans); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg3); }
+  .input {
+    background: var(--bg-inset); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: 10px 12px; font-family: var(--font-sans);
+    font-size: 15px; color: var(--fg1); min-height: 44px; box-sizing: border-box; width: 100%;
+    transition: border-color var(--dur-fast) var(--ease-out);
+  }
+  .input::placeholder { color: var(--fg4); }
+  .input.focused { border-color: var(--brand); box-shadow: 0 0 0 3px oklch(73% 0.135 80 / 0.18); outline: none; }
+  .input.money { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 26px; letter-spacing: -0.025em; min-height: 56px; padding: 8px 14px; color: var(--fg1); }
+  .input.with-prefix { padding-left: 36px; }
+  .field.money { position: relative; }
+  .field.money .prefix { position: absolute; left: 14px; top: calc(50% + 8px); transform: translateY(-50%); font-family: var(--font-sans); font-weight: 500; font-size: 20px; color: var(--fg3); letter-spacing: -0.01em; }
+  .help { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); }
+</style></head>
+<body><div class="card">
+  <div class="grid">
+    <div class="field money">
+      <span class="label">Valor</span>
+      <span class="prefix">€</span>
+      <input class="input money with-prefix focused" value="1.240,50">
+    </div>
+    <div class="field">
+      <span class="label">Descrição</span>
+      <input class="input" placeholder="Ex: Pão na padaria">
+      <span class="help">required · max 80 caracteres</span>
+    </div>
+  </div>
+</div></body></html>

@@ -10,10 +10,11 @@ Portal pessoal de controle financeiro. Flexível pra uso individual ou compartil
 - **Banco**: Postgres via Supabase (free tier) — RLS por household
 - **Auth**: Supabase Auth (email + senha). Allowlist server-only em `AUTH_ALLOWED_EMAILS`, provisionamento manual no dashboard. Gating via `AUTH_ENABLED`. Detalhes em `docs/prds/password-auth.md`.
 - **ORM/queries**: `@supabase/supabase-js` direto + `drizzle-orm` opcional pra queries complexas. Não usar Prisma.
-- **Estilo**: Tailwind v4 + design tokens em CSS variables direto em `src/app/globals.css` (source of truth única, paleta OKLCH dark + light).
-- **UI primitives**: shadcn/ui (Base UI + Radix por baixo)
-- **Ícones**: Lucide React
-- **Tipografia**: IBM Plex Sans (heading + body) + JetBrains Mono (numérico). Carregadas via `next/font/google` no `src/app/layout.tsx`.
+- **Design system**: pasta `design-system/` na raiz (conceito "Livro-razão", paleta OKLCH brass/sage/clay/amber + warm undertone h≈95°). Tokens canônicos em `design-system/colors_and_type.css`; cópia inline em `src/app/globals.css` (source of truth de runtime). Ler `design-system/SKILL.md` e `design-system/README.md` antes de tocar visual.
+- **Estilo**: Tailwind v4 + tokens semânticos (`bg-bg-base`, `text-fg1`, `text-brand`, `text-money-positive`, etc).
+- **UI primitives**: shadcn/ui (Base UI por baixo)
+- **Ícones**: Lucide React, stroke 1.6, linecap round (22px nav, 14–16px inline).
+- **Tipografia**: Geist (sans, workhorse) + JetBrains Mono (cotação/tags técnicas). Carregadas via `next/font/google` no `src/app/layout.tsx`. Geist com `tabular-nums` é o stack numérico (incluindo hero).
 - **Validação**: Zod nos formulários e nas Server Actions
 - **Testes**: Vitest (unit + integração) + React Testing Library (componentes client) + Playwright (E2E). Supabase local pra integração/E2E. MSW opcional pra mockar APIs externas.
 - **Hospedagem**: Vercel (preview deploy por branch)
@@ -37,13 +38,13 @@ Não introduzir dependências fora desta lista sem motivo claro.
 
 ## Padrões visuais
 
-- **Tema**: dark + light com toggle (`ThemeToggle`). Persiste em cookie `cf_theme`, default = system. SSR aplica `data-theme` no `<html>` pra evitar FOUC.
-- Mobile-first. Layouts desktop adaptam de mobile, não o contrário.
-- **Tokens** (cor/tipografia/spacing/radius) vivem em `src/app/globals.css`. Paleta OKLCH em ambos os temas pra contraste uniforme. NÃO existe mais `docs/design-system/` — foi removido no rework visual.
-- **Mood**: "Documento Tranquilo" — sober, denso, type-driven. Sem gradients, sem glassmorphism, sem ornamento. Único accent primário (índigo). Status colors (paid/pending/overdue) só em pequenos pills.
-- Números **sempre** com JetBrains Mono e `font-variant-numeric: tabular-nums` (classes `.num`, `.num-lg`, `.num-display`).
-- Formato PT-BR: `R$ 1.240,50`, `€ 1.240,50`. Negativos com sinal de menos e cor `--danger`, nunca parênteses.
-- **Lançar despesa vive em Sheet bottom-up** (`?sheet=lancar`), não em rota separada. A URL legada `/lancar` redireciona pra `/?sheet=lancar`.
+- **Mood — "Livro-razão"**: editorial e preciso, sem serif. Números são o herói. Acento único de bronze velho (`--brand` brass). Verde (`--money-positive` sage) é só pra entrada; vermelho (`--money-negative` clay) é só pra despesa. **Sem gradientes, sem glassmorphism (exceto bottom nav), sem ilustrações 3D**. Tudo em `design-system/`.
+- **Tema**: dark default, light opt-in via `[data-theme="light"]`, auto via `[data-theme="auto"]` (segue sistema). Persiste em cookie `cf_theme`. SSR aplica `data-theme` no `<html>` pra evitar FOUC. Toggle cicla 3 estados (dark → light → auto).
+- **Layout**: mobile-first, `max-w-110` (440px) em main e bottom nav. Bottom nav fixa de **5 colunas** (Dashboard / Lançar / Transações / Dívidas / Mais). Touch min 44px.
+- **Números** sempre com `.num` (font Geist + `tabular-nums` + `tnum`/`lnum`/`ss01`). Variantes: `.num--hero` (56px), `.num--stat` (32px), `.num--positive` (sage), `.num--negative` (clay).
+- **Formato PT-BR**: `R$ 1.240,50`, `€ 1.240,50`. Negativos com `−` (U+2212, não hífen) + cor `--money-negative`. **Nunca parênteses**.
+- **Sentence case** em títulos e labels. **UPPERCASE tracking 0.08em** só em eyebrows (use classe `.eyebrow`).
+- **Ícones**: Lucide React, `strokeWidth={1.6}`.
 
 ## Vocabulário (PT-BR, sentence case)
 
@@ -204,5 +205,6 @@ Regra: **invocar a skill explicitamente** no prompt (ex.: "use a skill prd pra p
 2. `docs/tdd.md` — guia prático do ciclo TDD outside-in (com exemplo).
 3. `docs/schema.sql` — schema Postgres + RLS, pronto pra rodar no Supabase.
 4. `docs/prds/` — PRDs por feature já entregue ou em andamento (`lancar-despesa`, `password-auth`).
-5. `src/app/globals.css` — design tokens (OKLCH dark + light) e helper classes.
-6. `reference/reference-sheet.xlsx` — planilha antiga do Tiago, **apenas referência** de padrões de uso. Não importar.
+5. `design-system/SKILL.md` + `design-system/README.md` — fonte única do visual (Livro-razão). UI kits de referência em `design-system/ui_kits/pwa/`.
+6. `design-system/colors_and_type.css` — tokens canônicos (espelhados em `src/app/globals.css`).
+7. `reference/reference-sheet.xlsx` — planilha antiga do Tiago, **apenas referência** de padrões de uso. Não importar.

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Hero number</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .hero-wrap { display: flex; align-items: baseline; gap: 12px; }
+  .hero-currency {
+    font-family: var(--font-sans);
+    font-size: 32px;
+    color: var(--fg3);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1;
+  }
+  .hero-int { font-size: 72px; font-weight: 700; letter-spacing: -0.04em; line-height: 0.95; color: var(--fg1); }
+  .hero-frac { font-size: 36px; font-weight: 500; color: var(--fg3); letter-spacing: -0.02em; }
+  .meta { display: flex; gap: 18px; align-items: center; }
+  .meta-item { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label { font-family: var(--font-mono); font-size: 10px; color: var(--fg4); letter-spacing: 0.04em; text-transform: uppercase; }
+  .meta-val { font-family: var(--font-mono); font-size: 11px; color: var(--fg2); }
+</style></head>
+<body><div class="card">
+  <div class="editorial" style="font-size: 22px;">Saldo atual</div>
+  <div class="hero-wrap num">
+    <span class="hero-currency">€</span>
+    <span class="hero-int">2.183</span><span class="hero-int" style="color:var(--fg3)">,</span><span class="hero-frac">14</span>
+  </div>
+  <div class="meta">
+    <div class="meta-item"><span class="meta-label">Família</span><span class="meta-val">Geist 700</span></div>
+    <div class="meta-item"><span class="meta-label">Recursos</span><span class="meta-val">tnum · lnum · ss01</span></div>
+    <div class="meta-item"><span class="meta-label">Tracking</span><span class="meta-val">−0.04em</span></div>
+    <div class="meta-item"><span class="meta-label">Símbolo</span><span class="meta-val">Geist 500 · fg3</span></div>
+  </div>
+</div></body></html>

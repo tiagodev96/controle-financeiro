@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Buttons</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; min-height: 40px; padding: 0 16px; border-radius: var(--radius-md);
+    font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em; border: 1px solid transparent; cursor: pointer;
+    transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  }
+  .btn--primary   { background: var(--brand); color: var(--fg-on-brand); }
+  .btn--primary:hover { background: var(--brand-hover); }
+  .btn--secondary { background: var(--bg-inset); color: var(--fg1); border-color: var(--border); }
+  .btn--secondary:hover { background: var(--bg-raised); border-color: var(--border-strong); }
+  .btn--ghost     { background: transparent; color: var(--fg2); }
+  .btn--ghost:hover { color: var(--fg1); background: var(--bg-inset); }
+  .btn--danger    { background: var(--clay-bg); color: var(--clay-300); border-color: oklch(34% 0.06 30); }
+  .btn--danger:hover { background: oklch(28% 0.05 30); color: var(--clay-400); }
+  .btn--sm { min-height: 32px; padding: 0 12px; font-size: 13px; }
+  .btn--lg { min-height: 48px; padding: 0 22px; font-size: 15px; }
+  .btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+  .row-r { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .lbl { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); width: 80px; }
+  .col { display: flex; flex-direction: column; gap: 10px; }
+</style></head>
+<body><div class="card">
+  <div class="col">
+    <div class="row-r"><span class="lbl">primary</span><button class="btn btn--primary btn--lg">Lançar despesa</button><button class="btn btn--primary">Salvar</button><button class="btn btn--primary btn--sm">OK</button><button class="btn btn--primary" disabled>Salvar</button></div>
+    <div class="row-r"><span class="lbl">secondary</span><button class="btn btn--secondary">Cancelar</button><button class="btn btn--secondary btn--sm">Filtrar</button><button class="btn btn--ghost">Ver tudo</button></div>
+    <div class="row-r"><span class="lbl">danger</span><button class="btn btn--danger">Excluir transação</button><button class="btn btn--danger btn--sm">Apagar</button></div>
+  </div>
+</div></body></html>

@@ -4,23 +4,23 @@ type Props = {
   label: string;
   children: React.ReactNode;
   hint?: React.ReactNode;
-  size?: 'md' | 'lg';
+  size?: 'stat' | 'hero';
   className?: string;
 };
 
-export function StatCard({ label, children, hint, size = 'md', className }: Props) {
+export function StatCard({ label, children, hint, size = 'stat', className }: Props) {
   return (
     <div
       className={cn(
-        'flex flex-col gap-1 rounded-md border border-border bg-surface p-4',
+        'flex flex-col gap-2 rounded-md border border-border-soft bg-bg-surface p-4',
         className,
       )}
     >
-      <p className="caption">{label}</p>
-      <p className={cn(size === 'lg' ? 'num-display' : 'num-lg', 'text-fg')}>
+      <p className="eyebrow">{label}</p>
+      <p className={cn('num text-fg1', size === 'hero' ? 'num--hero' : 'num--stat')}>
         {children}
       </p>
-      {hint && <p className="text-sm text-fg-muted">{hint}</p>}
+      {hint && <p className="text-sm text-fg3">{hint}</p>}
     </div>
   );
 }

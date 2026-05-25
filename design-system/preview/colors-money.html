@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Money signals</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .col-box { padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-soft); }
+  .pos-box { background: var(--money-positive-bg); }
+  .neg-box { background: var(--money-negative-bg); }
+  .label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .label.p { color: var(--money-positive); }
+  .label.n { color: var(--money-negative); }
+  .figure { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 30px; letter-spacing: -0.025em; margin-top: 4px; }
+  .figure.p { color: var(--money-positive); }
+  .figure.n { color: var(--money-negative); }
+  .meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); margin-top: 8px; letter-spacing: -0.01em; }
+</style></head>
+<body><div class="card">
+  <div class="grid">
+    <div class="col-box pos-box">
+      <div class="label p">Entrada · positivo</div>
+      <div class="figure p">+€ 2.480,00</div>
+      <div class="meta">--money-positive · sage-400</div>
+    </div>
+    <div class="col-box neg-box">
+      <div class="label n">Despesa · negativo</div>
+      <div class="figure n">−€ 142,55</div>
+      <div class="meta">--money-negative · clay-400</div>
+    </div>
+  </div>
+</div></body></html>

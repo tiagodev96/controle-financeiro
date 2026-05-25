@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Motion</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .col-m { display: flex; flex-direction: column; gap: 8px; }
+  .row-m { display: grid; grid-template-columns: 100px 64px 1fr; align-items: center; gap: 12px; padding: 4px 0; }
+  .k { font-family: var(--font-mono); font-size: 11px; color: var(--fg2); }
+  .v { font-family: var(--font-mono); font-size: 11px; color: var(--fg4); }
+  .curve { height: 22px; background: linear-gradient(90deg, var(--bg-inset), var(--brand-quiet-bg)); border: 1px solid var(--border-soft); border-radius: 3px; position: relative; overflow: hidden; }
+  .curve::after { content:""; position: absolute; top:0; bottom:0; left:0; width: 14px; background: var(--brand); animation: slide 1.6s infinite; border-radius: 0; }
+  .curve.fast::after { animation-duration: 0.6s; }
+  .curve.slow::after { animation-duration: 2.2s; }
+  .curve.ease-out::after { animation-timing-function: cubic-bezier(0.2, 0, 0, 1); }
+  .curve.ease-in-out::after { animation-timing-function: cubic-bezier(0.65, 0, 0.35, 1); }
+  .curve.ease-spring::after { animation-timing-function: cubic-bezier(0.34, 1.2, 0.64, 1); }
+  @keyframes slide { 0% { left: 0; } 50% { left: calc(100% - 14px); } 100% { left: 0; } }
+  .head { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); letter-spacing: 0.02em; text-transform: uppercase; }
+</style></head>
+<body><div class="card">
+  <div class="grid">
+    <div class="col-m">
+      <span class="head">Duração</span>
+      <div class="row-m"><span class="k">instant</span><span class="v">80ms</span><div class="curve fast ease-out"></div></div>
+      <div class="row-m"><span class="k">fast</span><span class="v">150ms</span><div class="curve ease-out"></div></div>
+      <div class="row-m"><span class="k">base</span><span class="v">220ms</span><div class="curve ease-out"></div></div>
+      <div class="row-m"><span class="k">slow</span><span class="v">320ms</span><div class="curve slow ease-out"></div></div>
+    </div>
+    <div class="col-m">
+      <span class="head">Easing</span>
+      <div class="row-m"><span class="k">out</span><span class="v">.2,0,0,1</span><div class="curve ease-out"></div></div>
+      <div class="row-m"><span class="k">in-out</span><span class="v">.65,0,.35,1</span><div class="curve ease-in-out"></div></div>
+      <div class="row-m"><span class="k">spring</span><span class="v">raro</span><div class="curve ease-spring"></div></div>
+    </div>
+  </div>
+</div></body></html>

@@ -12,6 +12,7 @@ const config = [
       'supabase/.branches/**',
       'supabase/.temp/**',
       'src/types/database.ts',
+      'design-system/**',
     ],
   },
 ];

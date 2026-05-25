@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Currency display</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .panel { padding: 14px 16px; background: var(--bg-surface); border: 1px solid var(--border-soft); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 8px; }
+  .total {
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .sym { font-family: var(--font-sans); font-size: 22px; color: var(--fg3); font-weight: 500; letter-spacing: -0.01em; }
+  .num { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 36px; letter-spacing: -0.03em; color: var(--fg1); line-height: 1; }
+  .frac { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 500; font-size: 22px; color: var(--fg3); letter-spacing: -0.02em; }
+  .split { display: flex; gap: 14px; padding-top: 8px; border-top: 1px solid var(--border-soft); }
+  .leg { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  .leg .code { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+  .leg.eur .code { color: var(--brass-300); }
+  .leg.brl .code { color: var(--sage-300); }
+  .leg .val { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; color: var(--fg2); letter-spacing: -0.015em; }
+  .rate { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); margin-left: auto; align-self: center; }
+</style></head>
+<body><div class="card">
+  <div class="panel">
+    <div style="font-family: var(--font-sans); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg3);">Saldo total convertido</div>
+    <div class="total">
+      <span class="sym">€</span>
+      <span class="num">2.183</span><span class="frac">,14</span>
+    </div>
+    <div class="split">
+      <div class="leg eur"><span class="code">EUR</span><span class="val">€ 1.840,00</span></div>
+      <div class="leg brl"><span class="code">BRL</span><span class="val">R$ 2.103,80</span></div>
+      <span class="rate">EUR→BRL · 6,1240</span>
+    </div>
+  </div>
+</div></body></html>

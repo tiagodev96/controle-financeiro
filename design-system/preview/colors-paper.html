@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Paper (foreground)</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .row-ink { display: grid; grid-template-columns: 240px 1fr 80px; align-items: center; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
+  .row-ink:last-child { border-bottom: 0; }
+  .sample { font-size: 17px; letter-spacing: -0.01em; }
+  .key { font-family: var(--font-mono); font-size: 11px; color: var(--fg3); }
+  .use { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); text-align: right; letter-spacing: -0.01em; }
+</style></head>
+<body><div class="card card--surface">
+  <div class="col" style="gap: 0;">
+    <div class="row-ink"><span class="sample" style="color: var(--fg1)">Saldo atual</span><span class="key">--fg1 · paper-0</span><span class="use">títulos · hero</span></div>
+    <div class="row-ink"><span class="sample" style="color: var(--fg2)">Descrição da despesa</span><span class="key">--fg2 · paper-1</span><span class="use">corpo</span></div>
+    <div class="row-ink"><span class="sample" style="color: var(--fg3)">há 3 dias · Tiago</span><span class="key">--fg3 · paper-2</span><span class="use">labels · meta</span></div>
+    <div class="row-ink"><span class="sample" style="color: var(--fg4)">Ex: Pão na padaria</span><span class="key">--fg4 · paper-3</span><span class="use">placeholder</span></div>
+    <div class="row-ink"><span class="sample" style="color: var(--fg5)">desativado</span><span class="key">--fg5 · paper-4</span><span class="use">disabled</span></div>
+  </div>
+</div></body></html>

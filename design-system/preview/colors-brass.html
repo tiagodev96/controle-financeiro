@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Brass (brand)</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .scale { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .tile { aspect-ratio: 1/1.1; border-radius: var(--radius-md); padding: 8px; display: flex; flex-direction: column; justify-content: flex-end; gap: 1px; border: 1px solid oklch(100% 0 0 / 0.04); }
+  .tile .k { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: -0.01em; opacity: 0.85; }
+  .tile.dark .k { color: oklch(15% 0.020 85); }
+  .tile.light .k { color: oklch(96% 0.060 85); }
+  .pill {
+    display: inline-flex; align-items: center; padding: 8px 14px; border-radius: var(--radius-md);
+    background: var(--brand); color: var(--fg-on-brand); font-weight: 600; font-size: 13px;
+  }
+  .pill.quiet { background: var(--brand-quiet-bg); color: var(--brand-quiet-fg); }
+</style></head>
+<body><div class="card">
+  <div class="scale">
+    <div class="tile light" style="background: var(--brass-100)"><span class="k">100</span></div>
+    <div class="tile light" style="background: var(--brass-200)"><span class="k">200</span></div>
+    <div class="tile dark"  style="background: var(--brass-300)"><span class="k">300</span></div>
+    <div class="tile dark"  style="background: var(--brass-400)"><span class="k">400</span></div>
+    <div class="tile dark"  style="background: var(--brass-500)"><span class="k">500 · brand</span></div>
+    <div class="tile light" style="background: var(--brass-600)"><span class="k">600</span></div>
+    <div class="tile light" style="background: var(--brass-700)"><span class="k">700</span></div>
+  </div>
+  <div class="row">
+    <span class="pill">Lançar despesa</span>
+    <span class="pill quiet">Categoria ativa</span>
+    <span class="label-sm" style="margin-left: auto;">Brass · accent único do produto. Nunca para dinheiro.</span>
+  </div>
+</div></body></html>

@@ -3,126 +3,312 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-/* ============================================================
- * Documento Tranquilo — design tokens
- * Dark é o default. Light vive em [data-theme="light"].
- * Valores em OKLCH para contraste uniforme entre temas.
- * ============================================================ */
+/* ============================================================================
+ * Controle Financeiro — Design Tokens (Livro-razão)
+ * Fonte canônica: design-system/colors_and_type.css (na raiz do projeto).
+ * Aqui inline pra evitar @import de CDN — fontes vêm via next/font.
+ * ============================================================================ */
 
-:root,
-:root[data-theme="dark"] {
-  --bg:               oklch(0.18 0.005 250);
-  --surface:          oklch(0.21 0.005 250);
-  --surface-elevated: oklch(0.25 0.005 250);
-  --surface-input:    oklch(0.23 0.005 250);
-  --border:           oklch(0.30 0.008 250);
-  --border-strong:    oklch(0.40 0.010 250);
+:root {
+  /* Canvas — warm near-black ledger paper, inverted */
+  --ink-0:  oklch(15.5% 0.006 95);
+  --ink-1:  oklch(18.5% 0.008 95);
+  --ink-2:  oklch(22.0% 0.010 95);
+  --ink-3:  oklch(26.0% 0.010 95);
 
-  --fg:               oklch(0.96 0.005 250);
-  --fg-muted:         oklch(0.70 0.008 250);
-  --fg-subtle:        oklch(0.55 0.010 250);
+  --paper-0: oklch(96.0% 0.008 90);
+  --paper-1: oklch(82.0% 0.010 90);
+  --paper-2: oklch(64.0% 0.012 90);
+  --paper-3: oklch(48.0% 0.010 90);
+  --paper-4: oklch(34.0% 0.008 90);
 
-  --primary:          oklch(0.65 0.16 255);
-  --primary-hover:    oklch(0.70 0.16 255);
-  --on-primary:       oklch(0.18 0.005 250);
+  --line-strong:  oklch(38.0% 0.008 90);
+  --line:         oklch(30.0% 0.008 90);
+  --line-soft:    oklch(24.0% 0.008 90);
 
-  --danger:           oklch(0.65 0.18 25);
-  --warning:          oklch(0.78 0.14 75);
-  --success:          oklch(0.70 0.13 155);
+  --brass-100: oklch(96.0% 0.060 85);
+  --brass-200: oklch(88.0% 0.090 85);
+  --brass-300: oklch(80.0% 0.120 82);
+  --brass-400: oklch(73.0% 0.135 80);
+  --brass-500: oklch(66.0% 0.140 78);
+  --brass-600: oklch(56.0% 0.125 76);
+  --brass-700: oklch(40.0% 0.080 76);
+  --brass-bg:  oklch(24.0% 0.040 82);
 
-  --paid-fg:          oklch(0.78 0.13 155);
-  --paid-bg:          oklch(0.70 0.12 155 / 0.18);
-  --pending-fg:       oklch(0.82 0.10 85);
-  --pending-bg:       oklch(0.75 0.10 85 / 0.18);
-  --overdue-fg:       oklch(0.72 0.18 25);
-  --overdue-bg:       oklch(0.65 0.18 25 / 0.18);
+  --sage-300: oklch(80.0% 0.070 150);
+  --sage-400: oklch(72.0% 0.090 150);
+  --sage-500: oklch(64.0% 0.095 150);
+  --sage-bg:  oklch(24.0% 0.030 150);
 
-  --ring:             oklch(0.65 0.16 255 / 0.55);
+  --clay-300: oklch(78.0% 0.110 30);
+  --clay-400: oklch(70.0% 0.140 30);
+  --clay-500: oklch(63.0% 0.155 30);
+  --clay-600: oklch(54.0% 0.150 30);
+  --clay-bg:  oklch(24.5% 0.040 30);
 
-  --overlay-bg:       rgb(0 0 0 / 0.60);
-  --shadow-soft:      0 4px 16px -2px rgb(0 0 0 / 0.25);
-  --shadow-strong:    0 12px 48px -8px rgb(0 0 0 / 0.45);
+  --amber-300: oklch(82.0% 0.110 65);
+  --amber-400: oklch(74.0% 0.130 65);
+  --amber-500: oklch(67.0% 0.135 65);
+  --amber-bg:  oklch(25.0% 0.040 65);
+
+  /* Semantic */
+  --bg-base:      var(--ink-0);
+  --bg-surface:   var(--ink-1);
+  --bg-inset:     var(--ink-2);
+  --bg-raised:    var(--ink-3);
+  --bg-overlay:   oklch(8.0% 0.005 95 / 0.72);
+
+  --fg1:          var(--paper-0);
+  --fg2:          var(--paper-1);
+  --fg3:          var(--paper-2);
+  --fg4:          var(--paper-3);
+  --fg5:          var(--paper-4);
+  --fg-on-brand:  oklch(14.0% 0.020 85);
+
+  --border:        var(--line);
+  --border-soft:   var(--line-soft);
+  --border-strong: var(--line-strong);
+
+  --brand:          var(--brass-500);
+  --brand-hover:    var(--brass-400);
+  --brand-pressed:  var(--brass-600);
+  --brand-quiet-bg: var(--brass-bg);
+  --brand-quiet-fg: var(--brass-300);
+
+  --money-positive:    var(--sage-400);
+  --money-positive-bg: var(--sage-bg);
+  --money-negative:    var(--clay-400);
+  --money-negative-bg: var(--clay-bg);
+
+  --status-paid-fg:    var(--sage-400);
+  --status-paid-bg:    var(--sage-bg);
+  --status-pending-fg: var(--amber-400);
+  --status-pending-bg: var(--amber-bg);
+  --status-overdue-fg: var(--clay-400);
+  --status-overdue-bg: var(--clay-bg);
+
+  --eur:  var(--brass-300);
+  --brl:  var(--sage-300);
+
+  --ring: var(--brass-400);
+
+  /* Type scale */
+  --fs-hero:    56px;
+  --fs-stat:    32px;
+  --fs-h1:      28px;
+  --fs-h2:      22px;
+  --fs-h3:      18px;
+  --fs-body:    15px;
+  --fs-body-lg: 17px;
+  --fs-sm:      13px;
+  --fs-caption: 12px;
+  --fs-mono:    13px;
+  --fs-eyebrow: 11px;
+
+  --lh-tight:  1.08;
+  --lh-snug:   1.25;
+  --lh-base:   1.45;
+  --lh-loose:  1.6;
+
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.08em;
+  --tracking-mono:   -0.01em;
+
+  /* Spacing */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  56px;
+  --space-10: 72px;
+
+  /* Radii — sharp */
+  --radius-none: 0;
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   10px;
+  --radius-full: 9999px;
+
+  /* Elevation */
+  --shadow-1: 0 1px 0 0 oklch(100% 0 0 / 0.02) inset;
+  --shadow-2: 0 8px 24px -8px oklch(0% 0 0 / 0.6), 0 2px 4px oklch(0% 0 0 / 0.4);
+  --shadow-3: 0 24px 48px -12px oklch(0% 0 0 / 0.7), 0 8px 16px -4px oklch(0% 0 0 / 0.5);
+  --shadow-focus: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--ring);
+
+  /* Motion */
+  --ease-out:    cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
+
+  --dur-instant: 80ms;
+  --dur-fast:    150ms;
+  --dur-base:    220ms;
+  --dur-slow:    320ms;
+
+  /* Layout */
+  --app-max-width: 440px;
+  --tap-target:    44px;
+  --bottom-nav-h:  64px;
 }
+
+/* Default = dark. data-theme="dark" é alias explícito. */
+:root[data-theme="dark"] {
+  /* same as :root — no overrides needed */
+}
+
+/* ============================================================================
+   LIGHT THEME — cream paper, dark ink.
+   ============================================================================ */
 
 :root[data-theme="light"] {
-  --bg:               oklch(0.98 0.003 250);
-  --surface:          oklch(1.00 0 0);
-  --surface-elevated: oklch(0.97 0.005 250);
-  --surface-input:    oklch(0.99 0.003 250);
-  --border:           oklch(0.90 0.008 250);
-  --border-strong:    oklch(0.80 0.010 250);
+  --ink-0:  oklch(97.5% 0.008 90);
+  --ink-1:  oklch(95.5% 0.010 90);
+  --ink-2:  oklch(93.0% 0.012 90);
+  --ink-3:  oklch(90.5% 0.012 90);
 
-  --fg:               oklch(0.20 0.008 250);
-  --fg-muted:         oklch(0.45 0.010 250);
-  --fg-subtle:        oklch(0.60 0.012 250);
+  --paper-0: oklch(17.0% 0.010 95);
+  --paper-1: oklch(28.0% 0.010 95);
+  --paper-2: oklch(44.0% 0.010 95);
+  --paper-3: oklch(58.0% 0.010 95);
+  --paper-4: oklch(70.0% 0.008 95);
 
-  --primary:          oklch(0.45 0.16 255);
-  --primary-hover:    oklch(0.40 0.16 255);
-  --on-primary:       oklch(0.98 0.003 250);
+  --line-strong:  oklch(60.0% 0.010 90);
+  --line:         oklch(80.0% 0.010 90);
+  --line-soft:    oklch(88.0% 0.010 90);
 
-  --danger:           oklch(0.55 0.18 25);
-  --warning:          oklch(0.65 0.14 75);
-  --success:          oklch(0.50 0.13 155);
+  --brand:          oklch(56.0% 0.125 76);
+  --brand-hover:    oklch(50.0% 0.130 76);
+  --brand-pressed:  oklch(46.0% 0.130 76);
+  --brand-quiet-bg: oklch(93.0% 0.055 82);
+  --brand-quiet-fg: oklch(38.0% 0.110 76);
+  --fg-on-brand:    oklch(98.0% 0.010 85);
 
-  --paid-fg:          oklch(0.40 0.13 155);
-  --paid-bg:          oklch(0.50 0.12 155 / 0.12);
-  --pending-fg:       oklch(0.50 0.12 75);
-  --pending-bg:       oklch(0.55 0.10 85 / 0.14);
-  --overdue-fg:       oklch(0.50 0.18 25);
-  --overdue-bg:       oklch(0.55 0.18 25 / 0.10);
+  --money-positive:    oklch(42.0% 0.110 150);
+  --money-positive-bg: oklch(94.0% 0.040 150);
+  --money-negative:    oklch(48.0% 0.165 30);
+  --money-negative-bg: oklch(94.0% 0.045 30);
 
-  --ring:             oklch(0.45 0.16 255 / 0.55);
+  --status-paid-fg:    oklch(38.0% 0.110 150);
+  --status-paid-bg:    oklch(93.0% 0.045 150);
+  --status-pending-fg: oklch(44.0% 0.135 65);
+  --status-pending-bg: oklch(94.0% 0.060 65);
+  --status-overdue-fg: oklch(46.0% 0.165 30);
+  --status-overdue-bg: oklch(94.0% 0.050 30);
 
-  --overlay-bg:       rgb(20 24 36 / 0.45);
-  --shadow-soft:      0 4px 16px -2px rgb(20 24 36 / 0.10);
-  --shadow-strong:    0 12px 48px -8px rgb(20 24 36 / 0.18);
+  --eur:  oklch(50.0% 0.130 80);
+  --brl:  oklch(45.0% 0.105 150);
+
+  --ring: oklch(50.0% 0.130 76);
+
+  --bg-overlay: oklch(20.0% 0.008 95 / 0.42);
+
+  --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.04), 0 1px 0 oklch(0% 0 0 / 0.02);
+  --shadow-2: 0 8px 24px -8px oklch(0% 0 0 / 0.12), 0 2px 4px oklch(0% 0 0 / 0.06);
+  --shadow-3: 0 24px 48px -12px oklch(0% 0 0 / 0.18), 0 8px 16px -4px oklch(0% 0 0 / 0.08);
 }
 
-/* shadcn alias mapping (universal — vive em ambos os temas) */
+/* Auto: segue preferência do sistema quando data-theme="auto". */
+@media (prefers-color-scheme: light) {
+  :root[data-theme="auto"] {
+    --ink-0:  oklch(97.5% 0.008 90);
+    --ink-1:  oklch(95.5% 0.010 90);
+    --ink-2:  oklch(93.0% 0.012 90);
+    --ink-3:  oklch(90.5% 0.012 90);
+    --paper-0: oklch(17.0% 0.010 95);
+    --paper-1: oklch(28.0% 0.010 95);
+    --paper-2: oklch(44.0% 0.010 95);
+    --paper-3: oklch(58.0% 0.010 95);
+    --paper-4: oklch(70.0% 0.008 95);
+    --line-strong:  oklch(60.0% 0.010 90);
+    --line:         oklch(80.0% 0.010 90);
+    --line-soft:    oklch(88.0% 0.010 90);
+    --brand:          oklch(56.0% 0.125 76);
+    --brand-hover:    oklch(50.0% 0.130 76);
+    --brand-pressed:  oklch(46.0% 0.130 76);
+    --brand-quiet-bg: oklch(93.0% 0.055 82);
+    --brand-quiet-fg: oklch(38.0% 0.110 76);
+    --fg-on-brand:    oklch(98.0% 0.010 85);
+    --money-positive:    oklch(42.0% 0.110 150);
+    --money-positive-bg: oklch(94.0% 0.040 150);
+    --money-negative:    oklch(48.0% 0.165 30);
+    --money-negative-bg: oklch(94.0% 0.045 30);
+    --status-paid-fg:    oklch(38.0% 0.110 150);
+    --status-paid-bg:    oklch(93.0% 0.045 150);
+    --status-pending-fg: oklch(44.0% 0.135 65);
+    --status-pending-bg: oklch(94.0% 0.060 65);
+    --status-overdue-fg: oklch(46.0% 0.165 30);
+    --status-overdue-bg: oklch(94.0% 0.050 30);
+    --ring: oklch(50.0% 0.130 76);
+    --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.04);
+    --shadow-2: 0 8px 24px -8px oklch(0% 0 0 / 0.12), 0 2px 4px oklch(0% 0 0 / 0.06);
+    --shadow-3: 0 24px 48px -12px oklch(0% 0 0 / 0.18), 0 8px 16px -4px oklch(0% 0 0 / 0.08);
+  }
+}
+
+/* shadcn alias mapping — usa os tokens do design system. */
 :root {
-  --background:           var(--bg);
-  --foreground:           var(--fg);
-  --card:                 var(--surface);
-  --card-foreground:      var(--fg);
-  --popover:              var(--surface-elevated);
-  --popover-foreground:   var(--fg);
-  --primary-foreground:   var(--on-primary);
-  --secondary:            var(--surface-elevated);
-  --secondary-foreground: var(--fg);
-  --muted:                var(--surface);
-  --muted-foreground:     var(--fg-muted);
-  --accent:               var(--surface-elevated);
-  --accent-foreground:    var(--fg);
-  --destructive:          var(--danger);
-  --input:                var(--surface-input);
-  --radius:               10px;
+  --background:           var(--bg-base);
+  --foreground:           var(--fg1);
+  --card:                 var(--bg-surface);
+  --card-foreground:      var(--fg1);
+  --popover:              var(--bg-raised);
+  --popover-foreground:   var(--fg1);
+  --primary-foreground:   var(--fg-on-brand);
+  --secondary:            var(--bg-inset);
+  --secondary-foreground: var(--fg1);
+  --muted:                var(--bg-inset);
+  --muted-foreground:     var(--fg3);
+  --accent:               var(--bg-raised);
+  --accent-foreground:    var(--fg1);
+  --destructive:          var(--money-negative);
+  --input:                var(--bg-inset);
+  --radius:               var(--radius-md);
 }
 
 @theme inline {
-  --color-bg:               var(--bg);
-  --color-surface:          var(--surface);
-  --color-surface-elevated: var(--surface-elevated);
-  --color-surface-input:    var(--surface-input);
-  --color-border:           var(--border);
-  --color-border-strong:    var(--border-strong);
+  --color-bg-base:       var(--bg-base);
+  --color-bg-surface:    var(--bg-surface);
+  --color-bg-inset:      var(--bg-inset);
+  --color-bg-raised:     var(--bg-raised);
 
-  --color-fg:               var(--fg);
-  --color-fg-muted:         var(--fg-muted);
-  --color-fg-subtle:        var(--fg-subtle);
+  --color-fg1: var(--fg1);
+  --color-fg2: var(--fg2);
+  --color-fg3: var(--fg3);
+  --color-fg4: var(--fg4);
+  --color-fg5: var(--fg5);
+  --color-fg-on-brand: var(--fg-on-brand);
 
-  --color-primary:          var(--primary);
-  --color-primary-hover:    var(--primary-hover);
-  --color-on-primary:       var(--on-primary);
-  --color-danger:           var(--danger);
-  --color-warning:          var(--warning);
-  --color-success:          var(--success);
+  --color-border:        var(--border);
+  --color-border-soft:   var(--border-soft);
+  --color-border-strong: var(--border-strong);
 
-  --color-paid-fg:          var(--paid-fg);
-  --color-paid-bg:          var(--paid-bg);
-  --color-pending-fg:       var(--pending-fg);
-  --color-pending-bg:       var(--pending-bg);
-  --color-overdue-fg:       var(--overdue-fg);
-  --color-overdue-bg:       var(--overdue-bg);
+  --color-brand:          var(--brand);
+  --color-brand-hover:    var(--brand-hover);
+  --color-brand-pressed:  var(--brand-pressed);
+  --color-brand-quiet-bg: var(--brand-quiet-bg);
+  --color-brand-quiet-fg: var(--brand-quiet-fg);
+
+  --color-money-positive:    var(--money-positive);
+  --color-money-positive-bg: var(--money-positive-bg);
+  --color-money-negative:    var(--money-negative);
+  --color-money-negative-bg: var(--money-negative-bg);
+
+  --color-status-paid-fg:    var(--status-paid-fg);
+  --color-status-paid-bg:    var(--status-paid-bg);
+  --color-status-pending-fg: var(--status-pending-fg);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-overdue-fg: var(--status-overdue-fg);
+  --color-status-overdue-bg: var(--status-overdue-bg);
+
+  --color-eur: var(--eur);
+  --color-brl: var(--brl);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -130,6 +316,7 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--brand);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -143,11 +330,12 @@
 
   --font-sans:    var(--font-sans);
   --font-mono:    var(--font-mono);
-  --font-numeric: var(--font-mono);
+  --font-numeric: var(--font-sans);
 
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  14px;
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   10px;
   --radius-full: 9999px;
 }
 
@@ -155,12 +343,14 @@
   * { border-color: var(--border); }
 
   html, body {
-    background: var(--bg);
-    color: var(--fg);
+    background: var(--bg-base);
+    color: var(--fg1);
     font-family: var(--font-sans);
-    font-size: 15px;
-    line-height: 1.5;
+    font-size: var(--fs-body);
+    line-height: var(--lh-base);
+    font-feature-settings: "ss01", "ss06", "cv11";
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
 
@@ -172,7 +362,7 @@
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -184,61 +374,87 @@
     }
   }
 
-  h1, h2, h3 {
+  h1, .h1 {
     font-family: var(--font-sans);
-    color: var(--fg);
-    letter-spacing: -0.015em;
-    text-wrap: balance;
+    font-size: var(--fs-h1);
+    font-weight: 600;
+    line-height: var(--lh-tight);
+    letter-spacing: var(--tracking-tight);
+    color: var(--fg1);
+    margin: 0;
   }
 
-  h1 { font-size: 22px; line-height: 1.2; font-weight: 600; }
-  h2 { font-size: 17px; line-height: 1.3; font-weight: 600; }
-  h3 { font-size: 15px; line-height: 1.4; font-weight: 600; }
+  h2, .h2 {
+    font-family: var(--font-sans);
+    font-size: var(--fs-h2);
+    font-weight: 600;
+    line-height: var(--lh-snug);
+    letter-spacing: var(--tracking-tight);
+    color: var(--fg1);
+    margin: 0;
+  }
 
-  p  { color: var(--fg); margin: 0; text-wrap: pretty; }
+  h3, .h3 {
+    font-family: var(--font-sans);
+    font-size: var(--fs-h3);
+    font-weight: 600;
+    line-height: var(--lh-snug);
+    color: var(--fg1);
+    margin: 0;
+  }
+
+  p { margin: 0; }
 }
 
-/* ---- helper classes ---- */
+/* ============================================================================
+ * Typographic helpers (do design system)
+ * ============================================================================ */
 
-.display {
-  font-size: 32px;
-  line-height: 1.1;
-  font-weight: 500;
-  letter-spacing: -0.02em;
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg3);
 }
 
 .caption {
-  font-size: 11px;
-  line-height: 1.4;
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
   font-weight: 500;
-  color: var(--fg-muted);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: var(--fg3);
+  letter-spacing: 0.01em;
 }
 
-.num, .money {
+.mono {
   font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1, "zero" 1;
-  letter-spacing: -0.005em;
-}
-
-.num-lg {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1, "zero" 1;
-  font-size: 28px;
-  line-height: 1.0;
+  font-size: var(--fs-mono);
   font-weight: 500;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-mono);
 }
 
-.num-display {
-  font-family: var(--font-mono);
+.num,
+[data-num] {
+  font-family: var(--font-numeric);
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1, "zero" 1;
-  font-size: 32px;
+  font-feature-settings: "tnum", "lnum", "ss01";
+  letter-spacing: -0.015em;
+}
+
+.num--hero {
+  font-size: var(--fs-hero);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.num--stat {
+  font-size: var(--fs-stat);
+  font-weight: 600;
   line-height: 1.05;
-  font-weight: 500;
   letter-spacing: -0.025em;
 }
+
+.num--positive { color: var(--money-positive); }
+.num--negative { color: var(--money-negative); }

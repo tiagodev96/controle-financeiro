@@ -69,7 +69,7 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
     return (
       <div
         role="status"
-        className="rounded-md border border-paid-fg/30 bg-paid-bg p-4 text-paid-fg"
+        className="rounded-md border border-status-paid-fg/30 bg-status-paid-bg px-4 py-3 text-status-paid-fg"
       >
         Despesa lançada.
       </div>
@@ -77,7 +77,7 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       <MoneyInput
         label="Valor"
         name="valor"
@@ -86,8 +86,8 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
         onChange={setAmountCents}
       />
 
-      <label className="block space-y-1.5">
-        <span className="caption">Descrição</span>
+      <label className="block space-y-2">
+        <span className="eyebrow">Descrição</span>
         <input
           type="text"
           name="descricao"
@@ -95,12 +95,12 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Ex: Pão na padaria"
-          className="block w-full min-h-11 rounded-md border border-border bg-surface-input px-3 py-2 text-base text-fg placeholder:text-fg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-[15px] text-fg1 placeholder:text-fg4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </label>
 
       <fieldset className="space-y-2">
-        <legend className="caption mb-2">Categoria</legend>
+        <legend className="eyebrow mb-2">Categoria</legend>
         <div className="flex flex-wrap gap-2">
           {categories.map((cat) => {
             const active = cat.id === categoryId;
@@ -111,10 +111,10 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
                 onClick={() => setCategoryId(cat.id)}
                 aria-pressed={active}
                 className={cn(
-                  'min-h-11 rounded-sm border px-3 py-2 text-sm font-medium transition-colors',
+                  'min-h-11 rounded-full border px-4 py-2 text-sm font-medium transition-colors',
                   active
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-surface text-fg-muted hover:border-border-strong hover:text-fg',
+                    ? 'border-brand bg-brand-quiet-bg text-brand-quiet-fg'
+                    : 'border-border bg-bg-surface text-fg2 hover:border-border-strong hover:text-fg1',
                 )}
               >
                 {cat.name}
@@ -124,14 +124,14 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
         </div>
       </fieldset>
 
-      <label className="block space-y-1.5">
-        <span className="caption">Conta</span>
+      <label className="block space-y-2">
+        <span className="eyebrow">Conta</span>
         <select
           name="conta"
           required
           value={accountId}
           onChange={(e) => setAccountId(e.target.value)}
-          className="block w-full min-h-11 rounded-md border border-border bg-surface-input px-3 py-2 text-base text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-[15px] text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {accounts.map((acc) => (
             <option key={acc.id} value={acc.id}>
@@ -142,32 +142,32 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
       </label>
 
       <div className="flex items-center justify-between gap-3">
-        <label className="flex items-center gap-3 text-sm text-fg">
+        <label className="flex items-center gap-3 text-sm text-fg1">
           <input
             type="checkbox"
             name="paid"
             checked={paid}
             onChange={(e) => setPaid(e.target.checked)}
-            className="size-5 rounded border-border bg-surface-input accent-primary"
+            className="size-5 rounded border-border bg-bg-inset accent-brand"
           />
           <span>Já pago</span>
         </label>
 
-        <label className="flex items-center gap-2 text-sm text-fg-muted">
-          <span className="caption">Data</span>
+        <label className="flex items-center gap-2 text-sm">
+          <span className="eyebrow">Data</span>
           <input
             type="date"
             name="data"
             required
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="min-h-11 rounded-md border border-border bg-surface-input px-2 py-1 text-sm text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="min-h-11 rounded-md border border-border bg-bg-inset px-2 py-1 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </label>
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-sm text-money-negative">
           {error}
         </p>
       )}
@@ -175,9 +175,9 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
       <button
         type="submit"
         disabled={pending}
-        className="block w-full min-h-11 rounded-md bg-primary px-3 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+        className="block w-full min-h-11 rounded-md bg-brand px-3 py-3 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? 'Lançando…' : 'Lançar'}
+        {pending ? 'Lançando…' : 'Lançar despesa'}
       </button>
     </form>
   );

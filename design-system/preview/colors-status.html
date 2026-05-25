@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Status colors</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stat {
+    padding: 12px 14px; border-radius: var(--radius-md);
+    border: 1px solid var(--border-soft);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .stat .name { font-family: var(--font-sans); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat .pill { align-self: flex-start; padding: 2px 8px; border-radius: var(--radius-full); font-family: var(--font-sans); font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .stat .tok { font-family: var(--font-mono); font-size: 10px; color: var(--fg4); }
+  .paid    { background: var(--status-paid-bg); }
+  .paid .name, .paid .pill { color: var(--status-paid-fg); }
+  .paid .pill { background: oklch(34% 0.06 150); }
+  .pending { background: var(--status-pending-bg); }
+  .pending .name, .pending .pill { color: var(--status-pending-fg); }
+  .pending .pill { background: oklch(34% 0.06 65); }
+  .overdue { background: var(--status-overdue-bg); }
+  .overdue .name, .overdue .pill { color: var(--status-overdue-fg); }
+  .overdue .pill { background: oklch(34% 0.06 30); }
+</style></head>
+<body><div class="card">
+  <div class="status-grid">
+    <div class="stat paid"><span class="name">Pago</span><span class="pill">Pago</span><span class="tok">--status-paid-*</span></div>
+    <div class="stat pending"><span class="name">Pendente</span><span class="pill">Pendente</span><span class="tok">--status-pending-*</span></div>
+    <div class="stat overdue"><span class="name">Em atraso</span><span class="pill">Em atraso</span><span class="tok">--status-overdue-*</span></div>
+  </div>
+</div></body></html>

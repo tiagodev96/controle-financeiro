@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Elevation</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: end; }
+  .stage { padding: 18px 12px 14px; background: var(--bg-base); border-radius: 8px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .surface { width: 100%; height: 56px; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-soft); }
+  .e0 .surface { background: var(--bg-surface); }
+  .e1 .surface { background: var(--bg-surface); box-shadow: 0 1px 0 0 oklch(100% 0 0 / 0.025) inset; border-color: var(--border); }
+  .e2 .surface { background: var(--bg-raised); box-shadow: 0 8px 24px -8px oklch(0% 0 0 / 0.6), 0 2px 4px oklch(0% 0 0 / 0.4); border-color: var(--border); }
+  .e3 .surface { background: var(--bg-raised); box-shadow: 0 24px 48px -12px oklch(0% 0 0 / 0.7), 0 8px 16px -4px oklch(0% 0 0 / 0.5); border-color: var(--border); }
+  .k { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg2); }
+  .v { font-family: var(--font-mono); font-size: 10px; color: var(--fg4); text-align: center; }
+</style></head>
+<body><div class="card">
+  <div class="grid">
+    <div class="stage e0"><div class="surface"></div><span class="k">flat · default</span><span class="v">surface lift apenas</span></div>
+    <div class="stage e1"><div class="surface"></div><span class="k">shadow-1</span><span class="v">card destacado</span></div>
+    <div class="stage e2"><div class="surface"></div><span class="k">shadow-2</span><span class="v">popover · menu</span></div>
+    <div class="stage e3"><div class="surface"></div><span class="k">shadow-3</span><span class="v">modal · sheet</span></div>
+  </div>
+</div></body></html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Labels above hero</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: end; }
+  .lbl-eyebrow {
+    font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg3);
+  }
+  .lbl-sentence {
+    font-family: var(--font-sans); font-size: 13px; font-weight: 500;
+    color: var(--fg3); letter-spacing: 0.005em;
+  }
+  .num {
+    font-family: var(--font-numeric); font-variant-numeric: tabular-nums;
+    font-weight: 700; font-size: 44px; letter-spacing: -0.03em; color: var(--fg1);
+    line-height: 1; margin-top: 6px;
+  }
+  .role { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); }
+  .col { display: flex; flex-direction: column; gap: 2px; }
+</style></head>
+<body><div class="card">
+  <div class="stage">
+    <div class="col">
+      <span class="lbl-eyebrow">Saldo atual</span>
+      <span class="num">€ 2.183,14</span>
+      <span class="role" style="margin-top:6px">uppercase · 0.08em · 11px · default</span>
+    </div>
+    <div class="col">
+      <span class="lbl-sentence">Saldo atual</span>
+      <span class="num">€ 2.183,14</span>
+      <span class="role" style="margin-top:6px">sentence-case · 13px · alt mais quieto</span>
+    </div>
+  </div>
+</div></body></html>

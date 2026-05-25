@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Transaction row</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .list { display: flex; flex-direction: column; background: var(--bg-surface); border-radius: var(--radius-md); border: 1px solid var(--border-soft); overflow: hidden; }
+  .row {
+    display: grid; grid-template-columns: 1fr auto; align-items: center;
+    gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-soft);
+  }
+  .row:last-child { border-bottom: 0; }
+  .left { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .desc { font-family: var(--font-sans); font-size: 15px; font-weight: 500; color: var(--fg1); letter-spacing: -0.005em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sub { display: flex; align-items: center; gap: 8px; font-family: var(--font-sans); font-size: 12px; color: var(--fg3); }
+  .sub .cat { color: var(--fg2); }
+  .sub .sep { color: var(--fg5); }
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .amount { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600; font-size: 16px; letter-spacing: -0.015em; }
+  .amount.neg { color: var(--money-negative); }
+  .amount.pos { color: var(--money-positive); }
+  .pill {
+    font-family: var(--font-sans); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 7px; border-radius: var(--radius-full);
+  }
+  .pill.paid    { color: var(--status-paid-fg); background: var(--status-paid-bg); }
+  .pill.pending { color: var(--status-pending-fg); background: var(--status-pending-bg); }
+  .pill.overdue { color: var(--status-overdue-fg); background: var(--status-overdue-bg); }
+</style></head>
+<body><div class="card">
+  <div class="list">
+    <div class="row">
+      <div class="left">
+        <span class="desc">Mercado · Pingo Doce</span>
+        <span class="sub"><span class="cat">Alimentação</span><span class="sep">·</span><span>25 mai · Tiago</span></span>
+      </div>
+      <div class="right">
+        <span class="amount neg">−€ 142,55</span>
+        <span class="pill paid">Pago</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="left">
+        <span class="desc">Aluguel</span>
+        <span class="sub"><span class="cat">Moradia</span><span class="sep">·</span><span>1 jun · recorrente · Laine</span></span>
+      </div>
+      <div class="right">
+        <span class="amount">−€ 800,00</span>
+        <span class="pill pending">Pendente</span>
+      </div>
+    </div>
+    <div class="row">
+      <div class="left">
+        <span class="desc">Vet · Lupita</span>
+        <span class="sub"><span class="cat">Pet</span><span class="sep">·</span><span>21 mai · Tiago</span></span>
+      </div>
+      <div class="right">
+        <span class="amount neg">−€ 92,00</span>
+        <span class="pill overdue">Em atraso · 4d</span>
+      </div>
+    </div>
+  </div>
+</div></body></html>

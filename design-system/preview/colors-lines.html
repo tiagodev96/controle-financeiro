@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Lines and borders</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .stage { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .demo { padding: 14px; border-radius: var(--radius-md); background: var(--bg-surface); display: flex; flex-direction: column; gap: 10px; }
+  .ledger-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; color: var(--fg2); }
+  .l-soft   .ledger-row { border-bottom: 1px solid var(--border-soft); }
+  .l-default .ledger-row { border-bottom: 1px solid var(--border); }
+  .l-strong .ledger-row { border-bottom: 1px solid var(--border-strong); }
+  .name { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 600; }
+  .label { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); letter-spacing: -0.01em; }
+</style></head>
+<body><div class="card">
+  <div class="stage">
+    <div class="demo l-soft">
+      <span class="label">--border-soft · ledger lines</span>
+      <div class="ledger-row"><span>Aluguel</span><span class="name">800,00</span></div>
+      <div class="ledger-row"><span>NOS</span><span class="name">44,00</span></div>
+      <div class="ledger-row" style="border:0"><span>Mercado</span><span class="name">142,55</span></div>
+    </div>
+    <div class="demo l-default">
+      <span class="label">--border · cards, inputs</span>
+      <div class="ledger-row"><span>Aluguel</span><span class="name">800,00</span></div>
+      <div class="ledger-row"><span>NOS</span><span class="name">44,00</span></div>
+      <div class="ledger-row" style="border:0"><span>Mercado</span><span class="name">142,55</span></div>
+    </div>
+    <div class="demo l-strong">
+      <span class="label">--border-strong · focus, active</span>
+      <div class="ledger-row"><span>Aluguel</span><span class="name">800,00</span></div>
+      <div class="ledger-row"><span>NOS</span><span class="name">44,00</span></div>
+      <div class="ledger-row" style="border:0"><span>Mercado</span><span class="name">142,55</span></div>
+    </div>
+  </div>
+</div></body></html>

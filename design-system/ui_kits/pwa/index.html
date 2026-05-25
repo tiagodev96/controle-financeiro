@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Controle Financeiro — UI Kit (PWA)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="../../colors_and_type.css">
+  <style>
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg-base);
+      color: var(--fg1);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+    }
+    .stage {
+      padding: 56px 40px 80px;
+      display: grid;
+      grid-template-columns: repeat(3, auto);
+      gap: 56px;
+      justify-content: center;
+      align-items: start;
+    }
+    .theme-toggle {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--bg-inset); border: 1px solid var(--border-soft);
+      border-radius: 9999px; padding: 3px; margin-top: 12px;
+    }
+    .theme-toggle button {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 30px; padding: 0 14px; border-radius: 9999px;
+      background: transparent; color: var(--fg3); border: 0;
+      font-family: var(--font-sans); font-size: 12px; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.01em;
+      transition: background 150ms cubic-bezier(0.2,0,0,1), color 150ms;
+    }
+    .theme-toggle button[aria-pressed="true"] {
+      background: var(--bg-surface); color: var(--fg1);
+      font-weight: 600;
+      box-shadow: 0 1px 0 oklch(100% 0 0 / 0.04) inset, 0 1px 2px oklch(0% 0 0 / 0.2);
+    }
+    [data-theme="light"] .theme-toggle button[aria-pressed="true"] {
+      box-shadow: 0 1px 2px oklch(0% 0 0 / 0.06);
+    }
+    .theme-toggle svg { stroke: currentColor; }
+    .phone-wrap {
+      display: flex; flex-direction: column; gap: 18px; align-items: center;
+    }
+    .phone-label {
+      display: flex; flex-direction: column; gap: 4px; align-items: center;
+      font-family: var(--font-sans);
+    }
+    .phone-label .name {
+      font-size: 14px; font-weight: 600; color: var(--fg1); letter-spacing: -0.005em;
+    }
+    .phone-label .meta {
+      font-family: var(--font-mono); font-size: 11px; color: var(--fg4);
+    }
+    .header {
+      max-width: 1100px; margin: 0 auto; padding: 48px 40px 0;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .header h1 {
+      margin: 0; font-family: var(--font-sans); font-size: 32px; font-weight: 600;
+      letter-spacing: -0.03em; color: var(--fg1);
+    }
+    .header .sub {
+      font-family: var(--font-mono);
+      font-size: 12px; color: var(--fg3);
+      text-transform: uppercase; letter-spacing: 0.12em;
+    }
+    .header .tags {
+      display: flex; gap: 8px; margin-top: 10px;
+      font-family: var(--font-mono); font-size: 11px; color: var(--fg4);
+    }
+    .header .tags span {
+      padding: 2px 8px; background: var(--bg-inset);
+      border: 1px solid var(--border-soft); border-radius: 4px;
+      letter-spacing: 0.01em;
+    }
+    .phone-host {
+      transform: scale(0.86);
+      transform-origin: top center;
+      margin-bottom: -100px; /* compensate scale spacing */
+    }
+
+    /* ============================================================
+       Motion system — applied to phone contents
+       ============================================================ */
+    @keyframes cfFadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes cfSheetIn {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    @keyframes cfPulse {
+      0%   { transform: scale(1); }
+      30%  { transform: scale(1.04); color: var(--brand); }
+      100% { transform: scale(1); }
+    }
+    @keyframes cfToastIn {
+      from { transform: translateY(16px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes cfShimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .cf-pulse { animation: cfPulse 600ms cubic-bezier(0.2, 0, 0, 1); display: inline-block; transform-origin: left center; }
+    .cf-press { transition: transform 80ms cubic-bezier(0.2, 0, 0, 1), filter 80ms; }
+    .cf-press:active { transform: scale(0.97); filter: brightness(0.95); }
+
+    .desktop-stage { padding: 56px 40px 80px; display: flex; justify-content: center; }
+    .desktop-label {
+      max-width: 1280px; margin: 0 auto 18px;
+      display: flex; flex-direction: column; gap: 4px; align-items: center;
+      font-family: var(--font-sans);
+    }
+    .desktop-label .name { font-size: 14px; font-weight: 600; color: var(--fg1); letter-spacing: -0.005em; }
+    .desktop-label .meta { font-family: var(--font-mono); font-size: 11px; color: var(--fg4); }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header class="header" data-screen-label="00 Kit header">
+    <span class="sub">Livro-razão pessoal · controle financeiro</span>
+    <h1>Controle Financeiro — UI Kit</h1>
+    <div class="tags">
+      <span>Mobile-first PWA</span>
+      <span>EUR · BRL</span>
+      <span>PT-BR</span>
+      <span>Sem gamificação</span>
+    </div>
+    <div class="theme-toggle" role="group" aria-label="Tema">
+      <button id="t-dark" aria-pressed="true" onclick="setTheme('dark')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        Dark
+      </button>
+      <button id="t-light" aria-pressed="false" onclick="setTheme('light')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        Light
+      </button>
+      <button id="t-auto" aria-pressed="false" onclick="setTheme('auto')">Auto</button>
+    </div>
+  </header>
+
+  <script>
+    function setTheme(t) {
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('cf-theme', t);
+      document.getElementById('t-dark' ).setAttribute('aria-pressed', t === 'dark');
+      document.getElementById('t-light').setAttribute('aria-pressed', t === 'light');
+      document.getElementById('t-auto' ).setAttribute('aria-pressed', t === 'auto');
+      // notify the IOSDevice components to swap their bezel `dark` prop
+      window.dispatchEvent(new CustomEvent('cf-theme', { detail: t }));
+    }
+    (function init() {
+      const t = localStorage.getItem('cf-theme') || 'dark';
+      setTheme(t);
+    })();
+  </script>
+
+  <div id="stage" class="stage"></div>
+
+  <div class="desktop-label">
+    <span class="name">Desktop · 1280px</span>
+    <span class="meta">26 · adapta de mobile · clique no sidebar pra navegar entre as 9 telas</span>
+  </div>
+  <div class="desktop-stage">
+    <div id="desktop-host"></div>
+  </div>
+
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="browser-window.jsx"></script>
+  <script type="text/babel" src="components.jsx"></script>
+  <script type="text/babel" src="screens.jsx"></script>
+  <script type="text/babel" src="extras.jsx"></script>
+  <script type="text/babel" src="iterations.jsx"></script>
+  <script type="text/babel" src="desktop.jsx"></script>
+
+  <script type="text/babel" data-presets="react">
+    /* global React, ReactDOM, IOSDevice, DashboardScreen, LancarScreen, DividasScreen, BottomNav,
+              TransacoesScreen, ContasScreen, ResumoScreen, RecorrentesScreen, CategoriasScreen, MaisScreen,
+              OnboardingLoginScreen, OnboardingFirstAccountScreen, OnboardingReadyScreen,
+              NovaCategoriaSheet, NovaDividaSheet, RegistrarPagamentoSheet, MotionDemoScreen,
+              EmptyDashboardScreen, EmptyTransacoesScreen, EmptyDividasScreen,
+              LoadingTransacoesScreen, OfflineExchangeScreen, SyncWarningScreen,
+              Toast, DesktopApp, ChromeWindow */
+    const { useState, useEffect } = React;
+
+    function useTheme() {
+      const [theme, setTheme] = useState(localStorage.getItem('cf-theme') || 'dark');
+      useEffect(() => {
+        const h = (e) => setTheme(e.detail);
+        window.addEventListener('cf-theme', h);
+        return () => window.removeEventListener('cf-theme', h);
+      }, []);
+      if (theme === 'auto') {
+        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      }
+      return theme;
+    }
+
+    function Phone({ label, sub, initialScreen = 'dashboard', overlay = null, hideNav = false, children }) {
+      const [screen, setScreen] = useState(initialScreen);
+      const theme = useTheme();
+      return (
+        <div className="phone-wrap" data-screen-label={`Phone · ${label}`}>
+          <div className="phone-label">
+            <span className="name">{label}</span>
+            <span className="meta">{sub}</span>
+          </div>
+          <div className="phone-host">
+            <IOSDevice width={402} height={874} dark={theme === 'dark'}>
+              <div style={{
+                position: 'absolute', top: 50, left: 0, right: 0, bottom: 0,
+                overflow: 'auto',
+                background: 'var(--bg-base)',
+              }}>
+                {children(screen, setScreen)}
+                {!hideNav && <BottomNav active={screen} onChange={setScreen} />}
+              </div>
+              {overlay}
+            </IOSDevice>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const screens = {
+        dashboard: DashboardScreen,
+        lancar:    LancarScreen,
+        dividas:   DividasScreen,
+        transacoes: TransacoesScreen,
+        contas:    ContasScreen,
+        resumo:    ResumoScreen,
+        recorrentes: RecorrentesScreen,
+        categorias:  CategoriasScreen,
+        mais:      MaisScreen,
+        motion:    MotionDemoScreen,
+        emptyDash: EmptyDashboardScreen,
+        emptyTxn:  EmptyTransacoesScreen,
+        emptyDeb:  EmptyDividasScreen,
+        loading:   LoadingTransacoesScreen,
+        offline:   OfflineExchangeScreen,
+        syncwarn:  SyncWarningScreen,
+      };
+      const renderScreen = (id) => {
+        const S = screens[id] || screens.dashboard;
+        return <S />;
+      };
+      const phones = [
+        // Row 1 — primary flows
+        { initial: 'dashboard',  label: 'Dashboard',   sub: '01 · saldo e previsão' },
+        { initial: 'lancar',     label: 'Lançar',      sub: '02 · formulário rápido' },
+        { initial: 'dividas',    label: 'Dívidas',     sub: '03 · prioridade + sugestão' },
+        // Row 2 — secondary surfaces
+        { initial: 'transacoes', label: 'Transações',  sub: '04 · ledger do mês' },
+        { initial: 'contas',     label: 'Contas',      sub: '05 · saldo manual + câmbio' },
+        { initial: 'resumo',     label: 'Resumo',      sub: '06 · export WhatsApp' },
+        // Row 3 — settings sub-pages
+        { initial: 'recorrentes',label: 'Recorrentes', sub: '07 · regras mensais' },
+        { initial: 'categorias', label: 'Categorias',  sub: '08 · CRUD + reorder' },
+        { initial: 'mais',       label: 'Mais',        sub: '09 · settings' },
+        // Row 4 — onboarding flow (no bottom nav)
+        { initial: 'dashboard',  label: 'Onboarding · login',   sub: '10 · magic link',     custom: 'login', hideNav: true },
+        { initial: 'dashboard',  label: 'Onboarding · conta',   sub: '11 · primeira conta', custom: 'first', hideNav: true },
+        { initial: 'dashboard',  label: 'Onboarding · pronto',  sub: '12 · instalar PWA',   custom: 'ready', hideNav: true },
+        // Row 5 — sheets layered over base screens
+        { initial: 'categorias', label: 'Sheet · nova categoria', sub: '13 · CRUD modal',         overlay: 'cat' },
+        { initial: 'dividas',    label: 'Sheet · nova dívida',    sub: '14 · CRUD modal',         overlay: 'div' },
+        { initial: 'dividas',    label: 'Sheet · registrar pgto', sub: '15 · pagamento dívida',   overlay: 'pgto' },
+        // Row 6 — motion demo
+        { initial: 'motion',     label: 'Motion',                 sub: '16 · pulse · press · fade' },
+        // Row 7 — empty states (first-time)
+        { initial: 'emptyDash',  label: 'Empty · Dashboard',      sub: '17 · primeira vez',     hideNav: true },
+        { initial: 'emptyTxn',   label: 'Empty · Transações',     sub: '18 · sem lançamentos',  hideNav: true },
+        { initial: 'emptyDeb',   label: 'Empty · Dívidas',        sub: '19 · positivo · sem dívidas', hideNav: true },
+        // Row 8 — loading + error states
+        { initial: 'loading',    label: 'Loading · skeleton',     sub: '20 · shimmer',         hideNav: true },
+        { initial: 'offline',    label: 'Erro · câmbio offline',  sub: '21 · banner âmbar',    hideNav: true },
+        { initial: 'syncwarn',   label: 'Erro · saldo divergente',sub: '22 · banner clay',     hideNav: true },
+        // Row 9 — toast overlays
+        { initial: 'dashboard',  label: 'Toast · sucesso',        sub: '23 · pós-lançamento',  toast: 'success' },
+        { initial: 'dashboard',  label: 'Toast · erro',           sub: '24 · sync falhou',     toast: 'error' },
+        { initial: 'dashboard',  label: 'Toast · info',           sub: '25 · câmbio atualizando', toast: 'info' },
+      ];
+      const overlayMap = {
+        cat:  <NovaCategoriaSheet />,
+        div:  <NovaDividaSheet />,
+        pgto: <RegistrarPagamentoSheet />,
+      };
+      const toastMap = {
+        success: <Toast kind="success" title="Despesa lançada" body="Saldo previsto: € 2.040,59" action="Desfazer" />,
+        error:   <Toast kind="error"   title="Sync falhou"     body="Sem conexão com o servidor. Vamos tentar de novo." action="Reenviar" />,
+        info:    <Toast kind="info"    title="Câmbio atualizado" body="EUR→BRL · 6,1240 · há 12s" />,
+      };
+      const customMap = {
+        login: <OnboardingLoginScreen />,
+        first: <OnboardingFirstAccountScreen />,
+        ready: <OnboardingReadyScreen />,
+      };
+      return (
+        <React.Fragment>
+          {phones.map((p, i) => (
+            <Phone key={i} label={p.label} sub={p.sub}
+                   initialScreen={p.initial}
+                   overlay={p.overlay ? overlayMap[p.overlay] : (p.toast ? toastMap[p.toast] : null)}
+                   hideNav={p.hideNav}>
+              {(screen) => p.custom ? customMap[p.custom] : renderScreen(screen)}
+            </Phone>
+          ))}
+        </React.Fragment>
+      );
+    }
+
+    try {
+      ReactDOM.createRoot(document.getElementById('stage')).render(<App />);
+
+      // Desktop view — full 9-screen kit with internal sidebar nav
+      function DesktopAppWrapper() {
+        useTheme(); // re-render on theme change
+        return (
+          <ChromeWindow width={1280} height={820}
+            tabs={[
+              { title: 'Controle · CF', active: true },
+              { title: 'Linear', active: false },
+              { title: 'Wise', active: false },
+            ]}
+            activeIndex={0}
+            url="controle.tiago.dev">
+            <div style={{ height: '100%', background: 'var(--bg-base)' }}>
+              <DesktopApp />
+            </div>
+          </ChromeWindow>
+        );
+      }
+      ReactDOM.createRoot(document.getElementById('desktop-host')).render(<DesktopAppWrapper />);
+    } catch (e) {
+      console.error('CF render failed:', e);
+      document.getElementById('stage').innerHTML = '<pre style="padding:20px;color:red;font-family:monospace">' + (e.message || e) + '</pre>';
+    }
+  </script>
+</body>
+</html>

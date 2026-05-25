@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Mono and labels</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .mono-xl { font-family: var(--font-mono); font-size: 32px; font-weight: 600; color: var(--fg1); letter-spacing: -0.02em; }
+  .mono-md { font-family: var(--font-mono); font-size: 13px; color: var(--fg2); }
+  .role { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); }
+  .tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: var(--radius-sm); background: var(--bg-inset); border: 1px solid var(--border-soft); font-family: var(--font-mono); font-size: 11px; color: var(--fg2); letter-spacing: 0.01em; }
+  .tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fg4); }
+  .tag.eur .dot { background: var(--brass-300); }
+  .tag.brl .dot { background: var(--sage-300); }
+</style></head>
+<body><div class="card">
+  <div class="row" style="align-items: flex-start; gap: 40px;">
+    <div class="col">
+      <div class="mono-xl">EUR → BRL</div>
+      <div class="mono-md">6,1240 · 25.05.2026</div>
+      <span class="role">JetBrains Mono · 11–13px</span>
+    </div>
+    <div class="col">
+      <div class="row row--tight"><span class="tag eur"><span class="dot"></span>EUR</span><span class="tag brl"><span class="dot"></span>BRL</span></div>
+      <div class="row row--tight"><span class="tag">PAGO</span><span class="tag">REC</span><span class="tag">3/10</span></div>
+      <span class="role">códigos · tags técnicas · cotação</span>
+    </div>
+  </div>
+</div></body></html>

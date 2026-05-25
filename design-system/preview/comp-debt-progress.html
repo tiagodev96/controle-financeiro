@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Debt progress</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .debt { padding: 14px 16px; background: var(--bg-surface); border: 1px solid var(--border-soft); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 10px; }
+  .row1 { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .name { font-family: var(--font-sans); font-size: 15px; font-weight: 600; color: var(--fg1); letter-spacing: -0.005em; }
+  .meta { font-family: var(--font-mono); font-size: 11px; color: var(--fg3); }
+  .remaining { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 22px; letter-spacing: -0.025em; color: var(--fg1); }
+  .row2 { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: var(--fg3); }
+  .row2 .pct { color: var(--fg2); }
+  .bar { height: 6px; border-radius: 3px; background: var(--bg-inset); overflow: hidden; position: relative; }
+  .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--brand); border-radius: 3px; }
+  .fill.lo { background: var(--clay-500); }
+  .priority { font-family: var(--font-sans); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 7px; border-radius: var(--radius-full); }
+  .priority.high { background: var(--clay-bg); color: var(--clay-400); }
+</style></head>
+<body><div class="card">
+  <div class="debt">
+    <div class="row1">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span class="name">Empréstimo Jefferson</span>
+        <span class="meta">Restam <span style="color:var(--fg2)">€ 1.875,00</span> · prioridade alta</span>
+      </div>
+      <span class="priority high">Alta</span>
+    </div>
+    <div class="bar"><div class="fill" style="width: 37.5%"></div></div>
+    <div class="row2">
+      <span>Pago <span class="pct">€ 1.125,00 (37,5%)</span></span>
+      <span>Total € 3.000,00</span>
+    </div>
+  </div>
+</div></body></html>

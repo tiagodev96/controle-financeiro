@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Status pills</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: var(--radius-full);
+    font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    border: 1px solid transparent;
+  }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .pill.paid    { color: var(--status-paid-fg);    background: var(--status-paid-bg);    border-color: oklch(32% 0.05 150); }
+  .pill.paid    .dot { background: var(--status-paid-fg); }
+  .pill.pending { color: var(--status-pending-fg); background: var(--status-pending-bg); border-color: oklch(32% 0.05 65); }
+  .pill.pending .dot { background: var(--status-pending-fg); }
+  .pill.overdue { color: var(--status-overdue-fg); background: var(--status-overdue-bg); border-color: oklch(32% 0.05 30); }
+  .pill.overdue .dot { background: var(--status-overdue-fg); }
+  .pill.rec    { color: var(--brand-quiet-fg); background: var(--brand-quiet-bg); border-color: oklch(34% 0.05 80); }
+  .pill.inst   { color: var(--fg2); background: var(--bg-inset); border-color: var(--border-soft); }
+  .pill.author { color: var(--fg3); background: var(--bg-inset); border-color: var(--border-soft); padding-left: 6px; }
+  .pill.author .avatar { width: 14px; height: 14px; border-radius: 50%; background: var(--brand-quiet-bg); color: var(--brand-quiet-fg); font-size: 9px; display:flex; align-items:center; justify-content:center; font-weight: 700; }
+  .group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .head  { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg4); }
+</style></head>
+<body><div class="card">
+  <div class="group">
+    <span class="pill paid"><span class="dot"></span>Pago</span>
+    <span class="pill pending"><span class="dot"></span>Pendente</span>
+    <span class="pill overdue"><span class="dot"></span>Em atraso</span>
+    <span class="pill rec">Recorrente</span>
+    <span class="pill inst">Parcela 3/10</span>
+    <span class="pill author"><span class="avatar">T</span>Tiago</span>
+    <span class="pill author"><span class="avatar" style="background:oklch(28% 0.04 150);color:var(--sage-300)">L</span>Laine</span>
+  </div>
+  <span class="head">3px vertical · 9px horizontal · uppercase 0.06em · dot opcional pra status</span>
+</div></body></html>

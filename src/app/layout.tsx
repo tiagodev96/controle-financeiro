@@ -1,20 +1,20 @@
 import type { Metadata, Viewport } from 'next';
-import { IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
+import { Geist, JetBrains_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 import { THEME_COOKIE, resolveTheme } from '@/lib/theme/cookie';
 import './globals.css';
 
-const sans = IBM_Plex_Sans({
+const sans = Geist({
   variable: '--font-sans',
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
 });
 
 const mono = JetBrains_Mono({
   variable: '--font-mono',
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
 });
 
@@ -41,7 +41,7 @@ export default async function RootLayout({
       data-theme={theme}
       className={`${sans.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-bg text-fg">
+      <body className="min-h-full flex flex-col bg-bg-base text-fg1">
         {children}
       </body>
     </html>

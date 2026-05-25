@@ -56,18 +56,22 @@ export default async function DashboardPage() {
   const hasData = txns.length > 0 || accounts.some((a) => a.balance_cents !== 0);
 
   return (
-    <section className="space-y-5">
+    <section className="space-y-7">
       {!hasData ? (
         <EmptyHero />
       ) : (
         <div className="grid gap-3">
-          {(['BRL', 'EUR'] as const)
-            .filter((cur) => balanceByCurrency[cur] !== 0 || accounts.some((a) => a.currency === cur))
-            .map((cur) => (
+          {(['EUR', 'BRL'] as const)
+            .filter(
+              (cur) =>
+                balanceByCurrency[cur] !== 0 ||
+                accounts.some((a) => a.currency === cur),
+            )
+            .map((cur, idx) => (
               <StatCard
                 key={cur}
-                label={`Saldo atual ${cur}`}
-                size="lg"
+                label={idx === 0 ? 'Saldo atual' : `Saldo atual ${cur}`}
+                size={idx === 0 ? 'hero' : 'stat'}
               >
                 <span>
                   {CURRENCY_SYMBOL[cur]} {formatCentsToBRL(balanceByCurrency[cur])}
@@ -81,8 +85,8 @@ export default async function DashboardPage() {
         <section className="space-y-4">
           {grouped.map(({ label, rows }) => (
             <div key={label} className="space-y-1">
-              <p className="caption px-1">{label}</p>
-              <div className="divide-y divide-border rounded-md border border-border bg-surface px-3">
+              <p className="eyebrow px-1">{label}</p>
+              <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
                 {rows.map((t) => (
                   <TxnRow
                     key={t.id}
@@ -105,18 +109,18 @@ export default async function DashboardPage() {
 
 function EmptyHero() {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-md border border-border bg-surface p-8 text-center">
-      <div className="space-y-1">
-        <h2>Comece pela primeira despesa.</h2>
-        <p className="text-sm text-fg-muted">
+    <div className="flex flex-col items-center gap-4 rounded-md border border-border-soft bg-bg-surface p-8 text-center">
+      <div className="space-y-2">
+        <h2>Sem transações ainda.</h2>
+        <p className="text-sm text-fg3">
           O dashboard ganha vida quando há movimentação.
         </p>
       </div>
       <Link
-        href="/?sheet=lancar"
-        className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        href="/lancar"
+        className="inline-flex min-h-11 items-center justify-center rounded-md bg-brand px-5 py-2 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        Lançar despesa
+        Lançar primeira despesa
       </Link>
     </div>
   );

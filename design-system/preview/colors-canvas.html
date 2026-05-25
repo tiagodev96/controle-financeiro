@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Canvas (backgrounds)</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .tile { aspect-ratio: 5/3; border-radius: var(--radius-md); border: 1px solid var(--border-soft); position: relative; padding: 10px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; }
+  .tile .k { font-family: var(--font-mono); font-size: 10px; color: var(--fg2); letter-spacing: -0.01em; }
+  .tile .h { font-family: var(--font-mono); font-size: 10px; color: var(--fg4); }
+</style></head>
+<body><div class="card">
+  <div class="scale">
+    <div class="tile" style="background: var(--ink-0)"><span class="k">--bg-base</span><span class="h">ink-0</span></div>
+    <div class="tile" style="background: var(--ink-1)"><span class="k">--bg-surface</span><span class="h">ink-1</span></div>
+    <div class="tile" style="background: var(--ink-2)"><span class="k">--bg-inset</span><span class="h">ink-2</span></div>
+    <div class="tile" style="background: var(--ink-3)"><span class="k">--bg-raised</span><span class="h">ink-3</span></div>
+    <div class="tile" style="background: oklch(8% 0.005 95)"><span class="k">--bg-overlay</span><span class="h">opaque</span></div>
+  </div>
+  <div class="row" style="gap: 16px;">
+    <span class="label-sm">Canvas</span>
+    <span class="role" style="font-family:var(--font-mono);font-size:10.5px;color:var(--fg4)">warm near-black, undertone 95° (khaki) · jamais azul</span>
+  </div>
+</div></body></html>

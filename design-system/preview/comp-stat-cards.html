@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Stat card</title>
+<link rel="stylesheet" href="_base.css">
+<style>
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .stat {
+    padding: 14px 16px; background: var(--bg-surface);
+    border: 1px solid var(--border-soft); border-radius: var(--radius-md);
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .eyebrow {
+    font-family: var(--font-sans); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .e-paid    { color: var(--status-paid-fg); }    .e-paid    .dot { background: var(--status-paid-fg); }
+  .e-pending { color: var(--status-pending-fg); } .e-pending .dot { background: var(--status-pending-fg); }
+  .e-overdue { color: var(--status-overdue-fg); } .e-overdue .dot { background: var(--status-overdue-fg); }
+  .num {
+    font-family: var(--font-numeric); font-variant-numeric: tabular-nums;
+    font-weight: 700; font-size: 28px; letter-spacing: -0.025em; color: var(--fg1);
+    line-height: 1;
+  }
+  .meta { font-family: var(--font-mono); font-size: 11px; color: var(--fg3); }
+</style></head>
+<body><div class="card">
+  <div class="grid">
+    <div class="stat">
+      <span class="eyebrow e-paid"><span class="dot"></span>Pago</span>
+      <span class="num">€ 1.450,00</span>
+      <span class="meta">8 transações</span>
+    </div>
+    <div class="stat">
+      <span class="eyebrow e-pending"><span class="dot"></span>Pendente</span>
+      <span class="num">€ 137,60</span>
+      <span class="meta">3 transações</span>
+    </div>
+    <div class="stat">
+      <span class="eyebrow e-overdue"><span class="dot"></span>Em atraso</span>
+      <span class="num" style="color:var(--money-negative)">€ 92,00</span>
+      <span class="meta">1 transação · 4 dias</span>
+    </div>
+  </div>
+</div></body></html>

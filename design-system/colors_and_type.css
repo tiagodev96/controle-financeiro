@@ -1,0 +1,416 @@
+/* ============================================================================
+   Controle Financeiro — Design Tokens
+   Concept: Livro-razão (personal ledger). Editorial precision, not playful
+   fintech. Numbers are the hero. Dark mode is the v1 surface.
+   ============================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ---------------------------------------------------------------------------
+     1. COLOR — palette (raw)
+     Warm near-black canvas (slight green/khaki undertone, never blue-cold)
+     paired with a paper-cream foreground. Signature accent: BRASS, used
+     sparingly. Green is reserved for "income" signal, not brand.
+     --------------------------------------------------------------------------- */
+
+  /* Canvas — warm near-black ledger paper, inverted */
+  --ink-0:  oklch(15.5% 0.006 95);    /* darkest void — bg-base */
+  --ink-1:  oklch(18.5% 0.008 95);    /* bg-surface (cards, sheets) */
+  --ink-2:  oklch(22.0% 0.010 95);    /* bg-inset (inputs, wells) */
+  --ink-3:  oklch(26.0% 0.010 95);    /* bg-raised (hover, popover) */
+
+  /* Paper — warm off-whites (the "ink" you write with) */
+  --paper-0: oklch(96.0% 0.008 90);   /* fg1 — primary text */
+  --paper-1: oklch(82.0% 0.010 90);   /* fg2 — body text */
+  --paper-2: oklch(64.0% 0.012 90);   /* fg3 — secondary/labels */
+  --paper-3: oklch(48.0% 0.010 90);   /* fg4 — muted/placeholder */
+  --paper-4: oklch(34.0% 0.008 90);   /* fg5 — disabled/quiet */
+
+  /* Borders — hairlines and dividers (low chroma, warm) */
+  --line-strong:  oklch(38.0% 0.008 90);   /* focused inputs, active */
+  --line:         oklch(30.0% 0.008 90);   /* default borders */
+  --line-soft:    oklch(24.0% 0.008 90);   /* dividers, ledger rules */
+
+  /* Signature — brass / old-gold. The single brand accent.
+     Used for: primary actions, "active nav", focus rings. NEVER for money. */
+  --brass-100: oklch(96.0% 0.060 85);
+  --brass-200: oklch(88.0% 0.090 85);
+  --brass-300: oklch(80.0% 0.120 82);   /* tertiary / link hover */
+  --brass-400: oklch(73.0% 0.135 80);   /* primary action */
+  --brass-500: oklch(66.0% 0.140 78);   /* default brand */
+  --brass-600: oklch(56.0% 0.125 76);   /* pressed */
+  --brass-700: oklch(40.0% 0.080 76);   /* tinted bg */
+  --brass-bg:  oklch(24.0% 0.040 82);   /* selected chip bg */
+
+  /* Income — sage (positive money, ENTRADAS only) */
+  --sage-300: oklch(80.0% 0.070 150);
+  --sage-400: oklch(72.0% 0.090 150);
+  --sage-500: oklch(64.0% 0.095 150);
+  --sage-bg:  oklch(24.0% 0.030 150);
+
+  /* Danger — clay red. Negative money, em atraso, errors. Warm, not screaming. */
+  --clay-300: oklch(78.0% 0.110 30);
+  --clay-400: oklch(70.0% 0.140 30);
+  --clay-500: oklch(63.0% 0.155 30);
+  --clay-600: oklch(54.0% 0.150 30);
+  --clay-bg:  oklch(24.5% 0.040 30);
+
+  /* Pending — amber, distinct from brass (more orange) */
+  --amber-300: oklch(82.0% 0.110 65);
+  --amber-400: oklch(74.0% 0.130 65);
+  --amber-500: oklch(67.0% 0.135 65);
+  --amber-bg:  oklch(25.0% 0.040 65);
+
+  /* ---------------------------------------------------------------------------
+     2. SEMANTIC tokens — what the UI actually consumes
+     --------------------------------------------------------------------------- */
+
+  /* Backgrounds */
+  --bg-base:      var(--ink-0);
+  --bg-surface:   var(--ink-1);
+  --bg-inset:     var(--ink-2);
+  --bg-raised:    var(--ink-3);
+  --bg-overlay:   oklch(8.0% 0.005 95 / 0.72);
+
+  /* Foreground */
+  --fg1:          var(--paper-0);
+  --fg2:          var(--paper-1);
+  --fg3:          var(--paper-2);
+  --fg4:          var(--paper-3);
+  --fg5:          var(--paper-4);
+  --fg-on-brand:  oklch(14.0% 0.020 85);   /* text on brass btn */
+
+  /* Lines */
+  --border:        var(--line);
+  --border-soft:   var(--line-soft);
+  --border-strong: var(--line-strong);
+
+  /* Brand */
+  --brand:          var(--brass-500);
+  --brand-hover:    var(--brass-400);
+  --brand-pressed:  var(--brass-600);
+  --brand-quiet-bg: var(--brass-bg);
+  --brand-quiet-fg: var(--brass-300);
+
+  /* Money signals — semantic. Used by transaction rows, stat cards, charts. */
+  --money-positive:    var(--sage-400);
+  --money-positive-bg: var(--sage-bg);
+  --money-negative:    var(--clay-400);
+  --money-negative-bg: var(--clay-bg);
+
+  /* Status pills */
+  --status-paid-fg:    var(--sage-400);
+  --status-paid-bg:    var(--sage-bg);
+  --status-pending-fg: var(--amber-400);
+  --status-pending-bg: var(--amber-bg);
+  --status-overdue-fg: var(--clay-400);
+  --status-overdue-bg: var(--clay-bg);
+
+  /* Currency badges */
+  --eur:  var(--brass-300);
+  --brl:  var(--sage-300);
+
+  /* Focus ring */
+  --ring: var(--brass-400);
+
+  /* ---------------------------------------------------------------------------
+     3. TYPE — family, weight, scale
+     Geist:          UI body + headings + heavy numerics. The workhorse.
+     JetBrains Mono: cotação, códigos técnicos, tags, meta inferior.
+     --------------------------------------------------------------------------- */
+
+  --font-sans:    'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Geist Mono', ui-monospace, monospace;
+  --font-numeric: 'Geist', ui-sans-serif, system-ui, sans-serif;
+
+  /* Scale — mobile-first. The hero balance is intentionally enormous. */
+  --fs-hero:    56px;   /* dashboard "Saldo atual" — the one number that matters */
+  --fs-stat:    32px;   /* stat card numbers — pago/pendente/em atraso */
+  --fs-h1:      28px;
+  --fs-h2:      22px;
+  --fs-h3:      18px;
+  --fs-body:    15px;   /* default body */
+  --fs-body-lg: 17px;   /* form fields, key copy */
+  --fs-sm:      13px;
+  --fs-caption: 12px;
+  --fs-mono:    13px;
+  --fs-eyebrow: 11px;   /* uppercase tracked label */
+
+  --lh-tight:  1.08;
+  --lh-snug:   1.25;
+  --lh-base:   1.45;
+  --lh-loose:  1.6;
+
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.08em;   /* eyebrow caps */
+  --tracking-mono:   -0.01em;
+
+  /* ---------------------------------------------------------------------------
+     4. SPACING — 4px grid
+     --------------------------------------------------------------------------- */
+  --space-0:   0;
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-7:   32px;
+  --space-8:   40px;
+  --space-9:   56px;
+  --space-10:  72px;
+
+  /* ---------------------------------------------------------------------------
+     5. RADII — sharp. This is a ledger, not a candy app.
+     --------------------------------------------------------------------------- */
+  --radius-none: 0;
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   6px;     /* default — cards, inputs */
+  --radius-lg:   10px;    /* sheets, modals */
+  --radius-full: 9999px;  /* pills only */
+
+  /* ---------------------------------------------------------------------------
+     6. ELEVATION — dark mode uses surface lift, not shadows.
+     Shadows only on floating elements (dropdowns, toasts, modals).
+     --------------------------------------------------------------------------- */
+  --shadow-1: 0 1px 0 0 oklch(100% 0 0 / 0.02) inset;                    /* subtle top edge on raised cards */
+  --shadow-2: 0 8px 24px -8px oklch(0% 0 0 / 0.6),
+              0 2px 4px oklch(0% 0 0 / 0.4);                              /* popover */
+  --shadow-3: 0 24px 48px -12px oklch(0% 0 0 / 0.7),
+              0 8px 16px -4px oklch(0% 0 0 / 0.5);                        /* modal / sheet */
+  --shadow-focus: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--ring);
+
+  /* ---------------------------------------------------------------------------
+     7. MOTION — Linear-esque. Subtle, fast, never bouncy.
+     --------------------------------------------------------------------------- */
+  --ease-out:    cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.2, 0.64, 1);   /* used VERY sparingly */
+
+  --dur-instant: 80ms;
+  --dur-fast:    150ms;
+  --dur-base:    220ms;
+  --dur-slow:    320ms;
+
+  /* ---------------------------------------------------------------------------
+     8. LAYOUT
+     --------------------------------------------------------------------------- */
+  --app-max-width: 440px;        /* mobile-first column cap */
+  --tap-target:    44px;         /* iOS minimum */
+  --bottom-nav-h:  64px;
+}
+
+/* ============================================================================
+   LIGHT THEME — actual paper. The ledger inverted.
+   Activate by setting [data-theme="light"] on <html> (or any ancestor).
+   Defaults remain dark; light is opt-in.
+   ============================================================================ */
+
+[data-theme="light"] {
+  /* Canvas — warm cream paper, never bone-white */
+  --ink-0:  oklch(97.5% 0.008 90);    /* bg-base */
+  --ink-1:  oklch(95.5% 0.010 90);    /* surface */
+  --ink-2:  oklch(93.0% 0.012 90);    /* inset */
+  --ink-3:  oklch(90.5% 0.012 90);    /* raised */
+
+  /* Paper inverted — dark ink */
+  --paper-0: oklch(17.0% 0.010 95);   /* fg1 — primary text */
+  --paper-1: oklch(28.0% 0.010 95);   /* fg2 */
+  --paper-2: oklch(44.0% 0.010 95);   /* fg3 — labels */
+  --paper-3: oklch(58.0% 0.010 95);   /* fg4 — placeholder */
+  --paper-4: oklch(70.0% 0.008 95);   /* fg5 — disabled */
+
+  /* Lines — gentle pencil rules */
+  --line-strong:  oklch(60.0% 0.010 90);
+  --line:         oklch(80.0% 0.010 90);
+  --line-soft:    oklch(88.0% 0.010 90);
+
+  /* Brass — deepen for contrast on cream */
+  --brand:          oklch(56.0% 0.125 76);
+  --brand-hover:    oklch(50.0% 0.130 76);
+  --brand-pressed:  oklch(46.0% 0.130 76);
+  --brand-quiet-bg: oklch(93.0% 0.055 82);
+  --brand-quiet-fg: oklch(38.0% 0.110 76);
+  --fg-on-brand:    oklch(98.0% 0.010 85);
+
+  /* Money — deeper, more saturated for legibility */
+  --money-positive:    oklch(42.0% 0.110 150);
+  --money-positive-bg: oklch(94.0% 0.040 150);
+  --money-negative:    oklch(48.0% 0.165 30);
+  --money-negative-bg: oklch(94.0% 0.045 30);
+
+  /* Status — light tints */
+  --status-paid-fg:    oklch(38.0% 0.110 150);
+  --status-paid-bg:    oklch(93.0% 0.045 150);
+  --status-pending-fg: oklch(44.0% 0.135 65);
+  --status-pending-bg: oklch(94.0% 0.060 65);
+  --status-overdue-fg: oklch(46.0% 0.165 30);
+  --status-overdue-bg: oklch(94.0% 0.050 30);
+
+  /* Currency dots */
+  --eur:  oklch(50.0% 0.130 80);
+  --brl:  oklch(45.0% 0.105 150);
+
+  /* Focus */
+  --ring: oklch(50.0% 0.130 76);
+
+  /* Overlay */
+  --bg-overlay: oklch(20.0% 0.008 95 / 0.42);
+}
+
+/* Elevation in light: subtle drop, not surface lift */
+[data-theme="light"] {
+  --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.04), 0 1px 0 oklch(0% 0 0 / 0.02);
+  --shadow-2: 0 8px 24px -8px oklch(0% 0 0 / 0.12),
+              0 2px 4px oklch(0% 0 0 / 0.06);
+  --shadow-3: 0 24px 48px -12px oklch(0% 0 0 / 0.18),
+              0 8px 16px -4px oklch(0% 0 0 / 0.08);
+  --shadow-focus: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--ring);
+}
+
+/* Auto: respeita preferência do sistema. Opt-in via data-theme="auto". */
+@media (prefers-color-scheme: light) {
+  [data-theme="auto"] {
+    --ink-0:  oklch(97.5% 0.008 90);
+    --ink-1:  oklch(95.5% 0.010 90);
+    --ink-2:  oklch(93.0% 0.012 90);
+    --ink-3:  oklch(90.5% 0.012 90);
+    --paper-0: oklch(17.0% 0.010 95);
+    --paper-1: oklch(28.0% 0.010 95);
+    --paper-2: oklch(44.0% 0.010 95);
+    --paper-3: oklch(58.0% 0.010 95);
+    --paper-4: oklch(70.0% 0.008 95);
+    --line-strong:  oklch(60.0% 0.010 90);
+    --line:         oklch(80.0% 0.010 90);
+    --line-soft:    oklch(88.0% 0.010 90);
+    --brand:          oklch(56.0% 0.125 76);
+    --brand-hover:    oklch(50.0% 0.130 76);
+    --brand-pressed:  oklch(46.0% 0.130 76);
+    --brand-quiet-bg: oklch(93.0% 0.055 82);
+    --brand-quiet-fg: oklch(38.0% 0.110 76);
+    --fg-on-brand:    oklch(98.0% 0.010 85);
+    --money-positive:    oklch(42.0% 0.110 150);
+    --money-positive-bg: oklch(94.0% 0.040 150);
+    --money-negative:    oklch(48.0% 0.165 30);
+    --money-negative-bg: oklch(94.0% 0.045 30);
+    --status-paid-fg:    oklch(38.0% 0.110 150);
+    --status-paid-bg:    oklch(93.0% 0.045 150);
+    --status-pending-fg: oklch(44.0% 0.135 65);
+    --status-pending-bg: oklch(94.0% 0.060 65);
+    --status-overdue-fg: oklch(46.0% 0.165 30);
+    --status-overdue-bg: oklch(94.0% 0.050 30);
+    --ring: oklch(50.0% 0.130 76);
+    --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.04);
+    --shadow-2: 0 8px 24px -8px oklch(0% 0 0 / 0.12), 0 2px 4px oklch(0% 0 0 / 0.06);
+    --shadow-3: 0 24px 48px -12px oklch(0% 0 0 / 0.18), 0 8px 16px -4px oklch(0% 0 0 / 0.08);
+  }
+}
+
+/* ============================================================================
+   Base element styles — these power the .typography demo and ground the UI.
+   ============================================================================ */
+
+html, body {
+  background: var(--bg-base);
+  color: var(--fg1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-base);
+  font-feature-settings: "ss01", "ss06", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1, .h1 {
+  font-family: var(--font-sans);
+  font-size: var(--fs-h1);
+  font-weight: 600;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg1);
+  margin: 0;
+}
+
+h2, .h2 {
+  font-family: var(--font-sans);
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tracking-tight);
+  color: var(--fg1);
+  margin: 0;
+}
+
+h3, .h3 {
+  font-family: var(--font-sans);
+  font-size: var(--fs-h3);
+  font-weight: 600;
+  line-height: var(--lh-snug);
+  color: var(--fg1);
+  margin: 0;
+}
+
+p { margin: 0; }
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--fg3);
+}
+
+.caption {
+  font-family: var(--font-sans);
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  color: var(--fg3);
+  letter-spacing: 0.01em;
+}
+
+.editorial {
+  /* Reserved class kept for backward compat — renders as standard sentence-case label. */
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--fg3);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  font-weight: 500;
+  letter-spacing: var(--tracking-mono);
+}
+
+/* Numbers — the hero treatment. Always tabular, weight reflects importance. */
+.num,
+[data-num] {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum", "lnum", "ss01";
+  letter-spacing: -0.015em;
+}
+
+.num--hero {
+  font-size: var(--fs-hero);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+
+.num--stat {
+  font-size: var(--fs-stat);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+}
+
+.num--positive { color: var(--money-positive); }
+.num--negative { color: var(--money-negative); }
