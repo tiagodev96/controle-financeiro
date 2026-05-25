@@ -69,6 +69,32 @@ describe('listTopCategoriesForHousehold (integração)', () => {
     expect(ranking).toHaveLength(3);
   });
 
+  it('I-IN2 — kind=income retorna só categorias income do seed (Salário, Freela, Outras entradas)', async () => {
+    const supabase = await getAuthedClient();
+    const ranking = await listTopCategoriesForHousehold(
+      supabase,
+      SEED_DEMO_HOUSEHOLD_ID,
+      6,
+      { kind: 'income' },
+    );
+    expect(ranking.map((c) => c.name).sort()).toEqual([
+      'Freela',
+      'Outras entradas',
+      'Salário',
+    ]);
+  });
+
+  it('I-IN3 — kind=expense (default) não retorna categorias income (regressão)', async () => {
+    const supabase = await getAuthedClient();
+    const ranking = await listTopCategoriesForHousehold(
+      supabase,
+      SEED_DEMO_HOUSEHOLD_ID,
+      6,
+    );
+    expect(ranking.map((c) => c.name)).not.toContain('Salário');
+    expect(ranking.map((c) => c.name)).not.toContain('Freela');
+  });
+
   it('I12 — retorna lista vazia quando household não tem categorias', async () => {
     const isolated = await createIsolatedHousehold();
     try {

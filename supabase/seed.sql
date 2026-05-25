@@ -78,6 +78,14 @@ values
   ('33333333-3333-4333-8333-333333333006', '11111111-1111-4111-8111-111111111111', 'Outros',      'expense', 6)
 on conflict (id) do nothing;
 
+-- 3 categorias default de entrada (kind='income'). Usadas na feature lancar-entrada.
+insert into categories (id, household_id, name, kind, sort_order)
+values
+  ('33333333-3333-4333-8333-333333333101', '11111111-1111-4111-8111-111111111111', 'Salário', 'income', 1),
+  ('33333333-3333-4333-8333-333333333102', '11111111-1111-4111-8111-111111111111', 'Freela',  'income', 2),
+  ('33333333-3333-4333-8333-333333333103', '11111111-1111-4111-8111-111111111111', 'Outras entradas', 'income', 3)
+on conflict (id) do nothing;
+
 -- =========================================================================
 -- Fixture E2E pro estado vazio (E3): household sem categorias, com conta.
 -- User "empty@example.com" / password-local. NÃO compartilha household com

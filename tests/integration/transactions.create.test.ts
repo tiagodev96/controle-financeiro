@@ -181,4 +181,30 @@ describe('createTransactionForSession (integração)', () => {
       .eq('household_id', SEED_DEMO_HOUSEHOLD_ID);
     expect(count).toBe(0);
   });
+
+  it('I-IN1 — cria transaction com direction=income e status default pending', async () => {
+    const supabase = await getAuthedClient();
+    const result = await createTransactionForSession(
+      { supabase, session: SEED_TIAGO_SESSION },
+      {
+        amountCents: 250000,
+        description: 'Salário maio',
+        // Categoria income do seed
+        categoryId: '33333333-3333-4333-8333-333333333101',
+        accountId: SEED_ACCOUNT_EUR_ID,
+        direction: 'income',
+        paid: false,
+        date: TODAY,
+      },
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.transaction).toMatchObject({
+      direction: 'income',
+      amount_cents: 250000,
+      status: 'pending',
+      paid_on: null,
+    });
+  });
 });

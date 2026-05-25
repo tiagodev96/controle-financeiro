@@ -6,15 +6,31 @@ import { listTopCategoriesForHousehold } from '@/lib/finance/categories';
 import { LancarForm } from '@/components/finance/lancar-form';
 import { EmptyState } from '@/components/finance/empty-state';
 import { AppTopBar } from '@/components/finance/app-top-bar';
+import { DirectionToggle } from '@/components/finance/direction-toggle';
 
 const TOP_CATEGORIES_LIMIT = 6;
 
-export default async function LancarPage() {
+type Direction = 'expense' | 'income';
+
+type Props = {
+  searchParams: Promise<{ direction?: string }>;
+};
+
+function parseDirection(raw: string | undefined): Direction {
+  return raw === 'income' ? 'income' : 'expense';
+}
+
+export default async function LancarPage({ searchParams }: Props) {
   const session = await getSession();
   const supabase = await getServerSupabase();
 
+  const params = await searchParams;
+  const direction = parseDirection(params.direction);
+
   const [categories, accountsRes] = await Promise.all([
-    listTopCategoriesForHousehold(supabase, session.householdId, TOP_CATEGORIES_LIMIT),
+    listTopCategoriesForHousehold(supabase, session.householdId, TOP_CATEGORIES_LIMIT, {
+      kind: direction,
+    }),
     supabase
       .from('accounts')
       .select('id, name, currency')
@@ -31,11 +47,13 @@ export default async function LancarPage() {
   const cookieStore = await cookies();
   const lastAccountId = cookieStore.get('cf_last_account_id')?.value ?? null;
 
+  const isIncome = direction === 'income';
+
   return (
     <section className="space-y-5">
       <AppTopBar
-        eyebrow="Nova despesa"
-        title="Lançar despesa"
+        eyebrow={isIncome ? 'Nova entrada' : 'Nova despesa'}
+        title={isIncome ? 'Lançar entrada' : 'Lançar despesa'}
         trailing={
           <Link
             href="/"
@@ -46,9 +64,15 @@ export default async function LancarPage() {
         }
       />
 
+      <DirectionToggle value={direction} />
+
       {categories.length === 0 ? (
         <EmptyState
-          message="Crie ao menos uma categoria primeiro."
+          message={
+            isIncome
+              ? 'Crie ao menos uma categoria de entrada primeiro.'
+              : 'Crie ao menos uma categoria primeiro.'
+          }
           ctaHref="/categorias"
           ctaLabel="Criar categoria"
         />
@@ -60,9 +84,11 @@ export default async function LancarPage() {
         />
       ) : (
         <LancarForm
+          key={direction}
           categories={categories}
           accounts={accounts}
           lastAccountId={lastAccountId}
+          direction={direction}
         />
       )}
     </section>

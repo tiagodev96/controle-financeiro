@@ -11,8 +11,9 @@ function makeCategoriesChain(result: { data: unknown; error: { message: string }
 
 function makeTransactionsChain(result: { data: unknown; error: { message: string } | null }) {
   const not = vi.fn().mockResolvedValue(result);
-  const eq = vi.fn().mockReturnValue({ not });
-  const select = vi.fn().mockReturnValue({ eq });
+  const eq2 = vi.fn().mockReturnValue({ not });
+  const eq1 = vi.fn().mockReturnValue({ eq: eq2 });
+  const select = vi.fn().mockReturnValue({ eq: eq1 });
   return { select };
 }
 

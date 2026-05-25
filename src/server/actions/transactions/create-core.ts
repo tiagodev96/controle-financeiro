@@ -71,7 +71,7 @@ export async function createTransactionForSession(
       profile_id: session.userId,
       account_id: data.accountId,
       category_id: data.categoryId,
-      direction: 'expense',
+      direction: data.direction,
       amount_cents: data.amountCents,
       currency: account.currency,
       description: data.description,

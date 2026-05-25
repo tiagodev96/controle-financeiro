@@ -33,6 +33,7 @@ export const createTransactionSchema = z.object({
     ),
   categoryId: z.string().uuid('Categoria inválida'),
   accountId: z.string().uuid('Conta inválida'),
+  direction: z.enum(['expense', 'income']).default('expense'),
   paid: z.boolean().default(false),
   date: isoDate,
 });

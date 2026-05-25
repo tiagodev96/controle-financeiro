@@ -15,7 +15,7 @@ test.describe('Lançar despesa', () => {
 
     await page.getByRole('button', { name: /lançar despesa/i }).click();
 
-    await expect(page.getByText(/despesa lançada/i)).toBeVisible();
+    await expect(page.getByText(/despesa lançada/i).first()).toBeVisible();
     await expect(page).toHaveURL('/');
   });
 
@@ -31,7 +31,7 @@ test.describe('Lançar despesa', () => {
 
     await page.getByRole('button', { name: /lançar despesa/i }).click();
 
-    await expect(page.getByText(/despesa lançada/i)).toBeVisible();
+    await expect(page.getByText(/despesa lançada/i).first()).toBeVisible();
     await expect(page).toHaveURL('/');
   });
 
@@ -50,6 +50,37 @@ test.describe('Lançar despesa', () => {
     await expect(cta).toHaveAttribute('href', '/categorias');
 
     await expect(page.getByRole('button', { name: /lançar despesa/i })).toHaveCount(0);
+  });
+
+  test('E-IN1 — lança entrada (income) feliz: toggle, categoria Salário, valor, toast', async ({ page, context }) => {
+    await signInAsFixtureUser(context);
+
+    await page.goto('/lancar?direction=income');
+
+    await expect(page.getByRole('heading', { name: /lançar entrada/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /entrada/i, selected: true })).toBeVisible();
+
+    await page.getByLabel(/valor/i).fill('2.500,00');
+    await page.getByLabel(/descrição/i).fill('Salário maio');
+    await page.getByRole('button', { name: 'Salário' }).click();
+
+    await page.getByRole('button', { name: /lançar entrada/i }).click();
+
+    await expect(page.getByText(/entrada lançada/i).first()).toBeVisible();
+    await expect(page).toHaveURL('/', { timeout: 10_000 });
+  });
+
+  test('E-IN2 — toggle Entrada navega via searchParam e troca categorias', async ({ page, context }) => {
+    await signInAsFixtureUser(context);
+
+    await page.goto('/lancar');
+    await expect(page.getByRole('button', { name: 'Mercado' })).toBeVisible();
+
+    await page.getByRole('tab', { name: /entrada/i }).click();
+
+    await expect(page).toHaveURL(/direction=income/);
+    await expect(page.getByRole('button', { name: 'Salário' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Mercado' })).toHaveCount(0);
   });
 
   test('E4 — valor zero é rejeitado com mensagem inline e mantém o form', async ({ page, context }) => {

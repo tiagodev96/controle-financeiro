@@ -30,7 +30,7 @@ test.describe('Transações', () => {
     await page.getByLabel(/descrição/i).fill('Marcar pago teste E-T3');
     await page.getByRole('button', { name: /mercado/i }).first().click();
     await page.getByRole('button', { name: /lançar despesa/i }).click();
-    await expect(page.getByText(/despesa lançada/i)).toBeVisible();
+    await expect(page.getByText(/despesa lançada/i).first()).toBeVisible();
 
     await page.goto('/transacoes?status=pending');
 

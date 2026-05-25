@@ -1,9 +1,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
+export type CategoryKind = 'expense' | 'income' | 'transfer';
+
 export type CategoryOption = {
   id: string;
   name: string;
+};
+
+type ListOptions = {
+  kind?: CategoryKind;
 };
 
 // Duas queries em vez de `categories.select('transactions(count)')`: o agregado
@@ -12,19 +18,23 @@ export type CategoryOption = {
 export async function listTopCategoriesForHousehold(
   supabase: SupabaseClient<Database>,
   householdId: string,
-  limit: number
+  limit: number,
+  options: ListOptions = {},
 ): Promise<CategoryOption[]> {
+  const kind = options.kind ?? 'expense';
+
   const [categoriesRes, txRes] = await Promise.all([
     supabase
       .from('categories')
       .select('id, name, sort_order')
       .eq('household_id', householdId)
-      .eq('kind', 'expense')
+      .eq('kind', kind)
       .eq('is_archived', false),
     supabase
       .from('transactions')
       .select('category_id')
       .eq('household_id', householdId)
+      .eq('direction', kind === 'income' ? 'income' : 'expense')
       .not('category_id', 'is', null),
   ]);
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar } from 'lucide-react';
+import { toast } from 'sonner';
 import { createTransaction } from '@/server/actions/transactions/create';
 import { iconForCategory } from '@/lib/finance/category-icons';
 import { MoneyInput } from './money-input';
@@ -13,11 +14,13 @@ import { cn } from '@/lib/utils';
 
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
 type Category = { id: string; name: string };
+type Direction = 'expense' | 'income';
 
 type Props = {
   categories: Category[];
   accounts: Account[];
   lastAccountId: string | null;
+  direction?: Direction;
 };
 
 function todayIsoDate(): string {
@@ -26,14 +29,22 @@ function todayIsoDate(): string {
   return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
 }
 
-function ptDate(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-  const month = months[Number(m) - 1] ?? m;
-  return `${d} ${month} ${y}`;
-}
+const COPY: Record<Direction, { cta: string; toast: string; numClass: string; sign: boolean }> = {
+  expense: {
+    cta: 'Lançar despesa',
+    toast: 'Despesa lançada.',
+    numClass: 'text-money-negative',
+    sign: false,
+  },
+  income: {
+    cta: 'Lançar entrada',
+    toast: 'Entrada lançada.',
+    numClass: 'text-money-positive',
+    sign: true,
+  },
+};
 
-export function LancarForm({ categories, accounts, lastAccountId }: Props) {
+export function LancarForm({ categories, accounts, lastAccountId, direction = 'expense' }: Props) {
   const router = useRouter();
 
   const initialAccountId =
@@ -41,12 +52,14 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
       ? lastAccountId
       : accounts[0]?.id) ?? '';
   const initialCategoryId = categories[0]?.id ?? '';
+  const copy = COPY[direction];
 
   const [amountCents, setAmountCents] = useState(0);
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [accountId, setAccountId] = useState(initialAccountId);
-  const [paid, setPaid] = useState(false);
+  // Entrada é dinheiro recebido — default ON. Despesa é vencimento — default OFF.
+  const [paid, setPaid] = useState(direction === 'income');
   const [date, setDate] = useState(todayIsoDate);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -65,6 +78,7 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
       description,
       categoryId,
       accountId,
+      direction,
       paid,
       date,
     });
@@ -76,6 +90,7 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
     }
 
     setSubmitted(true);
+    toast.success(copy.toast);
     setTimeout(() => router.push('/'), 800);
   }
 
@@ -85,7 +100,7 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
         role="status"
         className="rounded-md border border-status-paid-fg/30 bg-status-paid-bg px-4 py-3 text-status-paid-fg"
       >
-        Despesa lançada.
+        {copy.toast}
       </div>
     );
   }
@@ -108,7 +123,7 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
           required
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Ex: Pão na padaria"
+          placeholder={direction === 'income' ? 'Ex: Salário maio' : 'Ex: Pão na padaria'}
           className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-[15px] text-fg1 placeholder:text-fg4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </label>
@@ -170,7 +185,6 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
               value={date}
               onChange={(e) => setDate(e.target.value)}
               className="min-w-0 flex-1 bg-transparent text-sm font-medium text-fg1 focus-visible:outline-none"
-              aria-label={`Data: ${ptDate(date)}`}
             />
           </label>
         </Field>
@@ -183,8 +197,12 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
         className="flex w-full items-center justify-between gap-3 rounded-md border border-border-soft bg-bg-surface px-3.5 py-3 text-left transition-colors hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <span className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-fg1">Já pago</span>
-          <span className="mono text-[10px] text-fg4">desconta do saldo da conta</span>
+          <span className="text-sm font-medium text-fg1">
+            {direction === 'income' ? 'Já recebido' : 'Já pago'}
+          </span>
+          <span className="mono text-[10px] text-fg4">
+            {direction === 'income' ? 'soma no saldo da conta' : 'desconta do saldo da conta'}
+          </span>
         </span>
         <span
           className={cn(
@@ -199,7 +217,7 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
             onChange={() => setPaid(!paid)}
             className="sr-only"
             tabIndex={-1}
-            aria-label="Já pago"
+            aria-label={direction === 'income' ? 'Já recebido' : 'Já pago'}
           />
           <span
             className={cn(
@@ -221,11 +239,11 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
         disabled={pending}
         className="flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-3.5 text-[15px] font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <span>{pending ? 'Lançando…' : 'Lançar despesa'}</span>
+        <span>{pending ? 'Lançando…' : copy.cta}</span>
         {!pending && amountCents > 0 && selectedAccount && (
           <>
             <span aria-hidden className="opacity-50">·</span>
-            <Num cents={amountCents} currency={selectedAccount.currency} />
+            <Num cents={direction === 'expense' ? -amountCents : amountCents} currency={selectedAccount.currency} sign={copy.sign} className={copy.numClass} />
           </>
         )}
       </button>
