@@ -6,6 +6,13 @@ import { AppTopBar } from '@/components/finance/app-top-bar';
 import { HeroNumber, Num, type Currency } from '@/components/finance/num';
 import { CCY } from '@/components/finance/ccy';
 import { TxnRow } from '@/components/finance/txn-row';
+import { StatTrio } from '@/components/finance/stat-trio';
+import { CategoryProgressList } from '@/components/finance/category-progress';
+import { SobraPrevistaCard } from '@/components/finance/sobra-prevista-card';
+import {
+  calculateMonthStats,
+  topCategoriesThisMonth,
+} from '@/lib/finance/dashboard-stats';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -22,42 +29,30 @@ type TxnRowData = {
 };
 
 const MONTHS_PT = [
-  'janeiro',
-  'fevereiro',
-  'março',
-  'abril',
-  'maio',
-  'junho',
-  'julho',
-  'agosto',
-  'setembro',
-  'outubro',
-  'novembro',
-  'dezembro',
+  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
 ];
+
+const MONTHS_PT_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
 function monthEyebrow(d: Date): string {
   return `${MONTHS_PT[d.getMonth()]} · ${d.getFullYear()}`;
 }
 
+function endOfMonthLabel(d: Date): string {
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  return `${String(last.getDate()).padStart(2, '0')} ${MONTHS_PT_SHORT[last.getMonth()]}`;
+}
+
 export default async function DashboardPage() {
   const session = await getSession();
   const supabase = await getServerSupabase();
+  const now = new Date();
 
-  const [accountsRes, txnsRes] = await Promise.all([
-    supabase
-      .from('accounts')
-      .select('id, name, currency, balance_cents')
-      .eq('is_archived', false),
-    supabase
-      .from('transactions')
-      .select(
-        'id, description, amount_cents, currency, direction, status, occurred_on, categories(name)',
-      )
-      .eq('household_id', session.householdId)
-      .order('occurred_on', { ascending: false })
-      .limit(10),
-  ]);
+  const accountsRes = await supabase
+    .from('accounts')
+    .select('id, name, currency, balance_cents')
+    .eq('is_archived', false);
 
   const accounts = accountsRes.data ?? [];
   const balanceByCurrency = accounts.reduce<Record<Currency, number>>(
@@ -69,34 +64,68 @@ export default async function DashboardPage() {
     { BRL: 0, EUR: 0 },
   );
 
-  const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
-  const grouped = groupByDay(txns);
-  const hasData = txns.length > 0 || accounts.some((a) => a.balance_cents !== 0);
   const primaryCurrency: Currency = 'EUR';
   const secondaryCurrency: Currency = 'BRL';
 
+  const [stats, topCats, txnsRes] = await Promise.all([
+    calculateMonthStats(supabase, session.householdId, primaryCurrency, balanceByCurrency[primaryCurrency], now),
+    topCategoriesThisMonth(supabase, session.householdId, primaryCurrency, 5, now),
+    supabase
+      .from('transactions')
+      .select(
+        'id, description, amount_cents, currency, direction, status, occurred_on, categories(name)',
+      )
+      .eq('household_id', session.householdId)
+      .order('occurred_on', { ascending: false })
+      .limit(10),
+  ]);
+
+  const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
+  const grouped = groupByDay(txns);
+  const hasData = txns.length > 0 || accounts.some((a) => a.balance_cents !== 0);
+
   return (
-    <section className="space-y-6">
-      <AppTopBar eyebrow={monthEyebrow(new Date())} title="Dashboard" />
+    <section className="space-y-6 cf-fade-up">
+      <AppTopBar eyebrow={monthEyebrow(now)} title="Dashboard" />
 
       {!hasData ? (
         <EmptyHero />
       ) : (
-        <section className="space-y-3">
-          <p className="text-[15px] text-fg3">Saldo atual</p>
-          <HeroNumber cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} />
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <CCY code={primaryCurrency} />
-            <Num cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} className="text-[11px] text-fg3" />
-            <span className="text-fg5">·</span>
-            <CCY code={secondaryCurrency} />
-            <Num cents={balanceByCurrency[secondaryCurrency]} currency={secondaryCurrency} className="text-[11px] text-fg3" />
-          </div>
-        </section>
+        <>
+          <section className="space-y-3">
+            <p className="text-[15px] text-fg3">Saldo atual</p>
+            <HeroNumber cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} />
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <CCY code={primaryCurrency} />
+              <Num cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} className="text-[11px] text-fg3" />
+              <span className="text-fg5">·</span>
+              <CCY code={secondaryCurrency} />
+              <Num cents={balanceByCurrency[secondaryCurrency]} currency={secondaryCurrency} className="text-[11px] text-fg3" />
+            </div>
+          </section>
+
+          <SobraPrevistaCard stats={stats} currency={primaryCurrency} endOfMonthLabel={endOfMonthLabel(now)} />
+
+          <StatTrio stats={stats} currency={primaryCurrency} />
+
+          <section className="space-y-3">
+            <header className="flex items-baseline justify-between">
+              <h2>Top categorias</h2>
+              <span className="mono text-[10px] text-fg4">{MONTHS_PT_SHORT[now.getMonth()]}</span>
+            </header>
+            <CategoryProgressList rows={topCats} currency={primaryCurrency} />
+          </section>
+        </>
       )}
 
       {txns.length > 0 && (
         <section className="space-y-4">
+          <header className="flex items-baseline justify-between">
+            <h2>Transações recentes</h2>
+            <Link href="/transacoes" className="mono text-[10px] text-fg3 hover:text-fg1">
+              ver todas
+            </Link>
+          </header>
           {grouped.map(({ label, rows }) => (
             <div key={label} className="space-y-1.5">
               <p className="eyebrow px-1">{label}</p>
@@ -123,7 +152,7 @@ export default async function DashboardPage() {
 
 function EmptyHero() {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-md border border-border-soft bg-bg-surface p-8 text-center">
+    <div className="flex flex-col items-center gap-4 rounded-md border border-border-soft bg-bg-surface p-8 text-center cf-fade-up">
       <div className="space-y-2">
         <h2>Sem transações ainda.</h2>
         <p className="text-sm text-fg3">
@@ -132,7 +161,7 @@ function EmptyHero() {
       </div>
       <Link
         href="/lancar"
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-5 py-2 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-brand px-5 py-2 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cf-press"
       >
         <Plus className="size-4" strokeWidth={1.6} aria-hidden />
         Lançar primeira despesa

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { getSession, UnauthorizedError } from '@/lib/auth/session';
 import { BottomNav } from '@/components/finance/bottom-nav';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import { Toaster } from '@/components/ui/sonner';
 import { THEME_COOKIE, resolveTheme } from '@/lib/theme/cookie';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,6 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       </main>
 
       <BottomNav />
+      <Toaster position="top-center" richColors closeButton={false} />
     </div>
   );
 }

@@ -458,3 +458,44 @@
 
 .num--positive { color: var(--money-positive); }
 .num--negative { color: var(--money-negative); }
+
+/* ============================================================================
+ * Motion — Linear-esque, subtle, never bouncy.
+ * Definido aqui pra ficar disponível em qualquer componente sem repetir.
+ * ============================================================================ */
+
+@keyframes cfFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cfPulse {
+  0%, 100% { background-color: var(--brand-quiet-bg); }
+  50%      { background-color: color-mix(in oklch, var(--brand) 30%, transparent); }
+}
+
+@keyframes cfShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes cfSheetIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.cf-fade-up   { animation: cfFadeUp 320ms cubic-bezier(0.2, 0, 0, 1); }
+.cf-pulse     { animation: cfPulse 600ms cubic-bezier(0.2, 0, 0, 1) 1; }
+.cf-press     { transition: transform 80ms cubic-bezier(0.2, 0, 0, 1); }
+.cf-press:active { transform: scale(0.97); }
+
+.cf-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--bg-surface) 0%,
+    var(--bg-raised) 50%,
+    var(--bg-surface) 100%
+  );
+  background-size: 200% 100%;
+  animation: cfShimmer 1.4s linear infinite;
+}
