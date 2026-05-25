@@ -1,22 +1,20 @@
 import type { Metadata, Viewport } from 'next';
-import { Space_Grotesk, Manrope, JetBrains_Mono } from 'next/font/google';
+import { IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
+import { cookies } from 'next/headers';
+import { THEME_COOKIE, resolveTheme } from '@/lib/theme/cookie';
 import './globals.css';
 
-const display = Space_Grotesk({
-  variable: '--font-display',
+const sans = IBM_Plex_Sans({
+  variable: '--font-sans',
   subsets: ['latin'],
-  display: 'swap',
-});
-
-const body = Manrope({
-  variable: '--font-body',
-  subsets: ['latin'],
+  weight: ['400', '500', '600'],
   display: 'swap',
 });
 
 const mono = JetBrains_Mono({
   variable: '--font-mono',
   subsets: ['latin'],
+  weight: ['400', '500', '600'],
   display: 'swap',
 });
 
@@ -26,21 +24,24 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0B0F19',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const cookieStore = await cookies();
+  const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
+
   return (
     <html
       lang="pt-BR"
-      className={`${display.variable} ${body.variable} ${mono.variable} h-full antialiased`}
+      data-theme={theme}
+      className={`${sans.variable} ${mono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-bg-base text-fg1">
+      <body className="min-h-full flex flex-col bg-bg text-fg">
         {children}
       </body>
     </html>

@@ -32,8 +32,8 @@ export function MoneyInput({
   }
 
   return (
-    <label htmlFor={id} className="block space-y-2">
-      <span className="caption text-fg3">{label}</span>
+    <label htmlFor={id} className="block space-y-1.5">
+      <span className="caption">{label}</span>
       <input
         id={id}
         type="text"
@@ -44,7 +44,7 @@ export function MoneyInput({
         value={formatCentsToBRL(valueCents)}
         onChange={handleChange}
         className={cn(
-          'block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-base text-fg1 placeholder:text-fg4 font-numeric tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal',
+          'num-lg block w-full rounded-md border border-border bg-surface-input px-3 py-3 text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           className,
         )}
       />

@@ -299,7 +299,7 @@ Abra o terminal nesta pasta (`C:\dev\work\2026\controle-financeiro`) e rode `cla
 > 2. Configure `tsconfig.json` com `strict: true`, `noUncheckedIndexedAccess: true`, `noImplicitOverride: true`.
 > 3. Instale runtime deps: `@supabase/supabase-js @supabase/ssr zod lucide-react clsx tailwind-merge date-fns`.
 > 4. Instale shadcn/ui (`npx shadcn@latest init`) com tema dark e style "new-york".
-> 5. Copie `docs/design-system/colors_and_type.css` pra `src/app/globals.css`, preservando o `@import` do Google Fonts. Mescle com o reset/Tailwind existente sem perder os tokens.
+> 5. Defina design tokens em `src/app/globals.css` (source of truth única). Histórico: a versão original deste passo apontava pra `docs/design-system/colors_and_type.css`, removido no rework visual; a paleta atual (OKLCH dark + light + IBM Plex Sans + JetBrains Mono) vive direto no globals.css.
 >
 > **Fase 2 — Infra de teste (TDD-ready desde dia 1)**
 > 6. Instale dev deps de teste: `vitest @vitest/coverage-v8 @vitest/ui jsdom @testing-library/react @testing-library/jest-dom @testing-library/user-event @playwright/test`.

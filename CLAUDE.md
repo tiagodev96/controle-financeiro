@@ -8,11 +8,12 @@ Portal pessoal de controle financeiro. Flexível pra uso individual ou compartil
 
 - **Framework**: Next.js 16 (App Router, React Server Components, TypeScript estrito, Turbopack). Atenção: Next 16 introduziu Cache Components e tem APIs e convenções que diferem do conhecimento de Next 15. Consultar `node_modules/next/dist/docs/` em casos de dúvida (especialmente sobre `cookies()`, `headers()`, `'use cache'`, `cacheLife`, route segment config). O `AGENTS.md` na raiz reforça isso.
 - **Banco**: Postgres via Supabase (free tier) — RLS por household
-- **Auth**: Supabase Auth (magic link). Allowlist de 2 emails fixos no env.
+- **Auth**: Supabase Auth (email + senha). Allowlist server-only em `AUTH_ALLOWED_EMAILS`, provisionamento manual no dashboard. Gating via `AUTH_ENABLED`. Detalhes em `docs/prds/password-auth.md`.
 - **ORM/queries**: `@supabase/supabase-js` direto + `drizzle-orm` opcional pra queries complexas. Não usar Prisma.
-- **Estilo**: Tailwind v4 + design tokens em CSS variables (de `docs/design-system/colors_and_type.css`)
-- **UI primitives**: shadcn/ui (Radix por baixo)
+- **Estilo**: Tailwind v4 + design tokens em CSS variables direto em `src/app/globals.css` (source of truth única, paleta OKLCH dark + light).
+- **UI primitives**: shadcn/ui (Base UI + Radix por baixo)
 - **Ícones**: Lucide React
+- **Tipografia**: IBM Plex Sans (heading + body) + JetBrains Mono (numérico). Carregadas via `next/font/google` no `src/app/layout.tsx`.
 - **Validação**: Zod nos formulários e nas Server Actions
 - **Testes**: Vitest (unit + integração) + React Testing Library (componentes client) + Playwright (E2E). Supabase local pra integração/E2E. MSW opcional pra mockar APIs externas.
 - **Hospedagem**: Vercel (preview deploy por branch)
@@ -36,11 +37,13 @@ Não introduzir dependências fora desta lista sem motivo claro.
 
 ## Padrões visuais
 
-- Dark mode only no v1.
+- **Tema**: dark + light com toggle (`ThemeToggle`). Persiste em cookie `cf_theme`, default = system. SSR aplica `data-theme` no `<html>` pra evitar FOUC.
 - Mobile-first. Layouts desktop adaptam de mobile, não o contrário.
-- Tokens de cor/tipografia/spacing vêm de `docs/design-system/colors_and_type.css`. Copiar pra `src/app/globals.css` no scaffold inicial e importar a partir daí.
-- Números **sempre** com JetBrains Mono e `font-variant-numeric: tabular-nums`.
+- **Tokens** (cor/tipografia/spacing/radius) vivem em `src/app/globals.css`. Paleta OKLCH em ambos os temas pra contraste uniforme. NÃO existe mais `docs/design-system/` — foi removido no rework visual.
+- **Mood**: "Documento Tranquilo" — sober, denso, type-driven. Sem gradients, sem glassmorphism, sem ornamento. Único accent primário (índigo). Status colors (paid/pending/overdue) só em pequenos pills.
+- Números **sempre** com JetBrains Mono e `font-variant-numeric: tabular-nums` (classes `.num`, `.num-lg`, `.num-display`).
 - Formato PT-BR: `R$ 1.240,50`, `€ 1.240,50`. Negativos com sinal de menos e cor `--danger`, nunca parênteses.
+- **Lançar despesa vive em Sheet bottom-up** (`?sheet=lancar`), não em rota separada. A URL legada `/lancar` redireciona pra `/?sheet=lancar`.
 
 ## Vocabulário (PT-BR, sentence case)
 
@@ -85,7 +88,7 @@ git push origin main              # auto deploy via Vercel GitHub integration
 
 - Sem bot WhatsApp/Telegram. PWA mobile é a UX rápida.
 - Sem importação histórica. Começa do zero com saldo atual.
-- Auth com magic link, allowlist de emails (Tiago + Laine).
+- Auth com email + senha + allowlist server-only. Magic link foi avaliado e descartado (custo > benefício pra 2 usuários conhecidos). Detalhes em `docs/prds/password-auth.md`.
 - Dívidas são entidade separada de parcelas (parcelas têm data, dívidas não).
 - Recorrentes são regras que geram transações pendentes no início de cada mês.
 - Câmbio EUR/BRL via [frankfurter.app](https://www.frankfurter.app) (BCE oficial, sem chave), cacheado em `fx_rates_cache` por dia.
@@ -200,6 +203,6 @@ Regra: **invocar a skill explicitamente** no prompt (ex.: "use a skill prd pra p
 1. `docs/spec.md` — especificação funcional completa do MVP.
 2. `docs/tdd.md` — guia prático do ciclo TDD outside-in (com exemplo).
 3. `docs/schema.sql` — schema Postgres + RLS, pronto pra rodar no Supabase.
-4. `docs/design-system/README.md` — guia visual e vocabulário.
-5. `docs/design-system/colors_and_type.css` — tokens (copiar pra `src/app/globals.css`).
+4. `docs/prds/` — PRDs por feature já entregue ou em andamento (`lancar-despesa`, `password-auth`).
+5. `src/app/globals.css` — design tokens (OKLCH dark + light) e helper classes.
 6. `reference/reference-sheet.xlsx` — planilha antiga do Tiago, **apenas referência** de padrões de uso. Não importar.

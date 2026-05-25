@@ -15,6 +15,7 @@
 /playwright-report
 /test-results
 /playwright/.cache
+/.review
 
 # supabase local
 /supabase/.branches

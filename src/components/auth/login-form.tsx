@@ -25,7 +25,6 @@ export function LoginForm({ authEnabled }: Props) {
 
     if (!result.ok) {
       setError(result.error);
-      // Limpa a senha (mantém email) pra evitar exposição em screenshot/over-shoulder.
       setPassword('');
       setPending(false);
       return;
@@ -36,8 +35,8 @@ export function LoginForm({ authEnabled }: Props) {
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-      <label className="block space-y-2">
-        <span className="caption text-fg3">Email</span>
+      <label className="block space-y-1.5">
+        <span className="caption">Email</span>
         <input
           type="email"
           name="email"
@@ -49,11 +48,11 @@ export function LoginForm({ authEnabled }: Props) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={!authEnabled}
-          className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-base text-fg1 placeholder:text-fg4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal disabled:cursor-not-allowed disabled:opacity-60"
+          className="block w-full min-h-11 rounded-md border border-border bg-surface-input px-3 py-2 text-base text-fg placeholder:text-fg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
         />
       </label>
-      <label className="block space-y-2">
-        <span className="caption text-fg3">Senha</span>
+      <label className="block space-y-1.5">
+        <span className="caption">Senha</span>
         <input
           type="password"
           name="password"
@@ -62,7 +61,7 @@ export function LoginForm({ authEnabled }: Props) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={!authEnabled}
-          className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-base text-fg1 placeholder:text-fg4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal disabled:cursor-not-allowed disabled:opacity-60"
+          className="block w-full min-h-11 rounded-md border border-border bg-surface-input px-3 py-2 text-base text-fg placeholder:text-fg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
         />
       </label>
 
@@ -76,13 +75,13 @@ export function LoginForm({ authEnabled }: Props) {
         type="submit"
         disabled={!authEnabled || pending}
         aria-disabled={!authEnabled || pending}
-        className="block w-full min-h-11 rounded-md bg-teal px-3 py-3 font-semibold text-on-primary transition-colors hover:bg-teal/90 disabled:cursor-not-allowed disabled:opacity-60"
+        className="block w-full min-h-11 rounded-md bg-primary px-3 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? 'Entrando...' : 'Entrar'}
+        {pending ? 'Entrando…' : 'Entrar'}
       </button>
 
       {!authEnabled && (
-        <p className="text-center text-sm text-fg3">
+        <p className="text-center text-sm text-fg-muted">
           Em breve. O login ainda não está ativo.
         </p>
       )}

@@ -82,7 +82,7 @@ describe('<LancarForm>', () => {
     await user.type(screen.getByLabelText('Descrição'), 'Café');
     await user.click(screen.getByRole('button', { name: 'Lançar' }));
 
-    const pendingButton = await screen.findByRole('button', { name: 'Lançando...' });
+    const pendingButton = await screen.findByRole('button', { name: /lançando/i });
     expect(pendingButton).toBeDisabled();
     expect(createTransaction).toHaveBeenCalledTimes(1);
 
@@ -92,7 +92,7 @@ describe('<LancarForm>', () => {
     // Resolve pra evitar warning de unmount com promise pendente.
     resolveAction({ ok: true, transaction: { id: 'txn-1' } });
     await waitFor(() => {
-      expect(screen.queryByRole('button', { name: 'Lançando...' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /lançando/i })).not.toBeInTheDocument();
     });
   });
 
