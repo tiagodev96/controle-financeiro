@@ -15,6 +15,7 @@ export type TxnListRow = {
   occurred_on: string;
   paid_on: string | null;
   account_id: string;
+  category_id: string | null;
   categories: { name: string } | null;
 };
 
@@ -50,7 +51,7 @@ export async function listTransactionsForHousehold(
   let query = supabase
     .from('transactions')
     .select(
-      'id, description, amount_cents, currency, direction, status, occurred_on, paid_on, account_id, categories(name)',
+      'id, description, amount_cents, currency, direction, status, occurred_on, paid_on, account_id, category_id, categories(name)',
       { count: 'exact' },
     )
     .eq('household_id', filters.householdId);
