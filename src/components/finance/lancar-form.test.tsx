@@ -153,27 +153,23 @@ describe('<LancarForm>', () => {
     },
   );
 
-  it.each([
-    ['vazio', ''],
-    ['com ponto decimal', '12.50'],
-  ] as const)(
-    'C7 — valor %s mostra erro de formato e não chama a action',
-    async (_label, valor) => {
-      const user = userEvent.setup();
-      render(
-        <LancarForm categories={categories} accounts={accounts} lastAccountId={null} />,
-      );
+  it('C7 — submit sem digitar valor envia 0 e mostra erro do servidor inline', async () => {
+    createTransaction.mockResolvedValue({ ok: false, error: 'Valor inválido.' });
 
-      await user.type(screen.getByLabelText('Descrição'), 'x');
-      if (valor !== '') {
-        await user.type(screen.getByLabelText('Valor'), valor);
-      }
-      await user.click(screen.getByRole('button', { name: 'Lançar' }));
+    const user = userEvent.setup();
+    render(
+      <LancarForm categories={categories} accounts={accounts} lastAccountId={null} />,
+    );
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(/v[áa]lido/i);
-      expect(createTransaction).not.toHaveBeenCalled();
-    },
-  );
+    await user.type(screen.getByLabelText('Descrição'), 'x');
+    await user.click(screen.getByRole('button', { name: 'Lançar' }));
+
+    expect(createTransaction).toHaveBeenCalledTimes(1);
+    expect(createTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ amountCents: 0 }),
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(/v[áa]lido/i);
+  });
 
   it('C8 — sucesso renderiza confirmação e dispara router.push("/") após o delay', async () => {
     createTransaction.mockResolvedValue({ ok: true, transaction: { id: 'txn-1' } });

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createTransaction } from '@/server/actions/transactions/create';
-import { parseMoneyString } from '@/lib/money/parse';
+import { MoneyInput } from './money-input';
 import { cn } from '@/lib/utils';
 
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
@@ -30,7 +30,7 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
       : accounts[0]?.id) ?? '';
   const initialCategoryId = categories[0]?.id ?? '';
 
-  const [amountString, setAmountString] = useState('');
+  const [amountCents, setAmountCents] = useState(0);
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [accountId, setAccountId] = useState(initialAccountId);
@@ -45,17 +45,6 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
     if (pending) return;
     setError(null);
     setPending(true);
-
-    let amountCents: number;
-    try {
-      amountCents = parseMoneyString(amountString);
-    } catch {
-      // Engolimos o tipo do erro porque o parser só lança em formato inválido
-      // e a mensagem aqui é endereçada ao usuário, não ao log.
-      setError('Informe um valor válido (ex: 12,50).');
-      setPending(false);
-      return;
-    }
 
     const result = await createTransaction({
       amountCents,
@@ -73,7 +62,7 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
     }
 
     setSubmitted(true);
-    // Pequeno delay pra o usuário enxergar o toast antes do redirect.
+    // Delay pra o toast aparecer antes do redirect.
     setTimeout(() => router.push('/'), 800);
   }
 
@@ -91,20 +80,14 @@ export function LancarForm({ categories, accounts, lastAccountId }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      <label className="block space-y-2">
-        <span className="caption text-fg3">Valor</span>
-        <input
-          type="text"
-          inputMode="decimal"
-          name="valor"
-          autoFocus
-          required
-          value={amountString}
-          onChange={(e) => setAmountString(e.target.value)}
-          placeholder="0,00"
-          className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-base text-fg1 placeholder:text-fg4 font-numeric tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal"
-        />
-      </label>
+      <MoneyInput
+        label="Valor"
+        name="valor"
+        autoFocus
+        valueCents={amountCents}
+        onChange={setAmountCents}
+      />
+
 
       <label className="block space-y-2">
         <span className="caption text-fg3">Descrição</span>
