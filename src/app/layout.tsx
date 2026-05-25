@@ -21,12 +21,26 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Controle Financeiro',
   description: 'Portal pessoal de controle financeiro.',
+  applicationName: 'Controle CF',
+  appleWebApp: {
+    capable: true,
+    title: 'Controle CF',
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
   viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#1c1c1a' },
+    { media: '(prefers-color-scheme: light)', color: '#f7f4ee' },
+  ],
 };
 
 export default async function RootLayout({
