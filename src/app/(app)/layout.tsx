@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { BottomNav } from '@/components/finance/bottom-nav';
 import { DesktopSidebar } from '@/components/finance/desktop-sidebar';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
-import { Toaster } from '@/components/ui/sonner';
+import { ToasterLazy } from '@/components/ui/toaster-lazy';
 import { THEME_COOKIE, resolveTheme } from '@/lib/theme/cookie';
 
 // O proxy (src/proxy.ts) já gateia rotas autenticadas — redireciona anônimos
@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <BottomNav />
       </div>
 
-      <Toaster position="top-center" richColors closeButton={false} />
+      <ToasterLazy />
     </div>
   );
 }
