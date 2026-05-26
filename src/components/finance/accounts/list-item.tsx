@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useRef, useEffect } from 'react';
-import { Archive, Edit3, MoreHorizontal, Undo2 } from 'lucide-react';
+import { Archive, Coins, Edit3, MoreHorizontal, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   archiveAccountAction,
@@ -10,6 +10,7 @@ import {
 } from '@/server/actions/accounts/actions';
 import { CCY } from '@/components/finance/ccy';
 import { Num, type Currency } from '@/components/finance/num';
+import { EditBalanceDialog } from './edit-balance-dialog';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -32,6 +33,7 @@ export function AccountListItem({ id, name, currency, balanceCents, archived }: 
 
   const [pending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [balanceOpen, setBalanceOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -128,6 +130,16 @@ export function AccountListItem({ id, name, currency, balanceCents, archived }: 
         >
           <MoreHorizontal className="size-4" strokeWidth={1.6} aria-hidden />
         </button>
+        {balanceOpen && (
+          <EditBalanceDialog
+            accountId={id}
+            accountName={name}
+            currency={currency}
+            currentBalanceCents={balanceCents}
+            open={balanceOpen}
+            onOpenChange={setBalanceOpen}
+          />
+        )}
         {menuOpen && (
           <>
             <button
@@ -138,17 +150,30 @@ export function AccountListItem({ id, name, currency, balanceCents, archived }: 
             />
             <div className="absolute right-0 top-9 z-40 min-w-[140px] rounded-md border border-border-soft bg-bg-raised py-1 shadow-md">
               {!archived && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setEditing(true);
-                  }}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-fg1 hover:bg-bg-inset"
-                >
-                  <Edit3 className="size-3.5" strokeWidth={1.6} aria-hidden />
-                  Renomear
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setBalanceOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-fg1 hover:bg-bg-inset"
+                  >
+                    <Coins className="size-3.5" strokeWidth={1.6} aria-hidden />
+                    Editar saldo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setEditing(true);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-fg1 hover:bg-bg-inset"
+                  >
+                    <Edit3 className="size-3.5" strokeWidth={1.6} aria-hidden />
+                    Renomear
+                  </button>
+                </>
               )}
               {archived ? (
                 <button
