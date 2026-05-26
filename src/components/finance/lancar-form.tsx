@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Calendar } from 'lucide-react';
+import { Calendar, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { createTransaction } from '@/server/actions/transactions/create';
+import { createCategoryAction } from '@/server/actions/categories/actions';
 import { iconForCategory } from '@/lib/finance/category-icons';
 import { MoneyInput } from './money-input';
 import { Field } from './field';
@@ -56,7 +57,12 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
 
   const [amountCents, setAmountCents] = useState(0);
   const [description, setDescription] = useState('');
+  const [extraCategories, setExtraCategories] = useState<Category[]>([]);
+  const visibleCategories: Category[] = [...categories, ...extraCategories];
   const [categoryId, setCategoryId] = useState(initialCategoryId);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [creatingPending, setCreatingPending] = useState(false);
   const [accountId, setAccountId] = useState(initialAccountId);
   // Entrada é dinheiro recebido — default ON. Despesa é vencimento — default OFF.
   const [paid, setPaid] = useState(direction === 'income');
@@ -120,7 +126,7 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
       <fieldset className="space-y-2">
         <legend className="eyebrow mb-2">Categoria</legend>
         <div className="flex flex-wrap gap-1.5">
-          {categories.map((cat) => {
+          {visibleCategories.map((cat) => {
             const active = cat.id === categoryId;
             const Icon = iconForCategory(cat.name);
             return (
@@ -141,7 +147,71 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
               </button>
             );
           })}
+          {!creatingCategory && (
+            <button
+              type="button"
+              onClick={() => setCreatingCategory(true)}
+              aria-label="Criar nova categoria"
+              className="inline-flex min-h-9 items-center gap-1 rounded-full border border-dashed border-border-soft bg-transparent px-3 text-sm font-medium text-fg3 transition-colors hover:border-border-strong hover:text-fg1"
+            >
+              <Plus className="size-3.5" strokeWidth={1.8} aria-hidden />
+              Nova
+            </button>
+          )}
         </div>
+        {creatingCategory && (
+          <div className="flex items-center gap-2 rounded-md border border-border-soft bg-bg-inset px-2 py-1.5">
+            <input
+              type="text"
+              autoFocus
+              maxLength={32}
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Nome da categoria"
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setCreatingCategory(false);
+                  setNewCategoryName('');
+                }
+              }}
+              className="min-w-0 flex-1 bg-transparent px-1 py-1 text-sm text-fg1 placeholder:text-fg4 focus-visible:outline-none"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                const name = newCategoryName.trim();
+                if (!name || creatingPending) return;
+                setCreatingPending(true);
+                const result = await createCategoryAction({ name, kind: direction });
+                setCreatingPending(false);
+                if (!result.ok) {
+                  toast.error(result.error);
+                  return;
+                }
+                const created: Category = { id: result.category.id, name: result.category.name };
+                setExtraCategories((prev) => [...prev, created]);
+                setCategoryId(created.id);
+                setNewCategoryName('');
+                setCreatingCategory(false);
+                toast.success('Categoria criada.');
+              }}
+              disabled={!newCategoryName.trim() || creatingPending}
+              className="inline-flex h-7 items-center rounded-sm bg-brand px-2 text-[12px] font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover disabled:opacity-60"
+            >
+              {creatingPending ? 'Salvando…' : 'Criar'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCreatingCategory(false);
+                setNewCategoryName('');
+              }}
+              className="inline-flex h-7 items-center rounded-sm px-2 text-[12px] text-fg3 hover:text-fg1"
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
       </fieldset>
 
       <div className="grid grid-cols-2 gap-2.5">

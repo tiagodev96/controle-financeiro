@@ -103,4 +103,24 @@ test.describe('Lançar despesa', () => {
     await expect(page).toHaveURL(/\/lancar$/);
     await expect(page.getByLabel(/descrição/i)).toHaveValue('Tentativa inválida');
   });
+
+  test('E-LANCAR-CAT-INLINE — cria categoria inline durante o lançamento sem perder o form', async ({ page, context }) => {
+    await signInAsFixtureUser(context);
+
+    const newCat = `Inline ${Date.now()}`;
+
+    await page.goto('/lancar');
+    await page.getByLabel(/valor/i).fill('33,00');
+    await page.getByLabel(/descrição/i).fill('Compra com categoria nova');
+
+    await page.getByRole('button', { name: /criar nova categoria/i }).click();
+    await page.getByPlaceholder(/nome da categoria/i).fill(newCat);
+    await page.getByRole('button', { name: /^criar$/i }).click();
+
+    await expect(page.getByText(/categoria criada/i).first()).toBeVisible();
+    // A nova categoria deve ficar selecionada como ativa
+    await expect(page.getByRole('button', { name: newCat, exact: true })).toHaveAttribute('aria-pressed', 'true');
+    // Form preservou o que estava digitado
+    await expect(page.getByLabel(/descrição/i)).toHaveValue('Compra com categoria nova');
+  });
 });
