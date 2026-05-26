@@ -41,4 +41,5 @@ export async function getAuthedClient(
 export const SEED_TIAGO_SESSION: Session = {
   userId: SEED_TIAGO_USER_ID,
   householdId: SEED_DEMO_HOUSEHOLD_ID,
+  preferredDisplayCurrency: 'EUR',
 };

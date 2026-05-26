@@ -17,7 +17,10 @@ type FakeClient = {
 
 function makeFakeClient(opts: {
   userResult: { data: { user: { id: string } | null }; error: Error | null };
-  profileResult?: { data: { household_id: string } | null; error: Error | null };
+  profileResult?: {
+    data: { household_id: string; preferred_display_currency?: string } | null;
+    error: Error | null;
+  };
 }): FakeClient {
   const single = vi.fn().mockResolvedValue(
     opts.profileResult ?? { data: null, error: null }
@@ -37,16 +40,23 @@ describe('getSession', () => {
     mockedGetServerSupabase.mockReset();
   });
 
-  it('retorna userId e householdId quando usuário e profile existem', async () => {
+  it('retorna userId, householdId e preferredDisplayCurrency quando usuário e profile existem', async () => {
     const client = makeFakeClient({
       userResult: { data: { user: { id: 'user-1' } }, error: null },
-      profileResult: { data: { household_id: 'household-1' }, error: null },
+      profileResult: {
+        data: { household_id: 'household-1', preferred_display_currency: 'BRL' },
+        error: null,
+      },
     });
     mockedGetServerSupabase.mockResolvedValue(client as never);
 
     const session = await getSession();
 
-    expect(session).toEqual({ userId: 'user-1', householdId: 'household-1' });
+    expect(session).toEqual({
+      userId: 'user-1',
+      householdId: 'household-1',
+      preferredDisplayCurrency: 'BRL',
+    });
     expect(client.from).toHaveBeenCalledWith('profiles');
   });
 

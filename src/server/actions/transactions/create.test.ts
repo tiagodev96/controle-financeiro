@@ -43,7 +43,7 @@ describe('createTransaction (Server Action wrapper)', () => {
   it('no sucesso: seta cookie cf_last_account_id e revalida o dashboard', async () => {
     const cookieSet = vi.fn();
     mockedCookies.mockResolvedValue({ set: cookieSet } as never);
-    mockedGetSession.mockResolvedValue({ userId: 'u-1', householdId: 'h-1' });
+    mockedGetSession.mockResolvedValue({ userId: 'u-1', householdId: 'h-1', preferredDisplayCurrency: 'EUR' });
     mockedGetServerSupabase.mockResolvedValue({} as never);
     mockedCore.mockResolvedValue({
       ok: true,
@@ -65,7 +65,7 @@ describe('createTransaction (Server Action wrapper)', () => {
   it('no fracasso da action core: não seta cookie nem revalida, propaga erro', async () => {
     const cookieSet = vi.fn();
     mockedCookies.mockResolvedValue({ set: cookieSet } as never);
-    mockedGetSession.mockResolvedValue({ userId: 'u-1', householdId: 'h-1' });
+    mockedGetSession.mockResolvedValue({ userId: 'u-1', householdId: 'h-1', preferredDisplayCurrency: 'EUR' });
     mockedGetServerSupabase.mockResolvedValue({} as never);
     mockedCore.mockResolvedValue({ ok: false, error: 'Categoria inválida' });
 

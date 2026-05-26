@@ -7,9 +7,12 @@ export class UnauthorizedError extends Error {
   }
 }
 
+export type DisplayCurrency = 'EUR' | 'BRL';
+
 export type Session = {
   userId: string;
   householdId: string;
+  preferredDisplayCurrency: DisplayCurrency;
 };
 
 export async function getSession(): Promise<Session> {
@@ -26,7 +29,7 @@ export async function getSession(): Promise<Session> {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('household_id')
+    .select('household_id, preferred_display_currency')
     .eq('id', user.id)
     .single();
 
@@ -34,5 +37,13 @@ export async function getSession(): Promise<Session> {
     throw new UnauthorizedError('Profile not found');
   }
 
-  return { userId: user.id, householdId: profile.household_id };
+  const pref = profile.preferred_display_currency;
+  const preferredDisplayCurrency: DisplayCurrency =
+    pref === 'BRL' ? 'BRL' : 'EUR';
+
+  return {
+    userId: user.id,
+    householdId: profile.household_id,
+    preferredDisplayCurrency,
+  };
 }
