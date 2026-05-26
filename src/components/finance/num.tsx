@@ -24,9 +24,16 @@ type NumProps = {
 export function Num({ cents, currency = 'EUR', sign = false, className }: NumProps) {
   const abs = Math.abs(cents);
   const symbol = SYMBOL[currency];
-  const prefix = sign && cents > 0 ? '+' : '';
+  const isNegative = cents < 0;
+  const prefix = isNegative ? '−' : sign && cents > 0 ? '+' : '';
   return (
-    <span className={cn('num whitespace-nowrap', className)}>
+    <span
+      className={cn(
+        'num whitespace-nowrap',
+        isNegative && 'text-money-negative',
+        className,
+      )}
+    >
       {prefix}
       {symbol}
       &nbsp;
@@ -52,16 +59,24 @@ export function HeroNumber({ cents, currency = 'EUR', className }: HeroProps) {
     .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     .split(',');
   const symbol = SYMBOL[currency];
+  const isNegative = cents < 0;
+  const accentColor = isNegative ? 'text-money-negative' : 'text-fg3';
+  const intColor = isNegative ? 'text-money-negative' : 'text-fg1';
 
   return (
     <div className={cn('flex items-baseline gap-1.5', className)}>
-      <span className="text-2xl font-medium leading-none tracking-tight text-fg3">
+      {isNegative && (
+        <span className={cn('num text-[56px] font-bold leading-none tracking-[-0.035em]', intColor)}>
+          −
+        </span>
+      )}
+      <span className={cn('text-2xl font-medium leading-none tracking-tight', accentColor)}>
         {symbol}
       </span>
-      <span className="num text-[56px] font-bold leading-none tracking-[-0.035em] text-fg1">
+      <span className={cn('num text-[56px] font-bold leading-none tracking-[-0.035em]', intColor)}>
         {intPart}
       </span>
-      <span className="num text-[28px] font-medium leading-none tracking-tight text-fg3">
+      <span className={cn('num text-[28px] font-medium leading-none tracking-tight', accentColor)}>
         ,{fracPart}
       </span>
     </div>
