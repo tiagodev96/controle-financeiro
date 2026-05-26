@@ -72,6 +72,7 @@ export function EditBalanceDialog({
             valueCents={value}
             onChange={setValue}
             autoFocus
+            allowSign
           />
 
           {error && (
