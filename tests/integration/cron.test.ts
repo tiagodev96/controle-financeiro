@@ -62,7 +62,9 @@ describe('cron endpoints (integração + MSW)', () => {
   it('I-CRON-RR — gera transactions pending para regra ativa do mês', async () => {
     const admin = getAdminClient();
     const now = new Date();
-    const monthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    // active_from = início do mês corrente, pra isolar do sweep retroativo
+    // (cron varre 3 meses, mas regra inativa nos anteriores é pulada).
+    const currentMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
     await admin.from('recurring_rules').insert({
       household_id: SEED_DEMO_HOUSEHOLD_ID,
@@ -75,7 +77,7 @@ describe('cron endpoints (integração + MSW)', () => {
       currency: 'EUR',
       frequency: 'monthly',
       is_paused: false,
-      active_from: '2026-01-01',
+      active_from: currentMonthStart,
     });
 
     const res = await recurringCronGet(authed());
@@ -103,6 +105,40 @@ describe('cron endpoints (integração + MSW)', () => {
     };
     const myRun2 = body2.summary.find((s) => s.householdId === SEED_DEMO_HOUSEHOLD_ID);
     expect(myRun2?.created ?? 0).toBe(0);
+  });
+
+  it('I-CRON-RR-RETRO — sweep retroativo preenche gaps de meses anteriores', async () => {
+    const admin = getAdminClient();
+    const now = new Date();
+    // Regra ativa há ≥3 meses → o sweep gera 3 transactions (cur + 2 atrás).
+    const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 4, 1)
+      .toISOString()
+      .slice(0, 10);
+
+    await admin.from('recurring_rules').insert({
+      household_id: SEED_DEMO_HOUSEHOLD_ID,
+      title: 'CRON test retro',
+      amount_cents: 4400,
+      direction: 'expense',
+      category_id: SEED_CATEGORY_MERCADO_ID,
+      account_id: SEED_ACCOUNT_EUR_ID,
+      day_of_month: 10,
+      currency: 'EUR',
+      frequency: 'monthly',
+      is_paused: false,
+      active_from: threeMonthsAgo,
+    });
+
+    const res = await recurringCronGet(authed());
+    expect(res.status).toBe(200);
+
+    const { data: txns } = await admin
+      .from('transactions')
+      .select('occurred_on')
+      .eq('household_id', SEED_DEMO_HOUSEHOLD_ID)
+      .like('description', 'CRON test retro%')
+      .order('occurred_on', { ascending: true });
+    expect(txns?.length ?? 0).toBe(3);
   });
 
   it('I-CRON-FX — insere rate de hoje em fx_rates_cache', async () => {
