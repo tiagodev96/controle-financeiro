@@ -102,6 +102,7 @@ function Section({
               pendingCount={p.pendingCount}
               isFinished={p.isFinished}
               firstDueDate={p.first_due_date}
+              frequencyMonths={p.frequency_months}
               categories={categories}
               accounts={accounts}
             />

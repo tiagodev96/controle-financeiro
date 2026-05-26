@@ -25,6 +25,7 @@ type Props = {
   pendingCount: number;
   isFinished: boolean;
   firstDueDate: string;
+  frequencyMonths: number;
   categories: Category[];
   accounts: Account[];
 };
@@ -47,6 +48,7 @@ export function InstallmentListItem({
   pendingCount,
   isFinished,
   firstDueDate,
+  frequencyMonths,
   categories,
   accounts,
 }: Props) {
@@ -160,6 +162,11 @@ export function InstallmentListItem({
           initialNotes={notes}
           initialCategoryId={categoryId}
           initialAccountId={accountId}
+          initialTotalCents={totalCents}
+          initialTotalInstallments={totalInstallments}
+          initialFirstDueDate={firstDueDate}
+          initialFrequencyMonths={frequencyMonths}
+          paidCount={paidCount}
           planCurrency={currency}
           categories={categories}
           accounts={accounts}
