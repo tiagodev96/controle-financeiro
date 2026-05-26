@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { MoreHorizontal, RotateCcw, CheckCircle2, Trash2, Wallet } from 'lucide-react';
+import { MoreHorizontal, RotateCcw, CheckCircle2, Pencil, Trash2, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   closeDebtManuallyAction,
@@ -9,6 +9,7 @@ import {
   reopenDebtAction,
 } from '@/server/actions/debts/actions';
 import { Num, type Currency } from '@/components/finance/num';
+import { EditDebtDialog } from './edit-dialog';
 import { RegisterPaymentDialog } from './register-payment-dialog';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +58,7 @@ export function DebtListItem({
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const isOpen = status === 'open';
@@ -134,6 +136,17 @@ export function DebtListItem({
                 className="fixed inset-0 z-30 cursor-default"
               />
               <div className="absolute right-0 top-9 z-40 min-w-[180px] rounded-md border border-border-soft bg-bg-raised py-1 shadow-md">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setEditOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-fg1 hover:bg-bg-inset"
+                >
+                  <Pencil className="size-3.5" strokeWidth={1.6} aria-hidden />
+                  Editar
+                </button>
                 {isOpen ? (
                   <button
                     type="button"
@@ -215,6 +228,20 @@ export function DebtListItem({
           accounts={accounts}
           open={payOpen}
           onOpenChange={setPayOpen}
+        />
+      )}
+
+      {editOpen && (
+        <EditDebtDialog
+          debtId={id}
+          currentTitle={title}
+          currentOriginalCents={originalCents}
+          paidCents={paidCents}
+          currency={currency}
+          currentPriority={priority}
+          currentNotes={notes}
+          open={editOpen}
+          onOpenChange={setEditOpen}
         />
       )}
     </div>

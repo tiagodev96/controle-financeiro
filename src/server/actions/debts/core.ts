@@ -31,6 +31,7 @@ const updateSchema = z.object({
   debtId: z.string().uuid(),
   patch: z.object({
     title: titleSchema.optional(),
+    originalAmountCents: z.number().int().positive().optional(),
     priority: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
     notes: notesSchema,
   }),
@@ -90,7 +91,7 @@ export async function updateDebtCore(
 
   const { data: existing } = await supabase
     .from('debts')
-    .select('id, household_id')
+    .select('id, household_id, original_amount_cents')
     .eq('id', debtId)
     .maybeSingle();
   if (!existing || existing.household_id !== session.householdId) {
@@ -101,6 +102,27 @@ export async function updateDebtCore(
   if (patch.title !== undefined) update.title = patch.title;
   if (patch.priority !== undefined) update.priority = patch.priority;
   if (patch.notes !== undefined) update.notes = patch.notes;
+
+  // Mudar o valor original obriga recalcular remaining + status (o trigger
+  // de pagamentos só dispara em insert/update/delete de transactions).
+  if (
+    patch.originalAmountCents !== undefined &&
+    patch.originalAmountCents !== existing.original_amount_cents
+  ) {
+    const { data: paidRows, error: paidErr } = await supabase
+      .from('transactions')
+      .select('amount_cents')
+      .eq('source_debt_id', debtId)
+      .eq('status', 'paid');
+    if (paidErr) return { ok: false, error: GENERIC };
+
+    const paidSum = (paidRows ?? []).reduce((s, r) => s + r.amount_cents, 0);
+    const newRemaining = Math.max(patch.originalAmountCents - paidSum, 0);
+    update.original_amount_cents = patch.originalAmountCents;
+    update.remaining_amount_cents = newRemaining;
+    update.status = newRemaining > 0 ? 'open' : 'closed';
+    update.closed_at = newRemaining > 0 ? null : new Date().toISOString();
+  }
 
   const { error } = await supabase.from('debts').update(update).eq('id', debtId);
   if (error) return { ok: false, error: GENERIC };
