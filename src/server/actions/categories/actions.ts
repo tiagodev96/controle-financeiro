@@ -9,11 +9,13 @@ import {
   deleteCategoryCore,
   renameCategoryCore,
   unarchiveCategoryCore,
+  updateCategoryCore,
   type CategoryActionInput,
   type CategoryMutationResult,
   type CreateCategoryInput,
   type CreateCategoryResult,
   type RenameCategoryInput,
+  type UpdateCategoryInput,
 } from './core';
 
 function revalidateAll(): void {
@@ -38,6 +40,16 @@ export async function renameCategoryAction(
   const session = await getSession();
   const supabase = await getServerSupabase();
   const result = await renameCategoryCore({ supabase, session }, input);
+  if (result.ok) revalidateAll();
+  return result;
+}
+
+export async function updateCategoryAction(
+  input: UpdateCategoryInput,
+): Promise<CategoryMutationResult> {
+  const session = await getSession();
+  const supabase = await getServerSupabase();
+  const result = await updateCategoryCore({ supabase, session }, input);
   if (result.ok) revalidateAll();
   return result;
 }

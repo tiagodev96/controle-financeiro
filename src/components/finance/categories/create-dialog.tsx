@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { createCategoryAction } from '@/server/actions/categories/actions';
+import { IconPicker } from './icon-picker';
 import { cn } from '@/lib/utils';
 
 type Kind = 'expense' | 'income';
@@ -19,6 +20,7 @@ export function CreateCategoryDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [kind, setKind] = useState<Kind>('expense');
+  const [icon, setIcon] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +30,7 @@ export function CreateCategoryDialog() {
     setPending(true);
     setError(null);
 
-    const result = await createCategoryAction({ name, kind });
+    const result = await createCategoryAction({ name, kind, icon });
     setPending(false);
 
     if (!result.ok) {
@@ -39,6 +41,7 @@ export function CreateCategoryDialog() {
     toast.success('Categoria criada.');
     setName('');
     setKind('expense');
+    setIcon(null);
     setOpen(false);
   }
 
@@ -94,6 +97,8 @@ export function CreateCategoryDialog() {
               className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-[15px] text-fg1 placeholder:text-fg4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </label>
+
+          <IconPicker value={icon} onChange={setIcon} />
 
           {error && (
             <p role="alert" className="text-sm text-money-negative">

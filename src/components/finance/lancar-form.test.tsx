@@ -13,13 +13,13 @@ vi.mock('@/server/actions/transactions/create', () => ({
   createTransaction: (input: unknown) => createTransaction(input),
 }));
 
-type Category = { id: string; name: string };
+type Category = { id: string; name: string; icon: string | null };
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
 
 const categories: Category[] = [
-  { id: 'cat-mercado', name: 'Mercado' },
-  { id: 'cat-restaurante', name: 'Restaurante' },
-  { id: 'cat-transporte', name: 'Transporte' },
+  { id: 'cat-mercado', name: 'Mercado', icon: null },
+  { id: 'cat-restaurante', name: 'Restaurante', icon: null },
+  { id: 'cat-transporte', name: 'Transporte', icon: null },
 ];
 
 const accounts: Account[] = [

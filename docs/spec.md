@@ -259,7 +259,6 @@ Cron Vercel `0 12 * * *` (todo dia ao meio-dia UTC) pré-popula cotação do dia
 - v1.1: Metas e caixinhas (envelopes virtuais sobre o saldo).
 - v1.2: Limites por categoria + alerta quando ultrapassar.
 - v1.3: Gráfico de evolução do saldo (snapshots semanais).
-- v2.x: OCR de comprovantes (upload de foto → extrai valor/data/estabelecimento).
 - v2.x: Insights gerados por LLM ("você gastou 35% mais com Pet este mês porque...").
 
 ---

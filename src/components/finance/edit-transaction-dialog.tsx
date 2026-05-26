@@ -13,7 +13,7 @@ import { MoneyInput } from '@/components/finance/money-input';
 import { Field } from '@/components/finance/field';
 import { CCY } from '@/components/finance/ccy';
 import { FormSelect } from '@/components/finance/form-select';
-import { iconForCategory } from '@/lib/finance/category-icons';
+import { resolveCategoryIcon } from '@/lib/finance/category-icons';
 import { updateTransactionAction } from '@/server/actions/transactions/update';
 import type { Currency } from '@/components/finance/num';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ type Direction = 'expense' | 'income';
 type Category = {
   id: string;
   name: string;
+  icon: string | null;
   kind: 'expense' | 'income';
   is_archived: boolean;
 };
@@ -165,7 +166,7 @@ export function EditTransactionDialog({
                         : 'border-border-soft bg-bg-inset font-medium text-fg2 hover:border-border-strong hover:text-fg1',
                     )}
                   >
-                    {createElement(iconForCategory(cat.name), {
+                    {createElement(resolveCategoryIcon(cat), {
                       className: 'size-3.5',
                       strokeWidth: active ? 1.9 : 1.6,
                       'aria-hidden': true,

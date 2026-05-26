@@ -6,7 +6,7 @@ import { Calendar, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { createTransaction } from '@/server/actions/transactions/create';
 import { createCategoryAction } from '@/server/actions/categories/actions';
-import { iconForCategory } from '@/lib/finance/category-icons';
+import { resolveCategoryIcon } from '@/lib/finance/category-icons';
 import { MoneyInput } from './money-input';
 import { Field } from './field';
 import { CCY } from './ccy';
@@ -15,7 +15,7 @@ import { Num } from './num';
 import { cn } from '@/lib/utils';
 
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
-type Category = { id: string; name: string };
+type Category = { id: string; name: string; icon: string | null };
 type Direction = 'expense' | 'income';
 
 type Props = {
@@ -132,7 +132,7 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
         <div className="flex flex-wrap gap-1.5">
           {visibleCategories.map((cat) => {
             const active = cat.id === categoryId;
-            const Icon = iconForCategory(cat.name);
+            const Icon = resolveCategoryIcon(cat);
             return (
               <button
                 key={cat.id}
@@ -192,7 +192,11 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
                   toast.error(result.error);
                   return;
                 }
-                const created: Category = { id: result.category.id, name: result.category.name };
+                const created: Category = {
+                  id: result.category.id,
+                  name: result.category.name,
+                  icon: result.category.icon ?? null,
+                };
                 setExtraCategories((prev) => [...prev, created]);
                 setCategoryId(created.id);
                 setNewCategoryName('');

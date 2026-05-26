@@ -32,7 +32,7 @@ export default async function CategoriasPage() {
   );
 }
 
-type Row = { id: string; name: string };
+type Row = { id: string; name: string; icon: string | null };
 
 function Section({ label, rows, archived = false }: { label: string; rows: Row[]; archived?: boolean }) {
   if (rows.length === 0 && !archived) {
@@ -50,7 +50,7 @@ function Section({ label, rows, archived = false }: { label: string; rows: Row[]
       <p className="eyebrow px-1">{label}</p>
       <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
         {rows.map((c) => (
-          <CategoryListItem key={c.id} id={c.id} name={c.name} archived={archived} />
+          <CategoryListItem key={c.id} id={c.id} name={c.name} icon={c.icon} archived={archived} />
         ))}
       </div>
     </section>

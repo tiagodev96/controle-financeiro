@@ -30,6 +30,7 @@ export type Transaction = {
 type CategoryFull = {
   id: string;
   name: string;
+  icon: string | null;
   kind: 'expense' | 'income';
   is_archived: boolean;
 };

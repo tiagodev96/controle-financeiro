@@ -6,11 +6,13 @@ export type CategoryKind = 'expense' | 'income' | 'transfer';
 export type CategoryOption = {
   id: string;
   name: string;
+  icon: string | null;
 };
 
 export type CategoryFull = {
   id: string;
   name: string;
+  icon: string | null;
   kind: 'expense' | 'income';
   is_archived: boolean;
   sort_order: number;
@@ -26,7 +28,7 @@ export async function listAllCategoriesForHousehold(
 ): Promise<CategoryFull[]> {
   const { data, error } = await supabase
     .from('categories')
-    .select('id, name, kind, is_archived, sort_order')
+    .select('id, name, icon, kind, is_archived, sort_order')
     .eq('household_id', householdId)
     .neq('kind', 'transfer')
     .order('sort_order', { ascending: true });
@@ -53,7 +55,7 @@ export async function listTopCategoriesForHousehold(
   const [categoriesRes, txRes] = await Promise.all([
     supabase
       .from('categories')
-      .select('id, name, sort_order')
+      .select('id, name, icon, sort_order')
       .eq('household_id', householdId)
       .eq('kind', kind)
       .eq('is_archived', false),
@@ -83,6 +85,7 @@ export async function listTopCategoriesForHousehold(
     .map((c) => ({
       id: c.id,
       name: c.name,
+      icon: c.icon ?? null,
       sortOrder: c.sort_order ?? 0,
       txCount: counts.get(c.id) ?? 0,
     }))
@@ -91,5 +94,5 @@ export async function listTopCategoriesForHousehold(
       return a.sortOrder - b.sortOrder;
     })
     .slice(0, limit)
-    .map(({ id, name }) => ({ id, name }));
+    .map(({ id, name, icon }) => ({ id, name, icon }));
 }
