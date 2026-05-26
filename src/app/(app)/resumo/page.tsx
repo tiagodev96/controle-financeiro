@@ -8,7 +8,9 @@ import { ShareCopyActions } from '@/components/finance/share-copy-actions';
 import { calculateMonthStats, topCategoriesThisMonth } from '@/lib/finance/dashboard-stats';
 import { listDebtsForHousehold, sumDebtPaymentsThisMonth } from '@/lib/finance/debts';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
-import { buildMonthSummaryText } from '@/lib/finance/month-summary';
+import { buildMonthSummaryText, type FxRateMap } from '@/lib/finance/month-summary';
+import { convertCents, getRateMap, FxUnavailableError } from '@/lib/fx';
+import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 
 const MONTHS_PT = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -49,6 +51,18 @@ export default async function ResumoPage() {
         .lt('paid_on', end),
     ]);
 
+  let fxRateMap: FxRateMap | null = null;
+  try {
+    const map = await getRateMap({
+      supabase,
+      serviceSupabase: getServiceRoleSupabase(),
+      when: now,
+    });
+    fxRateMap = { EUR_BRL: map.EUR_BRL, BRL_EUR: map.BRL_EUR };
+  } catch (err) {
+    if (!(err instanceof FxUnavailableError)) throw err;
+  }
+
   const accounts = accountsAll.filter((a) => !a.is_archived);
   const balanceByCurrency = accounts.reduce<Record<Currency, number>>(
     (acc, a) => {
@@ -79,6 +93,26 @@ export default async function ResumoPage() {
     stats.paid.totalCents > 0 ||
     stats.pending.totalCents > 0;
 
+  const hasBothCurrencies =
+    accounts.some((a) => a.currency === 'EUR') &&
+    accounts.some((a) => a.currency === 'BRL');
+
+  const totalConvertedDisplay = (() => {
+    if (!fxRateMap || !hasBothCurrencies) return null;
+    let eurCents = 0;
+    let brlCents = 0;
+    for (const a of accounts) {
+      if (a.currency === 'EUR') {
+        eurCents += a.balance_cents;
+        brlCents += convertCents(a.balance_cents, fxRateMap.EUR_BRL);
+      } else {
+        brlCents += a.balance_cents;
+        eurCents += convertCents(a.balance_cents, fxRateMap.BRL_EUR);
+      }
+    }
+    return { eurCents, brlCents };
+  })();
+
   const saldoPrevistoFimDoMesCents = stats.sobraPrevistaCents;
   const sobraPrevistaCents = saldoPrevistoFimDoMesCents - balanceCents;
 
@@ -105,6 +139,7 @@ export default async function ResumoPage() {
       currency: a.currency,
       balanceCents: a.balance_cents,
     })),
+    fxRateMap,
   });
 
   return (
@@ -210,6 +245,23 @@ export default async function ResumoPage() {
             <section className="space-y-2">
               <p className="eyebrow px-1">Contas</p>
               <ul className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3 py-1">
+                {totalConvertedDisplay && (
+                  <li className="flex items-center justify-between py-2.5 text-[14px]">
+                    <span className="text-fg2">Total convertido</span>
+                    <span className="flex items-baseline gap-2">
+                      <Num
+                        cents={totalConvertedDisplay.eurCents}
+                        currency="EUR"
+                        className="font-semibold text-fg1"
+                      />
+                      <Num
+                        cents={totalConvertedDisplay.brlCents}
+                        currency="BRL"
+                        className="text-[12px] text-fg3"
+                      />
+                    </span>
+                  </li>
+                )}
                 {accounts.map((a) => (
                   <li key={a.id} className="flex items-center justify-between py-2.5 text-[14px]">
                     <span className="text-fg2">{a.name}</span>

@@ -118,4 +118,30 @@ describe('buildMonthSummaryText', () => {
     expect(idxNu).toBeGreaterThan(idxItau);
     expect(idxWise).toBeGreaterThan(idxNu);
   });
+
+  it('U-RES7 — inclui "Total convertido" como primeira linha de Contas quando há contas em ambas moedas + rateMap', () => {
+    const text = buildMonthSummaryText({
+      ...base(),
+      fxRateMap: { EUR_BRL: 6.0, BRL_EUR: 1 / 6.0 },
+      accounts: [
+        { name: 'Itaú', currency: 'BRL', balanceCents: 600000 },
+        { name: 'Wise EUR', currency: 'EUR', balanceCents: 200000 },
+      ],
+    });
+    // EUR total = 2000 + (6000 / 6) = 3000.00 → € 3.000,00
+    // BRL total = 6000 + (2000 * 6) = 18000.00 → R$ 18.000,00
+    expect(text).toContain('Contas:\n- Total convertido: € 3.000,00 (R$ 18.000,00)\n- Itaú:');
+  });
+
+  it('U-RES8 — omite "Total convertido" quando só uma moeda OU rateMap=null', () => {
+    const monoCurrency = buildMonthSummaryText({
+      ...base(),
+      fxRateMap: { EUR_BRL: 6.0, BRL_EUR: 1 / 6.0 },
+      accounts: [{ name: 'Wise EUR', currency: 'EUR', balanceCents: 200000 }],
+    });
+    expect(monoCurrency).not.toContain('Total convertido');
+
+    const noRate = buildMonthSummaryText({ ...base(), fxRateMap: null });
+    expect(noRate).not.toContain('Total convertido');
+  });
 });
