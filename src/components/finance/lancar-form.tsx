@@ -60,6 +60,7 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
   const [accountId, setAccountId] = useState(initialAccountId);
   // Entrada é dinheiro recebido — default ON. Despesa é vencimento — default OFF.
   const [paid, setPaid] = useState(direction === 'income');
+  const [updateBalance, setUpdateBalance] = useState(true);
   const [date, setDate] = useState(todayIsoDate);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -80,6 +81,7 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
       accountId,
       direction,
       paid,
+      updateBalance,
       date,
     });
 
@@ -201,7 +203,7 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
             {direction === 'income' ? 'Já recebido' : 'Já pago'}
           </span>
           <span className="mono text-[10px] text-fg4">
-            {direction === 'income' ? 'soma no saldo da conta' : 'desconta do saldo da conta'}
+            {direction === 'income' ? 'entrada com status pago' : 'despesa com status pago'}
           </span>
         </span>
         <span
@@ -227,6 +229,45 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
           />
         </span>
       </button>
+
+      {paid && (
+        <button
+          type="button"
+          onClick={() => setUpdateBalance(!updateBalance)}
+          aria-pressed={updateBalance}
+          className="flex w-full items-center justify-between gap-3 rounded-md border border-border-soft bg-bg-surface px-3.5 py-3 text-left transition-colors hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium text-fg1">Atualizar saldo da conta</span>
+            <span className="mono text-[10px] text-fg4">
+              {direction === 'income' ? 'soma o valor no saldo' : 'desconta o valor do saldo'}
+              {' · desligue se já ajustou manualmente'}
+            </span>
+          </span>
+          <span
+            className={cn(
+              'relative inline-flex h-5.5 w-10 items-center rounded-full border transition-colors',
+              updateBalance ? 'border-brand bg-brand' : 'border-border bg-bg-inset',
+            )}
+          >
+            <input
+              type="checkbox"
+              name="updateBalance"
+              checked={updateBalance}
+              onChange={() => setUpdateBalance(!updateBalance)}
+              className="sr-only"
+              tabIndex={-1}
+              aria-label="Atualizar saldo da conta"
+            />
+            <span
+              className={cn(
+                'absolute top-0.5 size-4 rounded-full transition-all',
+                updateBalance ? 'left-4.5 bg-fg-on-brand' : 'left-0.5 bg-fg3',
+              )}
+            />
+          </span>
+        </button>
+      )}
 
       {error && (
         <p role="alert" className="text-sm text-money-negative">

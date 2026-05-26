@@ -36,8 +36,9 @@ test.describe('Transações', () => {
 
     await expect(page.getByText('Marcar pago teste E-T3').first()).toBeVisible();
     await page.getByRole('button', { name: /marcar como pago/i }).first().click();
+    await page.getByRole('button', { name: /só marcar como paga/i }).click();
 
-    await expect(page.getByText(/marcada como pago/i)).toBeVisible();
+    await expect(page.getByText(/marcada como paga/i).first()).toBeVisible();
   });
 
   test('E-ED1 — edita valor de transação via dialog', async ({ page, context }) => {
