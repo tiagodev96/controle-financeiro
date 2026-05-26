@@ -33,6 +33,37 @@ export function TransactionFilters({ accounts, categories, defaultMonth }: Props
   );
   const [searchInput, setSearchInput] = useState(queryFromUrl);
 
+  // State local pra date inputs: digitar dataInicio/dataFim no <input type=date>
+  // dispara onChange por keystroke (ex: "20/05/0002" ao digitar "2026" um dígito
+  // por vez). Se a gente fizer router.push() a cada change, o re-render interrompe
+  // a digitação do ano. Só pusha quando completo + válido (ou vazio pra limpar).
+  const [dataInicioLocal, setDataInicioLocal] = useState(dataInicio);
+  const [dataFimLocal, setDataFimLocal] = useState(dataFim);
+  // Derived state: re-sync quando a URL muda por fora.
+  const [prevDataInicio, setPrevDataInicio] = useState(dataInicio);
+  const [prevDataFim, setPrevDataFim] = useState(dataFim);
+  if (dataInicio !== prevDataInicio) {
+    setPrevDataInicio(dataInicio);
+    setDataInicioLocal(dataInicio);
+  }
+  if (dataFim !== prevDataFim) {
+    setPrevDataFim(dataFim);
+    setDataFimLocal(dataFim);
+  }
+
+  function commitDate(key: 'dataInicio' | 'dataFim', value: string) {
+    if (value === '') {
+      setParam(key, '');
+      return;
+    }
+    // Só pusha se o input está completo (YYYY-MM-DD válido com ano razoável).
+    const match = /^(\d{4})-\d{2}-\d{2}$/.exec(value);
+    if (!match) return;
+    const year = Number(match[1]);
+    if (year < 1900 || year > 9999) return;
+    setParam(key, value);
+  }
+
   function buildUrl(mutate: (next: URLSearchParams) => void): string {
     const next = new URLSearchParams(params.toString());
     mutate(next);
@@ -175,8 +206,12 @@ export function TransactionFilters({ accounts, categories, defaultMonth }: Props
               <span className="mono text-[10px] uppercase tracking-wider text-fg4">de</span>
               <input
                 type="date"
-                value={dataInicio}
-                onChange={(e) => setParam('dataInicio', e.target.value)}
+                value={dataInicioLocal}
+                onChange={(e) => {
+                  setDataInicioLocal(e.target.value);
+                  commitDate('dataInicio', e.target.value);
+                }}
+                onBlur={() => commitDate('dataInicio', dataInicioLocal)}
                 className="block min-h-11 w-full rounded-md border border-border bg-bg-inset px-3 py-2 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </label>
@@ -184,8 +219,12 @@ export function TransactionFilters({ accounts, categories, defaultMonth }: Props
               <span className="mono text-[10px] uppercase tracking-wider text-fg4">até</span>
               <input
                 type="date"
-                value={dataFim}
-                onChange={(e) => setParam('dataFim', e.target.value)}
+                value={dataFimLocal}
+                onChange={(e) => {
+                  setDataFimLocal(e.target.value);
+                  commitDate('dataFim', e.target.value);
+                }}
+                onBlur={() => commitDate('dataFim', dataFimLocal)}
                 className="block min-h-11 w-full rounded-md border border-border bg-bg-inset px-3 py-2 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </label>
