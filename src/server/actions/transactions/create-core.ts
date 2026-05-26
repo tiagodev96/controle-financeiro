@@ -36,7 +36,7 @@ export async function createTransactionForSession(
   // próprio household, então accountId fora dele retorna null.
   const { data: account, error: accountError } = await supabase
     .from('accounts')
-    .select('currency')
+    .select('currency, balance_cents')
     .eq('id', data.accountId)
     .maybeSingle();
   if (accountError) {
@@ -87,6 +87,14 @@ export async function createTransactionForSession(
       ok: false,
       error: insertError?.message ?? 'Não foi possível salvar',
     };
+  }
+
+  if (data.paid && data.updateBalance) {
+    const delta = data.direction === 'income' ? data.amountCents : -data.amountCents;
+    await supabase
+      .from('accounts')
+      .update({ balance_cents: account.balance_cents + delta })
+      .eq('id', data.accountId);
   }
 
   return { ok: true, transaction: inserted };

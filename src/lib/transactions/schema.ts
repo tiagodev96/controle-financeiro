@@ -35,6 +35,13 @@ export const createTransactionSchema = z.object({
   accountId: z.string().uuid('Conta inválida'),
   direction: z.enum(['expense', 'income']).default('expense'),
   paid: z.boolean().default(false),
+  /**
+   * Quando true e paid também é true, atualiza accounts.balance_cents na hora
+   * (despesa subtrai, entrada soma). Quando false, transaction nasce paga mas
+   * o saldo manual fica intacto — útil quando o saldo já foi atualizado fora
+   * do app. Ignorado se paid=false.
+   */
+  updateBalance: z.boolean().default(true),
   date: isoDate,
 });
 

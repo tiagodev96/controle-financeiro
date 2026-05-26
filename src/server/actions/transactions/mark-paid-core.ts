@@ -8,6 +8,12 @@ const ALREADY_PAID = 'Transação já está marcada como paga.';
 
 const schema = z.object({
   transactionId: z.string().uuid(),
+  /**
+   * Quando true, atualiza accounts.balance_cents proporcional à transaction
+   * (despesa subtrai, entrada soma). Quando false, marca como paga sem mexer
+   * no saldo manual — útil se o saldo já foi atualizado fora do app.
+   */
+  updateBalance: z.boolean().default(true),
 });
 
 export type MarkPaidInput = z.input<typeof schema>;
@@ -34,7 +40,7 @@ export async function markPaidCore(
   // household, mas devolve null em vez de erro — checamos explícito.
   const { data: txn, error: readError } = await supabase
     .from('transactions')
-    .select('id, household_id, status')
+    .select('id, household_id, status, account_id, direction, amount_cents')
     .eq('id', parsed.data.transactionId)
     .maybeSingle();
 
@@ -48,5 +54,21 @@ export async function markPaidCore(
     .eq('id', parsed.data.transactionId);
 
   if (updateError) return { ok: false, error: GENERIC_ERROR };
+
+  if (parsed.data.updateBalance && txn.account_id) {
+    const { data: acc } = await supabase
+      .from('accounts')
+      .select('balance_cents')
+      .eq('id', txn.account_id)
+      .maybeSingle();
+    if (acc) {
+      const delta = txn.direction === 'income' ? txn.amount_cents : -txn.amount_cents;
+      await supabase
+        .from('accounts')
+        .update({ balance_cents: acc.balance_cents + delta })
+        .eq('id', txn.account_id);
+    }
+  }
+
   return { ok: true };
 }
