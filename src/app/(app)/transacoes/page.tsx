@@ -45,9 +45,11 @@ function groupByDay(txns: Transaction[]): { label: string; rows: Transaction[] }
 
   const groups = new Map<string, Transaction[]>();
   for (const t of txns) {
-    const list = groups.get(t.occurred_on) ?? [];
+    // Agrupa pela "data efetiva": paid_on quando pago, senão occurred_on.
+    const key = t.paid_on ?? t.occurred_on;
+    const list = groups.get(key) ?? [];
     list.push(t);
-    groups.set(t.occurred_on, list);
+    groups.set(key, list);
   }
 
   return Array.from(groups.entries()).map(([day, rows]) => {
@@ -156,9 +158,8 @@ export default async function TransacoesPage({ searchParams }: Props) {
                   <span className="flex items-baseline gap-1.5">
                     <span className="caption">despesa</span>
                     <Num
-                      cents={-convertedTotals.expense}
+                      cents={convertedTotals.expense}
                       currency={displayCurrency}
-                      sign
                       className="text-[14px] font-semibold text-money-negative"
                     />
                   </span>
@@ -169,7 +170,6 @@ export default async function TransacoesPage({ searchParams }: Props) {
                     <Num
                       cents={convertedTotals.income}
                       currency={displayCurrency}
-                      sign
                       className="text-[14px] font-semibold text-money-positive"
                     />
                   </span>
@@ -188,9 +188,8 @@ export default async function TransacoesPage({ searchParams }: Props) {
                   <span className="flex items-baseline gap-1.5">
                     <span className="caption">despesa</span>
                     <Num
-                      cents={-row.expense}
+                      cents={row.expense}
                       currency={row.currency}
-                      sign
                       className="text-[14px] font-semibold text-money-negative"
                     />
                   </span>
@@ -201,7 +200,6 @@ export default async function TransacoesPage({ searchParams }: Props) {
                     <Num
                       cents={row.income}
                       currency={row.currency}
-                      sign
                       className="text-[14px] font-semibold text-money-positive"
                     />
                   </span>

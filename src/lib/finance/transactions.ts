@@ -73,8 +73,19 @@ export async function listTransactionsForHousehold(
   const { data, count, error } = await query;
   if (error) throw new Error(`listTransactionsForHousehold: ${error.message}`);
 
+  const rows = (data ?? []) as unknown as TxnListRow[];
+  // Reordena pela "data efetiva": paid_on quando pago, senão occurred_on.
+  // Dentro do mesmo dia, paid vem antes de pending; final tie por id (estável).
+  rows.sort((a, b) => {
+    const aKey = a.paid_on ?? a.occurred_on;
+    const bKey = b.paid_on ?? b.occurred_on;
+    if (aKey !== bKey) return bKey > aKey ? 1 : -1;
+    if (a.status !== b.status) return a.status === 'paid' ? -1 : 1;
+    return a.id > b.id ? -1 : 1;
+  });
+
   return {
-    transactions: (data ?? []) as unknown as TxnListRow[],
+    transactions: rows,
     total: count ?? 0,
   };
 }
