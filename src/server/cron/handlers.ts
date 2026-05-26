@@ -95,6 +95,77 @@ export async function runRecurringCron(
   return { ok: true, summary };
 }
 
+export type SnapshotCronSummary = {
+  householdId: string;
+  accountsSnapshotted: number;
+  skipped: number;
+  error?: string;
+};
+
+/**
+ * Captura semanal do balance_cents de cada conta não-arquivada como snapshot
+ * histórico com `source='auto'`. Idempotente — `ON CONFLICT DO NOTHING`
+ * preserva snapshot já existente (auto ou manual). Roda toda madrugada de
+ * domingo via Vercel Cron.
+ */
+export async function runSnapshotCron(
+  { serviceSupabase }: CronDeps,
+  now: Date = new Date(),
+): Promise<{ ok: true; summary: SnapshotCronSummary[] }> {
+  const snapshotDate = now.toISOString().slice(0, 10);
+  const { data: households } = await serviceSupabase.from('households').select('id');
+  const summary: SnapshotCronSummary[] = [];
+
+  for (const { id: householdId } of households ?? []) {
+    const { data: accounts, error: accErr } = await serviceSupabase
+      .from('accounts')
+      .select('id, balance_cents')
+      .eq('household_id', householdId)
+      .eq('is_archived', false);
+
+    if (accErr) {
+      summary.push({ householdId, accountsSnapshotted: 0, skipped: 0, error: accErr.message });
+      continue;
+    }
+    if (!accounts || accounts.length === 0) {
+      summary.push({ householdId, accountsSnapshotted: 0, skipped: 0 });
+      continue;
+    }
+
+    const rows = accounts.map((a) => ({
+      household_id: householdId,
+      account_id: a.id,
+      snapshot_date: snapshotDate,
+      balance_cents: a.balance_cents,
+      source: 'auto',
+    }));
+
+    // ON CONFLICT DO NOTHING via .upsert com ignoreDuplicates: snapshot
+    // (auto ou manual) já existente pra (account, date) é preservado.
+    const { error: insErr, data: inserted } = await serviceSupabase
+      .from('account_balance_snapshots')
+      .upsert(rows, {
+        onConflict: 'account_id,snapshot_date',
+        ignoreDuplicates: true,
+      })
+      .select('id');
+
+    if (insErr) {
+      summary.push({ householdId, accountsSnapshotted: 0, skipped: 0, error: insErr.message });
+      continue;
+    }
+
+    const inserts = inserted?.length ?? 0;
+    summary.push({
+      householdId,
+      accountsSnapshotted: inserts,
+      skipped: accounts.length - inserts,
+    });
+  }
+
+  return { ok: true, summary };
+}
+
 export type FxCronResult = { ok: true; rate: number; rateDate: string };
 
 /**
