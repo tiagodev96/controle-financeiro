@@ -3,6 +3,7 @@ import {
   createAccountCore,
   renameAccountCore,
   archiveAccountCore,
+  setAccountBalanceCore,
 } from '@/server/actions/accounts/core';
 import {
   getAuthedClient,
@@ -105,5 +106,45 @@ describe('contas CRUD (integração)', () => {
       .eq('id', created.account.id)
       .single();
     expect(data?.is_archived).toBe(true);
+  });
+
+  it('I-ACC-BAL — setAccountBalanceCore atualiza balance_cents preservando demais campos', async () => {
+    const supabase = await getAuthedClient();
+    const created = await createAccountCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      { name: NAMES[0]!, currency: 'EUR', initialBalanceCents: 50_000 },
+    );
+    if (!created.ok) throw new Error('setup');
+
+    const result = await setAccountBalanceCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      { accountId: created.account.id, balanceCents: 123_456 },
+    );
+    expect(result.ok).toBe(true);
+
+    const admin = getAdminClient();
+    const { data } = await admin
+      .from('accounts')
+      .select('name, currency, balance_cents')
+      .eq('id', created.account.id)
+      .single();
+    expect(data?.balance_cents).toBe(123_456);
+    expect(data?.name).toBe(NAMES[0]);
+    expect(data?.currency).toBe('EUR');
+  });
+
+  it('I-ACC-BAL-NEG — balance negativo rejeita', async () => {
+    const supabase = await getAuthedClient();
+    const created = await createAccountCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      { name: NAMES[0]!, currency: 'EUR', initialBalanceCents: 10_000 },
+    );
+    if (!created.ok) throw new Error('setup');
+
+    const result = await setAccountBalanceCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      { accountId: created.account.id, balanceCents: -100 },
+    );
+    expect(result.ok).toBe(false);
   });
 });

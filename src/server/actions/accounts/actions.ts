@@ -7,12 +7,14 @@ import {
   archiveAccountCore,
   createAccountCore,
   renameAccountCore,
+  setAccountBalanceCore,
   unarchiveAccountCore,
   type AccountActionInput,
   type AccountMutationResult,
   type CreateAccountInput,
   type CreateAccountResult,
   type RenameAccountInput,
+  type SetAccountBalanceInput,
 } from './core';
 
 function revalidateAll(): void {
@@ -58,6 +60,16 @@ export async function unarchiveAccountAction(
   const session = await getSession();
   const supabase = await getServerSupabase();
   const result = await unarchiveAccountCore({ supabase, session }, input);
+  if (result.ok) revalidateAll();
+  return result;
+}
+
+export async function setAccountBalanceAction(
+  input: SetAccountBalanceInput,
+): Promise<AccountMutationResult> {
+  const session = await getSession();
+  const supabase = await getServerSupabase();
+  const result = await setAccountBalanceCore({ supabase, session }, input);
   if (result.ok) revalidateAll();
   return result;
 }

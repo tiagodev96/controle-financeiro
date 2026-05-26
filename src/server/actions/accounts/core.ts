@@ -27,9 +27,15 @@ const renameSchema = z.object({
 
 const idSchema = z.object({ accountId: z.string().uuid() });
 
+const setBalanceSchema = z.object({
+  accountId: z.string().uuid(),
+  balanceCents: z.number().int().nonnegative(),
+});
+
 export type CreateAccountInput = z.input<typeof createSchema>;
 export type RenameAccountInput = z.input<typeof renameSchema>;
 export type AccountActionInput = z.input<typeof idSchema>;
+export type SetAccountBalanceInput = z.input<typeof setBalanceSchema>;
 
 export type CreateAccountResult =
   | { ok: true; account: AccountRow }
@@ -142,4 +148,32 @@ export function unarchiveAccountCore(
   input: AccountActionInput,
 ): Promise<AccountMutationResult> {
   return setArchived(deps, input, false);
+}
+
+export async function setAccountBalanceCore(
+  { supabase, session }: Deps,
+  input: SetAccountBalanceInput,
+): Promise<AccountMutationResult> {
+  const parsed = setBalanceSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? GENERIC };
+  }
+
+  const { data: existing } = await supabase
+    .from('accounts')
+    .select('id, household_id')
+    .eq('id', parsed.data.accountId)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: NOT_FOUND };
+  if (existing.household_id !== session.householdId) {
+    return { ok: false, error: NOT_FOUND };
+  }
+
+  const { error } = await supabase
+    .from('accounts')
+    .update({ balance_cents: parsed.data.balanceCents })
+    .eq('id', parsed.data.accountId);
+
+  if (error) return { ok: false, error: GENERIC };
+  return { ok: true };
 }
