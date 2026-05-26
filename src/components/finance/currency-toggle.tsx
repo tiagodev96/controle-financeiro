@@ -10,16 +10,25 @@ type Props = {
 };
 
 export function CurrencyToggle({ current }: Props) {
+  // Derived state: quando o prop muda (porque outra instância no mesmo
+  // render trocou a preferência via server action + revalidatePath), sincroniza
+  // o estado local. Sem isso, as 2 instâncias na mesma página ficam dessincronizadas.
+  const [prevCurrent, setPrevCurrent] = useState(current);
   const [optimistic, setOptimistic] = useState(current);
+  if (current !== prevCurrent) {
+    setPrevCurrent(current);
+    setOptimistic(current);
+  }
   const [pending, startTransition] = useTransition();
 
   function toggle() {
     const next: 'EUR' | 'BRL' = optimistic === 'EUR' ? 'BRL' : 'EUR';
+    const previous = optimistic;
     setOptimistic(next);
     startTransition(async () => {
       const result = await setPreferredDisplayCurrencyAction({ currency: next });
       if (!result.ok) {
-        setOptimistic(optimistic);
+        setOptimistic(previous);
         toast.error(result.error);
       }
     });
