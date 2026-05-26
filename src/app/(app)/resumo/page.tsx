@@ -63,14 +63,6 @@ function parseMoedaParam(raw: string | undefined, fallback: Currency): Currency 
   return fallback;
 }
 
-function buildResumoUrl({ mes, moeda, currentMes }: { mes: string; moeda: Currency; currentMes: string }): string {
-  const params: string[] = [];
-  if (mes !== currentMes) params.push(`mes=${mes}`);
-  // moeda só vai pra URL se for diferente do default EUR (mantém URL limpa).
-  if (moeda !== 'EUR') params.push(`moeda=${moeda.toLowerCase()}`);
-  return params.length === 0 ? '/resumo' : `/resumo?${params.join('&')}`;
-}
-
 export default async function ResumoPage({ searchParams }: { searchParams: SearchParams }) {
   const session = await getSession();
   const supabase = await getServerSupabase();
@@ -205,12 +197,13 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
           <div className="flex items-center gap-2">
             <ResumoCurrencyToggle
               current={primary}
-              buildUrl={(m) => buildResumoUrl({ mes: monthIso, moeda: m, currentMes: currentMonthIso })}
+              preservedQuery={monthIso !== currentMonthIso ? { mes: monthIso } : {}}
             />
             <MonthPicker
               value={monthIso}
               currentMonth={currentMonthIso}
-              buildUrl={(m) => buildResumoUrl({ mes: m, moeda: primary, currentMes: currentMonthIso })}
+              basePath="/resumo"
+              preservedQuery={primary !== 'EUR' ? { moeda: primary.toLowerCase() } : {}}
             />
           </div>
         }

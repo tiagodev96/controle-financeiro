@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 
 type Props = {
   current: Currency;
-  /** Resolve a URL pra moeda escolhida. Permite preservar outros params (ex: ?mes). */
-  buildUrl: (nextMoeda: Currency) => string;
+  /** Outros search params a preservar (ex: { mes: '2026-04' }). */
+  preservedQuery?: Record<string, string>;
 };
 
 /**
@@ -15,12 +15,18 @@ type Props = {
  * dashboard — não persiste preferência cross-session, só atualiza o param
  * da página atual. Esvazia se a tela perder o param ao navegar.
  */
-export function ResumoCurrencyToggle({ current, buildUrl }: Props) {
+export function ResumoCurrencyToggle({ current, preservedQuery = {} }: Props) {
   const router = useRouter();
   const other: Currency = current === 'EUR' ? 'BRL' : 'EUR';
 
   function toggle() {
-    router.push(buildUrl(other));
+    const parts: string[] = [];
+    // moeda só vai na URL quando diferente do default EUR.
+    if (other !== 'EUR') parts.push(`moeda=${other.toLowerCase()}`);
+    for (const [k, v] of Object.entries(preservedQuery)) {
+      parts.push(`${k}=${v}`);
+    }
+    router.push(parts.length === 0 ? '/resumo' : `/resumo?${parts.join('&')}`);
   }
 
   return (
