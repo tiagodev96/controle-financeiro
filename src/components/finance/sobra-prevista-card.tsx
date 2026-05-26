@@ -32,9 +32,9 @@ export function SobraPrevistaCard({ stats, currency, endOfMonthLabel }: Props) {
       />
       <div className="h-px bg-border-soft" />
       <div className="grid grid-cols-3 gap-3 text-[11px]">
-        <Breakdown label="Pago" cents={stats.paid.totalCents} sign={false} currency={currency} tone="positive" />
-        <Breakdown label="Pendente" cents={-stats.pending.totalCents} sign currency={currency} tone="neutral" />
-        <Breakdown label="Atraso" cents={-stats.overdue.totalCents} sign currency={currency} tone={stats.overdue.totalCents > 0 ? 'negative' : 'neutral'} />
+        <Breakdown label="Pago" cents={stats.paid.totalCents} currency={currency} tone="positive" />
+        <Breakdown label="Pendente" cents={stats.pending.totalCents} currency={currency} tone="neutral" />
+        <Breakdown label="Atraso" cents={stats.overdue.totalCents} currency={currency} tone={stats.overdue.totalCents > 0 ? 'negative' : 'neutral'} />
       </div>
     </div>
   );
@@ -43,13 +43,11 @@ export function SobraPrevistaCard({ stats, currency, endOfMonthLabel }: Props) {
 function Breakdown({
   label,
   cents,
-  sign,
   currency,
   tone,
 }: {
   label: string;
   cents: number;
-  sign: boolean;
   currency: Currency;
   tone: 'positive' | 'neutral' | 'negative';
 }) {
@@ -62,7 +60,7 @@ function Breakdown({
   return (
     <div className="space-y-0.5">
       <p className="mono text-[10px] uppercase tracking-wider text-fg4">{label}</p>
-      <Num cents={cents} currency={currency} sign={sign} className={`text-[13px] font-semibold ${color}`} />
+      <Num cents={cents} currency={currency} className={`text-[13px] font-semibold ${color}`} />
     </div>
   );
 }

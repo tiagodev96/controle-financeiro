@@ -33,8 +33,6 @@ export function TxnRow({
   className,
 }: Props) {
   const isIncome = direction === 'income';
-  // Sinal de negativo é U+2212 (não hífen) por decisão do design system.
-  const sign = isIncome ? '+' : '−';
 
   return (
     <div className={cn('flex items-center gap-3 py-3', className)}>
@@ -61,7 +59,7 @@ export function TxnRow({
           isIncome ? 'text-money-positive' : 'text-money-negative',
         )}
       >
-        {sign}{SYMBOL[currency]} {formatCentsToBRL(amountCents)}
+        {SYMBOL[currency]} {formatCentsToBRL(amountCents)}
       </p>
       {action && <div className="shrink-0">{action}</div>}
     </div>

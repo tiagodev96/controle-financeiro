@@ -71,7 +71,7 @@ test.describe('Transações', () => {
     await page.getByRole('button', { name: /salvar alterações/i }).click();
 
     await expect(page.getByText(/lançamento atualizado/i).first()).toBeVisible();
-    await expect(page.getByText(/−€\s*50,00/).first()).toBeVisible();
+    await expect(page.getByText(/€\s*50,00/).first()).toBeVisible();
   });
 
   test('E-ED2 — edita conta de EUR pra BRL e currency segue', async ({ page, context }) => {
