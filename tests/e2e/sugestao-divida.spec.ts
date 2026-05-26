@@ -65,6 +65,34 @@ async function cleanup(): Promise<void> {
     .like('title', 'SUG test %');
 }
 
+async function seedBalanceOnly(): Promise<void> {
+  const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  await admin
+    .from('accounts')
+    .update({ balance_cents: 200_00 })
+    .eq('id', SEED_ACCOUNT_EUR_ID);
+  await admin.from('transactions').delete().eq('household_id', SEED_HOUSEHOLD_ID);
+  await admin
+    .from('debts')
+    .delete()
+    .eq('household_id', SEED_HOUSEHOLD_ID)
+    .like('title', 'SUG test %');
+  await admin.from('debts').insert({
+    household_id: SEED_HOUSEHOLD_ID,
+    title: 'SUG test Dilene',
+    original_amount_cents: 100_00,
+    remaining_amount_cents: 100_00,
+    currency: 'EUR',
+    priority: 1,
+    status: 'open',
+  });
+}
+
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Sugestão de dívida no dashboard', () => {
   test.afterEach(cleanup);
 
@@ -81,5 +109,16 @@ test.describe('Sugestão de dívida no dashboard', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText(/SUG test Jefferson/i).first()).toBeVisible();
+  });
+
+  test('E-SUG-BAL-ONLY — card aparece quando só há saldo (sem pending) e dívida aberta', async ({ page, context }) => {
+    // Regressão: antes o card usava sobra delta (pending_in - pending_out), que era 0
+    // mesmo com saldo confortável. Agora usa sobra completa (saldo + delta) per spec §6.3.
+    await seedBalanceOnly();
+    await signInAsFixtureUser(context);
+
+    await page.goto('/');
+    await expect(page.getByText(/sugest[aã]o/i).first()).toBeVisible();
+    await expect(page.getByText(/SUG test Dilene/i).first()).toBeVisible();
   });
 });

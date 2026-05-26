@@ -172,7 +172,7 @@ export default async function DashboardPage() {
   const hasData = txns.length > 0 || accounts.some((a) => a.balance_cents !== 0);
 
   const suggestion = computeDebtSuggestion({
-    sobraEurCents: stats.sobraPrevistaCents - balanceByCurrency.EUR,
+    sobraEurCents: stats.sobraPrevistaCents,
     openDebts: debts.open.map((d) => ({
       id: d.id,
       title: d.title,
@@ -235,7 +235,7 @@ export default async function DashboardPage() {
               debtRemainingCents={suggestion.debt.remainingCents}
               suggestedCents={suggestion.suggestedCents}
               percOfDebt={suggestion.percOfDebt}
-              sobraEurCents={stats.sobraPrevistaCents - balanceByCurrency.EUR}
+              sobraEurCents={stats.sobraPrevistaCents}
               accounts={suggestionAccounts}
             />
           )}
