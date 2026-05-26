@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FormSelect } from './form-select';
+import { MonthInput } from './month-input';
 
 type Account = { id: string; name: string };
 
@@ -49,31 +50,31 @@ export function TransactionFilters({ accounts, defaultMonth }: Props) {
         ]}
       />
 
-      <label className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
         <span className="eyebrow">Mês</span>
         <div className="flex items-center gap-2">
-          <input
-            type="month"
-            aria-label="Mês"
-            value={showsAllMonths ? '' : mes}
-            onChange={(e) => setParam('mes', e.target.value || defaultMonth)}
-            disabled={showsAllMonths}
-            className="min-h-11 min-w-0 flex-1 rounded-md border border-border bg-bg-inset px-3 py-2 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
-          />
+          <div className="min-w-0 flex-1">
+            <MonthInput
+              value={showsAllMonths ? '' : mes}
+              onChange={(next) => setParam('mes', next || defaultMonth)}
+              disabled={showsAllMonths}
+              placeholder="Todos os meses"
+            />
+          </div>
           <button
             type="button"
             onClick={() => setParam('mes', showsAllMonths ? defaultMonth : 'all')}
             aria-pressed={showsAllMonths}
             className={
               showsAllMonths
-                ? 'inline-flex h-8 items-center rounded-md border border-brand bg-brand-quiet-bg px-2 text-[11px] font-semibold text-brand-quiet-fg'
-                : 'inline-flex h-8 items-center rounded-md border border-border-soft bg-bg-inset px-2 text-[11px] font-medium text-fg3 hover:border-border-strong hover:text-fg1'
+                ? 'inline-flex h-11 shrink-0 items-center rounded-md border border-brand bg-brand-quiet-bg px-3 text-[11px] font-semibold text-brand-quiet-fg'
+                : 'inline-flex h-11 shrink-0 items-center rounded-md border border-border-soft bg-bg-inset px-3 text-[11px] font-medium text-fg3 hover:border-border-strong hover:text-fg1'
             }
           >
             Todos
           </button>
         </div>
-      </label>
+      </div>
     </div>
   );
 }
