@@ -1,10 +1,12 @@
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { getServerSupabase } from '@/lib/supabase/server';
+import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession } from '@/lib/auth/session';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { HeroNumber, Num, type Currency } from '@/components/finance/num';
 import { CCY } from '@/components/finance/ccy';
+import { CurrencyToggle } from '@/components/finance/currency-toggle';
 import { TxnRow } from '@/components/finance/txn-row';
 import { StatTrio } from '@/components/finance/stat-trio';
 import { CategoryProgressList } from '@/components/finance/category-progress';
@@ -13,6 +15,12 @@ import {
   calculateMonthStats,
   topCategoriesThisMonth,
 } from '@/lib/finance/dashboard-stats';
+import {
+  convertCents,
+  FxUnavailableError,
+  getRateMap,
+  type RateMap,
+} from '@/lib/fx';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -44,10 +52,40 @@ function endOfMonthLabel(d: Date): string {
   return `${String(last.getDate()).padStart(2, '0')} ${MONTHS_PT_SHORT[last.getMonth()]}`;
 }
 
+function formatRate(rate: number): string {
+  return rate.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+function shortDate(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
+async function loadRateMap(
+  supabase: Awaited<ReturnType<typeof getServerSupabase>>,
+  now: Date,
+): Promise<RateMap | null> {
+  try {
+    return await getRateMap({
+      supabase,
+      serviceSupabase: getServiceRoleSupabase(),
+      when: now,
+    });
+  } catch (err) {
+    if (err instanceof FxUnavailableError) return null;
+    throw err;
+  }
+}
+
 export default async function DashboardPage() {
   const session = await getSession();
   const supabase = await getServerSupabase();
   const now = new Date();
+  const displayCurrency: Currency = session.preferredDisplayCurrency;
+  const otherCurrency: Currency = displayCurrency === 'EUR' ? 'BRL' : 'EUR';
+  const statsCurrency: Currency = 'EUR';
 
   const accountsRes = await supabase
     .from('accounts')
@@ -64,12 +102,23 @@ export default async function DashboardPage() {
     { BRL: 0, EUR: 0 },
   );
 
-  const primaryCurrency: Currency = 'EUR';
-  const secondaryCurrency: Currency = 'BRL';
+  const hasBothCurrencies =
+    accounts.some((a) => a.currency === 'EUR') &&
+    accounts.some((a) => a.currency === 'BRL');
+
+  const rateMap = hasBothCurrencies ? await loadRateMap(supabase, now) : null;
+
+  const totalInDisplay = rateMap
+    ? balanceByCurrency[displayCurrency] +
+      convertCents(
+        balanceByCurrency[otherCurrency],
+        displayCurrency === 'EUR' ? rateMap.BRL_EUR : rateMap.EUR_BRL,
+      )
+    : balanceByCurrency[displayCurrency];
 
   const [stats, topCats, txnsRes] = await Promise.all([
-    calculateMonthStats(supabase, session.householdId, primaryCurrency, balanceByCurrency[primaryCurrency], now),
-    topCategoriesThisMonth(supabase, session.householdId, primaryCurrency, 5, now),
+    calculateMonthStats(supabase, session.householdId, statsCurrency, balanceByCurrency[statsCurrency], now),
+    topCategoriesThisMonth(supabase, session.householdId, statsCurrency, 5, now),
     supabase
       .from('transactions')
       .select(
@@ -94,20 +143,35 @@ export default async function DashboardPage() {
         <>
           <section className="grid gap-3 lg:grid-cols-[1.4fr_1fr] lg:items-start">
             <div className="rounded-md border border-border-soft bg-bg-surface p-5 lg:p-6 space-y-3">
-              <p className="text-[15px] text-fg3">Saldo atual</p>
-              <HeroNumber cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} />
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-[15px] text-fg3">
+                  {hasBothCurrencies && rateMap ? 'Saldo total' : 'Saldo atual'}
+                </p>
+                {hasBothCurrencies && <CurrencyToggle current={displayCurrency} />}
+              </div>
+              <HeroNumber cents={totalInDisplay} currency={displayCurrency} />
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <CCY code={primaryCurrency} />
-                <Num cents={balanceByCurrency[primaryCurrency]} currency={primaryCurrency} className="text-[11px] text-fg3" />
+                <CCY code="EUR" />
+                <Num cents={balanceByCurrency.EUR} currency="EUR" className="text-[11px] text-fg3" />
                 <span className="text-fg5">·</span>
-                <CCY code={secondaryCurrency} />
-                <Num cents={balanceByCurrency[secondaryCurrency]} currency={secondaryCurrency} className="text-[11px] text-fg3" />
+                <CCY code="BRL" />
+                <Num cents={balanceByCurrency.BRL} currency="BRL" className="text-[11px] text-fg3" />
+                {rateMap ? (
+                  <span className="ml-auto mono text-[10px] text-fg4">
+                    1 € = R$ {formatRate(rateMap.EUR_BRL)} · {shortDate(rateMap.rateDate)}
+                    {rateMap.isStale && ' (desatualizada)'}
+                  </span>
+                ) : hasBothCurrencies ? (
+                  <span className="ml-auto mono text-[10px] uppercase tracking-wider text-status-overdue-fg bg-status-overdue-bg rounded-xs px-1.5 py-0.5">
+                    Câmbio indisponível
+                  </span>
+                ) : null}
               </div>
             </div>
-            <SobraPrevistaCard stats={stats} currency={primaryCurrency} endOfMonthLabel={endOfMonthLabel(now)} />
+            <SobraPrevistaCard stats={stats} currency={statsCurrency} endOfMonthLabel={endOfMonthLabel(now)} />
           </section>
 
-          <StatTrio stats={stats} currency={primaryCurrency} />
+          <StatTrio stats={stats} currency={statsCurrency} />
 
           <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
             <section className="space-y-3">
@@ -115,7 +179,7 @@ export default async function DashboardPage() {
                 <h2>Top categorias</h2>
                 <span className="mono text-[10px] text-fg4">{MONTHS_PT_SHORT[now.getMonth()]}</span>
               </header>
-              <CategoryProgressList rows={topCats} currency={primaryCurrency} />
+              <CategoryProgressList rows={topCats} currency={statsCurrency} />
             </section>
 
             {txns.length > 0 && (
