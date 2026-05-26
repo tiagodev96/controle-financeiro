@@ -12,6 +12,7 @@ export type MonthStats = {
   paid: MonthBucket;
   pending: MonthBucket;
   overdue: MonthBucket;
+  incomePaid: MonthBucket;
   sobraPrevistaCents: number;
 };
 
@@ -67,6 +68,8 @@ export async function calculateMonthStats(
   let pendingTotal = 0;
   let overdueCount = 0;
   let overdueTotal = 0;
+  let incomePaidCount = 0;
+  let incomePaidTotal = 0;
   let pendingIncomeMonth = 0;
   let pendingExpenseMonth = 0;
 
@@ -79,6 +82,10 @@ export async function calculateMonthStats(
     if (isExpense && isPaidInMonth) {
       paidCount += 1;
       paidTotal += t.amount_cents;
+    }
+    if (!isExpense && isPaidInMonth) {
+      incomePaidCount += 1;
+      incomePaidTotal += t.amount_cents;
     }
 
     if (t.status === 'pending' && isExpense) {
@@ -103,6 +110,7 @@ export async function calculateMonthStats(
     paid: { count: paidCount, totalCents: paidTotal },
     pending: { count: pendingCount, totalCents: pendingTotal },
     overdue: { count: overdueCount, totalCents: overdueTotal },
+    incomePaid: { count: incomePaidCount, totalCents: incomePaidTotal },
     sobraPrevistaCents,
   };
 }

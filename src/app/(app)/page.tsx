@@ -11,6 +11,7 @@ import { TxnRow } from '@/components/finance/txn-row';
 import { StatTrio } from '@/components/finance/stat-trio';
 import { CategoryProgressList } from '@/components/finance/category-progress';
 import { SobraPrevistaCard } from '@/components/finance/sobra-prevista-card';
+import { DashboardMonthPicker } from '@/components/finance/dashboard-month-picker';
 import {
   calculateMonthStats,
   topCategoriesThisMonth,
@@ -115,10 +116,38 @@ async function loadRateMap(
   }
 }
 
-export default async function DashboardPage() {
+type SearchParams = Promise<{ mes?: string }>;
+
+function parseMonthParam(raw: string | undefined, now: Date): {
+  targetDate: Date;
+  monthIso: string;
+  isPast: boolean;
+} {
+  const currentIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const match = raw && /^(\d{4})-(\d{2})$/.exec(raw);
+  if (!match) {
+    return { targetDate: now, monthIso: currentIso, isPast: false };
+  }
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  if (!Number.isFinite(y) || m < 1 || m > 12) {
+    return { targetDate: now, monthIso: currentIso, isPast: false };
+  }
+  const monthIso = `${y}-${String(m).padStart(2, '0')}`;
+  if (monthIso === currentIso) {
+    return { targetDate: now, monthIso: currentIso, isPast: false };
+  }
+  const targetDate = new Date(y, m, 0);
+  return { targetDate, monthIso, isPast: monthIso < currentIso };
+}
+
+export default async function DashboardPage({ searchParams }: { searchParams: SearchParams }) {
   const session = await getSession();
   const supabase = await getServerSupabase();
   const now = new Date();
+  const params = await searchParams;
+  const { targetDate, monthIso, isPast } = parseMonthParam(params.mes, now);
+  const currentMonthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const displayCurrency: Currency = session.preferredDisplayCurrency;
   const otherCurrency: Currency = displayCurrency === 'EUR' ? 'BRL' : 'EUR';
   const statsCurrency: Currency = 'EUR';
@@ -152,12 +181,12 @@ export default async function DashboardPage() {
       )
     : balanceByCurrency[displayCurrency];
 
-  const monthStartIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-  const monthEndIso = isoLocal(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+  const monthStartIso = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-01`;
+  const monthEndIso = isoLocal(new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0));
 
   const [stats, topCats, txnsRes, debts, upcoming] = await Promise.all([
-    calculateMonthStats(supabase, session.householdId, statsCurrency, balanceByCurrency[statsCurrency], now),
-    topCategoriesThisMonth(supabase, session.householdId, statsCurrency, 5, now),
+    calculateMonthStats(supabase, session.householdId, statsCurrency, balanceByCurrency[statsCurrency], targetDate),
+    topCategoriesThisMonth(supabase, session.householdId, statsCurrency, 5, targetDate),
     supabase
       .from('transactions')
       .select(
@@ -169,7 +198,7 @@ export default async function DashboardPage() {
       .order('occurred_on', { ascending: false })
       .limit(10),
     listDebtsForHousehold(supabase, session.householdId),
-    listUpcomingPending(supabase, session.householdId, now, 7),
+    isPast ? Promise.resolve([]) : listUpcomingPending(supabase, session.householdId, now, 7),
   ]);
 
   const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
@@ -192,54 +221,72 @@ export default async function DashboardPage() {
     .filter((a) => suggestion && a.currency === suggestion.debt.currency)
     .map((a) => ({ id: a.id, name: a.name, currency: a.currency as Currency }));
 
+  const monthFlowNetCents = stats.incomePaid.totalCents - stats.paid.totalCents;
+
   return (
     <section className="space-y-6 cf-fade-up">
-      <AppTopBar eyebrow={monthEyebrow(now)} title="Dashboard" />
+      <AppTopBar
+        eyebrow={isPast ? `visualizando ${monthEyebrow(targetDate)}` : monthEyebrow(now)}
+        title="Dashboard"
+        trailing={<DashboardMonthPicker value={monthIso} currentMonth={currentMonthIso} />}
+      />
 
       {!hasData ? (
         <EmptyHero />
       ) : (
         <>
-          <section className="grid gap-3 lg:grid-cols-[1.4fr_1fr] lg:items-start">
-            <div className="rounded-md border border-border-soft bg-bg-surface p-5 lg:p-6 space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-[15px] text-fg3">
-                  {hasBothCurrencies && rateMap ? 'Saldo total' : 'Saldo atual'}
-                </p>
-                {hasBothCurrencies && <CurrencyToggle current={displayCurrency} />}
+          {isPast ? (
+            <section className="rounded-md border border-border-soft bg-bg-surface p-5 lg:p-6 space-y-3">
+              <p className="text-[15px] text-fg3">Resumo de {monthEyebrow(targetDate)}</p>
+              <HeroNumber cents={monthFlowNetCents} currency={statsCurrency} />
+              <div className="grid grid-cols-3 gap-3 pt-2">
+                <FlowStat label="Recebido" cents={stats.incomePaid.totalCents} currency={statsCurrency} tone="positive" />
+                <FlowStat label="Gasto" cents={stats.paid.totalCents} currency={statsCurrency} tone="negative" />
+                <FlowStat label="Sobra" cents={monthFlowNetCents} currency={statsCurrency} tone={monthFlowNetCents >= 0 ? 'positive' : 'negative'} />
               </div>
-              <HeroNumber cents={totalInDisplay} currency={displayCurrency} />
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <CCY code="EUR" />
-                <Num cents={balanceByCurrency.EUR} currency="EUR" className="text-[11px] text-fg3" />
-                <span className="text-fg5">·</span>
-                <CCY code="BRL" />
-                <Num cents={balanceByCurrency.BRL} currency="BRL" className="text-[11px] text-fg3" />
-                {rateMap ? (
-                  <span className="ml-auto mono text-[10px] text-fg4">
-                    1 € = R$ {formatRate(rateMap.EUR_BRL)} · {shortDate(rateMap.rateDate)}
-                    {rateMap.isStale && ' (desatualizada)'}
-                  </span>
-                ) : hasBothCurrencies ? (
-                  <span className="ml-auto mono text-[10px] uppercase tracking-wider text-status-overdue-fg bg-status-overdue-bg rounded-xs px-1.5 py-0.5">
-                    Câmbio indisponível
-                  </span>
-                ) : null}
+            </section>
+          ) : (
+            <section className="grid gap-3 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+              <div className="rounded-md border border-border-soft bg-bg-surface p-5 lg:p-6 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-[15px] text-fg3">
+                    {hasBothCurrencies && rateMap ? 'Saldo total' : 'Saldo atual'}
+                  </p>
+                  {hasBothCurrencies && <CurrencyToggle current={displayCurrency} />}
+                </div>
+                <HeroNumber cents={totalInDisplay} currency={displayCurrency} />
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <CCY code="EUR" />
+                  <Num cents={balanceByCurrency.EUR} currency="EUR" className="text-[11px] text-fg3" />
+                  <span className="text-fg5">·</span>
+                  <CCY code="BRL" />
+                  <Num cents={balanceByCurrency.BRL} currency="BRL" className="text-[11px] text-fg3" />
+                  {rateMap ? (
+                    <span className="ml-auto mono text-[10px] text-fg4">
+                      1 € = R$ {formatRate(rateMap.EUR_BRL)} · {shortDate(rateMap.rateDate)}
+                      {rateMap.isStale && ' (desatualizada)'}
+                    </span>
+                  ) : hasBothCurrencies ? (
+                    <span className="ml-auto mono text-[10px] uppercase tracking-wider text-status-overdue-fg bg-status-overdue-bg rounded-xs px-1.5 py-0.5">
+                      Câmbio indisponível
+                    </span>
+                  ) : null}
+                </div>
               </div>
-            </div>
-            <SobraPrevistaCard
-              stats={stats}
-              statsCurrency={statsCurrency}
-              displayCurrency={displayCurrency}
-              endOfMonthLabel={endOfMonthLabel(now)}
-              fxRateMap={rateMap ? { EUR_BRL: rateMap.EUR_BRL, BRL_EUR: rateMap.BRL_EUR } : null}
-              showToggle={hasBothCurrencies && rateMap !== null}
-            />
-          </section>
+              <SobraPrevistaCard
+                stats={stats}
+                statsCurrency={statsCurrency}
+                displayCurrency={displayCurrency}
+                endOfMonthLabel={endOfMonthLabel(now)}
+                fxRateMap={rateMap ? { EUR_BRL: rateMap.EUR_BRL, BRL_EUR: rateMap.BRL_EUR } : null}
+                showToggle={hasBothCurrencies && rateMap !== null}
+              />
+            </section>
+          )}
 
           <StatTrio stats={stats} currency={statsCurrency} />
 
-          {suggestion && (
+          {!isPast && suggestion && (
             <DebtSuggestionCard
               debtId={suggestion.debt.id}
               debtTitle={suggestion.debt.title}
@@ -252,7 +299,7 @@ export default async function DashboardPage() {
             />
           )}
 
-          {upcoming.length > 0 && (
+          {!isPast && upcoming.length > 0 && (
             <section className="space-y-2">
               <header className="flex items-baseline justify-between">
                 <h2>Próximos 7 dias</h2>
@@ -280,7 +327,7 @@ export default async function DashboardPage() {
             <section className="space-y-3">
               <header className="flex items-baseline justify-between">
                 <h2>Top categorias</h2>
-                <span className="mono text-[10px] text-fg4">{MONTHS_PT_SHORT[now.getMonth()]}</span>
+                <span className="mono text-[10px] text-fg4">{MONTHS_PT_SHORT[targetDate.getMonth()]}</span>
               </header>
               <CategoryProgressList rows={topCats} currency={statsCurrency} />
             </section>
@@ -318,6 +365,29 @@ export default async function DashboardPage() {
         </>
       )}
     </section>
+  );
+}
+
+function FlowStat({
+  label,
+  cents,
+  currency,
+  tone,
+}: {
+  label: string;
+  cents: number;
+  currency: Currency;
+  tone: 'positive' | 'negative';
+}) {
+  return (
+    <div className="rounded-md border border-border-soft bg-bg-inset p-3 space-y-1">
+      <p className="eyebrow">{label}</p>
+      <Num
+        cents={cents}
+        currency={currency}
+        className={tone === 'positive' ? 'num--stat text-money-positive' : 'num--stat text-money-negative'}
+      />
+    </div>
   );
 }
 
