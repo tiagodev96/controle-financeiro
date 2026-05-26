@@ -57,9 +57,22 @@ export default async function RecorrentesPage() {
         </p>
       ) : (
         <>
-          {active.length > 0 && <Section label="Ativas" rules={active} />}
+          {active.length > 0 && (
+            <Section
+              label="Ativas"
+              rules={active}
+              categories={categoriesForDialog}
+              accounts={accountsForDialog}
+            />
+          )}
           {paused.length > 0 && (
-            <Section label={`Pausadas (${paused.length})`} rules={paused} paused />
+            <Section
+              label={`Pausadas (${paused.length})`}
+              rules={paused}
+              paused
+              categories={categoriesForDialog}
+              accounts={accountsForDialog}
+            />
           )}
         </>
       )}
@@ -67,14 +80,21 @@ export default async function RecorrentesPage() {
   );
 }
 
+type SectionAccount = { id: string; name: string; currency: 'BRL' | 'EUR' };
+type SectionCategory = { id: string; name: string; kind: 'expense' | 'income' };
+
 function Section({
   label,
   rules,
   paused = false,
+  categories,
+  accounts,
 }: {
   label: string;
   rules: RecurringRule[];
   paused?: boolean;
+  categories: SectionCategory[];
+  accounts: SectionAccount[];
 }) {
   return (
     <section className="space-y-2">
@@ -90,6 +110,11 @@ function Section({
             direction={r.direction}
             dayOfMonth={r.day_of_month}
             paused={paused}
+            categoryId={r.category_id}
+            accountId={r.account_id}
+            notes={r.notes}
+            categories={categories}
+            accounts={accounts}
           />
         ))}
       </div>

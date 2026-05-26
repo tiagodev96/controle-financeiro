@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { MoreHorizontal, Pause, Play, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pause, Pencil, Play, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   deleteRecurringAction,
@@ -9,16 +9,27 @@ import {
   resumeRecurringAction,
 } from '@/server/actions/recurring/actions';
 import { Num, type Currency } from '@/components/finance/num';
+import { EditRecurringDialog } from './edit-dialog';
 import { cn } from '@/lib/utils';
+
+type Direction = 'expense' | 'income';
+
+type Category = { id: string; name: string; kind: Direction };
+type Account = { id: string; name: string; currency: Currency };
 
 type Props = {
   id: string;
   title: string;
   amountCents: number;
   currency: Currency;
-  direction: 'expense' | 'income';
+  direction: Direction;
   dayOfMonth: number;
   paused: boolean;
+  categoryId: string | null;
+  accountId: string | null;
+  notes: string | null;
+  categories: Category[];
+  accounts: Account[];
 };
 
 export function RecurringListItem({
@@ -29,8 +40,14 @@ export function RecurringListItem({
   direction,
   dayOfMonth,
   paused,
+  categoryId,
+  accountId,
+  notes,
+  categories,
+  accounts,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const isIncome = direction === 'income';
 
@@ -89,7 +106,18 @@ export function RecurringListItem({
               onClick={() => setMenuOpen(false)}
               className="fixed inset-0 z-30 cursor-default"
             />
-            <div className="absolute right-0 top-9 z-40 min-w-[160px] rounded-md border border-border-soft bg-bg-raised py-1 shadow-md">
+            <div className="absolute right-0 top-9 z-40 min-w-40 rounded-md border border-border-soft bg-bg-raised py-1 shadow-md">
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setEditOpen(true);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-fg1 hover:bg-bg-inset"
+              >
+                <Pencil className="size-3.5" strokeWidth={1.6} aria-hidden />
+                Editar
+              </button>
               <button
                 type="button"
                 onClick={handlePauseToggle}
@@ -119,6 +147,23 @@ export function RecurringListItem({
           </>
         )}
       </div>
+
+      {editOpen && (
+        <EditRecurringDialog
+          ruleId={id}
+          direction={direction}
+          currentTitle={title}
+          currentAmountCents={amountCents}
+          currentDayOfMonth={dayOfMonth}
+          currentCategoryId={categoryId}
+          currentAccountId={accountId}
+          currentNotes={notes}
+          categories={categories}
+          accounts={accounts}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      )}
     </div>
   );
 }

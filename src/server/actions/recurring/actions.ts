@@ -33,7 +33,15 @@ export async function createRecurringAction(
   const session = await getSession();
   const supabase = await getServerSupabase();
   const result = await createRecurringCore({ supabase, session }, input);
-  if (result.ok) revalidateAll();
+  if (result.ok) {
+    // Gera imediatamente a transaction do mês corrente — sem isso a regra
+    // fica "fantasma" até o cron do dia 1 do mês seguinte rodar. A geração
+    // é idempotente: se já existir por algum motivo, é pulada.
+    const now = new Date();
+    const monthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    await generateRecurringForMonthCore({ supabase, session }, { monthIso });
+    revalidateAll();
+  }
   return result;
 }
 

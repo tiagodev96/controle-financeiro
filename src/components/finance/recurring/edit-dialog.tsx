@@ -1,58 +1,69 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { MoneyInput } from '@/components/finance/money-input';
 import { FormSelect } from '@/components/finance/form-select';
-import { createRecurringAction } from '@/server/actions/recurring/actions';
-import { cn } from '@/lib/utils';
+import { updateRecurringAction } from '@/server/actions/recurring/actions';
+import type { Currency } from '@/components/finance/num';
 
 type Direction = 'expense' | 'income';
 
-type Category = { id: string; name: string; kind: 'expense' | 'income' };
-type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
+type Category = { id: string; name: string; kind: Direction };
+type Account = { id: string; name: string; currency: Currency };
 
 type Props = {
+  ruleId: string;
+  direction: Direction;
+  currentTitle: string;
+  currentAmountCents: number;
+  currentDayOfMonth: number;
+  currentCategoryId: string | null;
+  currentAccountId: string | null;
+  currentNotes: string | null;
   categories: Category[];
   accounts: Account[];
+  open: boolean;
+  onOpenChange: (next: boolean) => void;
 };
 
-export function CreateRecurringDialog({ categories, accounts }: Props) {
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [amountCents, setAmountCents] = useState(0);
-  const [direction, setDirection] = useState<Direction>('expense');
-  const [categoryId, setCategoryId] = useState<string>(
-    categories.find((c) => c.kind === 'expense')?.id ?? '',
-  );
-  const [accountId, setAccountId] = useState<string>(accounts[0]?.id ?? '');
-  const [dayOfMonthRaw, setDayOfMonthRaw] = useState('5');
-  const [notes, setNotes] = useState('');
+function clampDayOfMonth(raw: string): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1) return 1;
+  if (n > 28) return 28;
+  return Math.trunc(n);
+}
 
-  function clampDayOfMonth(raw: string): number {
-    const n = Number(raw);
-    if (!Number.isFinite(n) || n < 1) return 1;
-    if (n > 28) return 28;
-    return Math.trunc(n);
-  }
-  const dayOfMonth = clampDayOfMonth(dayOfMonthRaw);
+export function EditRecurringDialog({
+  ruleId,
+  direction,
+  currentTitle,
+  currentAmountCents,
+  currentDayOfMonth,
+  currentCategoryId,
+  currentAccountId,
+  currentNotes,
+  categories,
+  accounts,
+  open,
+  onOpenChange,
+}: Props) {
+  const [title, setTitle] = useState(currentTitle);
+  const [amountCents, setAmountCents] = useState(currentAmountCents);
+  const [dayOfMonthRaw, setDayOfMonthRaw] = useState(String(currentDayOfMonth));
+  const [categoryId, setCategoryId] = useState(currentCategoryId ?? '');
+  const [accountId, setAccountId] = useState(currentAccountId ?? '');
+  const [notes, setNotes] = useState(currentNotes ?? '');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const visibleCategories = categories.filter((c) => c.kind === direction);
-
-  function changeDirection(d: Direction) {
-    setDirection(d);
-    setCategoryId(categories.find((c) => c.kind === d)?.id ?? '');
-  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,14 +71,16 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
     setPending(true);
     setError(null);
 
-    const result = await createRecurringAction({
-      title,
-      amountCents,
-      direction,
-      categoryId,
-      accountId,
-      dayOfMonth,
-      notes: notes.trim() || null,
+    const result = await updateRecurringAction({
+      ruleId,
+      patch: {
+        title,
+        amountCents,
+        dayOfMonth: clampDayOfMonth(dayOfMonthRaw),
+        categoryId,
+        accountId,
+        notes: notes.trim() || null,
+      },
     });
     setPending(false);
 
@@ -75,53 +88,18 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
       setError(result.error);
       return;
     }
-
-    toast.success('Regra criada.');
-    setTitle('');
-    setAmountCents(0);
-    setNotes('');
-    setOpen(false);
+    toast.success('Regra atualizada.');
+    onOpenChange(false);
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <button
-            type="button"
-            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-brand px-3 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Plus className="size-4" strokeWidth={1.8} aria-hidden />
-            Nova regra
-          </button>
-        }
-      />
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Nova regra recorrente</DialogTitle>
+          <DialogTitle>Editar regra recorrente</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 px-4 pb-4" noValidate>
-          <label className="block space-y-2">
-            <span className="eyebrow">Tipo</span>
-            <div className="grid grid-cols-2 gap-0.5 rounded-md border border-border-soft bg-bg-inset p-1">
-              {(['expense', 'income'] as const).map((d) => (
-                <button
-                  type="button"
-                  key={d}
-                  onClick={() => changeDirection(d)}
-                  aria-pressed={direction === d}
-                  className={cn(
-                    'h-9 rounded-sm text-sm font-medium transition-colors',
-                    direction === d ? 'bg-bg-surface text-fg1 shadow-sm' : 'text-fg3 hover:text-fg1',
-                  )}
-                >
-                  {d === 'expense' ? 'Despesa' : 'Entrada'}
-                </button>
-              ))}
-            </div>
-          </label>
-
           <label className="block space-y-2">
             <span className="eyebrow">Título</span>
             <input
@@ -131,7 +109,6 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
               maxLength={50}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder={direction === 'income' ? 'Ex: Salário' : 'Ex: Aluguel'}
               className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-[15px] text-fg1 placeholder:text-fg4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </label>
@@ -195,7 +172,7 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
             disabled={pending || !title.trim() || amountCents === 0 || !categoryId || !accountId}
             className="block w-full min-h-11 rounded-md bg-brand px-3 py-2.5 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {pending ? 'Salvando…' : 'Criar regra'}
+            {pending ? 'Salvando…' : 'Salvar alterações'}
           </button>
         </form>
       </DialogContent>
