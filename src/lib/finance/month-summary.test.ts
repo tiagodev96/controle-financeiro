@@ -39,7 +39,6 @@ describe('buildMonthSummaryText', () => {
         'Resumo de maio · 2026',
         '',
         'Saldo previsto fim do mês: € 3.420,15',
-        'Sobra prevista: € 280,40',
         '',
         'Entradas: € 2.800,00',
         'Despesas: € 1.520,60 (já pago: € 1.200,00, pendente: € 320,60)',

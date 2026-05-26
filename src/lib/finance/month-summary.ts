@@ -80,7 +80,6 @@ export function buildMonthSummaryText(input: MonthSummaryInput): string {
 
   blocks.push([
     `Saldo previsto fim do mês: ${money(input.saldoPrevistoFimDoMesCents, c)}`,
-    `Sobra prevista: ${money(input.sobraPrevistaCents, c)}`,
   ]);
 
   const despesasTotalCents = input.despesasPaidCents + input.despesasPendingCents;

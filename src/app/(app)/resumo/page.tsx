@@ -261,21 +261,6 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
                 projeção: recorrentes ativas + parcelas previstas + saldo atual
               </p>
             )}
-            {!isPast && !isFuture && (
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-fg3">
-                <span>Sobra prevista:</span>
-                <Num
-                  cents={sobraPrevistaCents}
-                  currency={primary}
-                  sign={sobraPrevistaCents >= 0}
-                  className={
-                    sobraPrevistaCents >= 0
-                      ? 'text-[15px] font-semibold text-money-positive'
-                      : 'text-[15px] font-semibold text-money-negative'
-                  }
-                />
-              </div>
-            )}
           </section>
 
           <section className="space-y-2">
