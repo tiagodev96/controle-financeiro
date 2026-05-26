@@ -24,6 +24,7 @@ import {
 import { listDebtsForHousehold } from '@/lib/finance/debts';
 import { computeDebtSuggestion } from '@/lib/finance/debt-suggestion';
 import { DebtSuggestionCard } from '@/components/finance/debt-suggestion-card';
+import { listUpcomingPending } from '@/lib/finance/upcoming';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -85,6 +86,19 @@ function shortDate(iso: string): string {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }
 
+function shortDayLabel(iso: string, now: Date): string {
+  const today = isoLocal(now);
+  if (iso === today) return 'hoje';
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (iso === isoLocal(tomorrow)) return 'amanhã';
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
+function isoLocal(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 async function loadRateMap(
   supabase: Awaited<ReturnType<typeof getServerSupabase>>,
   now: Date,
@@ -138,7 +152,7 @@ export default async function DashboardPage() {
       )
     : balanceByCurrency[displayCurrency];
 
-  const [stats, topCats, txnsRes, debts] = await Promise.all([
+  const [stats, topCats, txnsRes, debts, upcoming] = await Promise.all([
     calculateMonthStats(supabase, session.householdId, statsCurrency, balanceByCurrency[statsCurrency], now),
     topCategoriesThisMonth(supabase, session.householdId, statsCurrency, 5, now),
     supabase
@@ -150,6 +164,7 @@ export default async function DashboardPage() {
       .order('occurred_on', { ascending: false })
       .limit(10),
     listDebtsForHousehold(supabase, session.householdId),
+    listUpcomingPending(supabase, session.householdId, now, 7),
   ]);
 
   const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
@@ -223,6 +238,30 @@ export default async function DashboardPage() {
               sobraEurCents={stats.sobraPrevistaCents - balanceByCurrency.EUR}
               accounts={suggestionAccounts}
             />
+          )}
+
+          {upcoming.length > 0 && (
+            <section className="space-y-2">
+              <header className="flex items-baseline justify-between">
+                <h2>Próximos 7 dias</h2>
+                <span className="mono text-[10px] text-fg4">{upcoming.length} venc.</span>
+              </header>
+              <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
+                {upcoming.map((u) => (
+                  <div key={u.id} className="flex items-center gap-3 py-2.5 text-[14px]">
+                    <span className="mono inline-flex w-12 shrink-0 text-[10px] text-fg4">
+                      {shortDayLabel(u.occurred_on, now)}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-fg2">{u.description}</span>
+                    <Num
+                      cents={u.amount_cents}
+                      currency={u.currency}
+                      className={u.direction === 'income' ? 'shrink-0 font-semibold text-money-positive' : 'shrink-0 font-semibold text-money-negative'}
+                    />
+                  </div>
+                ))}
+              </div>
+            </section>
           )}
 
           <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
