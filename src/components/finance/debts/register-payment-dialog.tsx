@@ -29,6 +29,7 @@ type Props = {
   accounts: Account[];
   open: boolean;
   onOpenChange: (next: boolean) => void;
+  initialValueCents?: number;
 };
 
 function todayIsoDate(): string {
@@ -45,11 +46,16 @@ export function RegisterPaymentDialog({
   accounts,
   open,
   onOpenChange,
+  initialValueCents,
 }: Props) {
   const compatible = accounts.filter((a) => a.currency === currency);
   const initialAccountId = compatible[0]?.id ?? '';
+  const initialAmount = Math.min(
+    Math.max(initialValueCents ?? remainingCents, 0),
+    remainingCents,
+  );
 
-  const [amount, setAmount] = useState(remainingCents);
+  const [amount, setAmount] = useState(initialAmount);
   const [accountId, setAccountId] = useState(initialAccountId);
   const [date, setDate] = useState(todayIsoDate);
   const [description, setDescription] = useState(`Pagamento — ${debtTitle}`);
