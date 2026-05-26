@@ -8,6 +8,9 @@ type CategoryRow = Database['public']['Tables']['categories']['Row'];
 const GENERIC = 'Não foi possível salvar.';
 const DUPLICATE = 'Já existe uma categoria com esse nome.';
 const NOT_FOUND = 'Categoria não encontrada.';
+const PROTECTED = '"Outros" é a categoria de backup e não pode ser alterada.';
+
+const PROTECTED_NAME = 'Outros';
 
 const nameSchema = z
   .string()
@@ -83,12 +86,15 @@ export async function renameCategoryCore(
 
   const { data: existing, error: readErr } = await supabase
     .from('categories')
-    .select('id, household_id')
+    .select('id, household_id, name')
     .eq('id', parsed.data.categoryId)
     .maybeSingle();
   if (readErr || !existing) return { ok: false, error: NOT_FOUND };
   if (existing.household_id !== session.householdId) {
     return { ok: false, error: NOT_FOUND };
+  }
+  if (existing.name === PROTECTED_NAME) {
+    return { ok: false, error: PROTECTED };
   }
 
   const { error: updErr } = await supabase
@@ -99,6 +105,62 @@ export async function renameCategoryCore(
   if (updErr) {
     return { ok: false, error: isDuplicateError(updErr) ? DUPLICATE : GENERIC };
   }
+  return { ok: true };
+}
+
+export async function deleteCategoryCore(
+  { supabase, session }: Deps,
+  input: CategoryActionInput,
+): Promise<CategoryMutationResult> {
+  const parsed = idSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: GENERIC };
+
+  const { data: existing } = await supabase
+    .from('categories')
+    .select('id, household_id, name, kind')
+    .eq('id', parsed.data.categoryId)
+    .maybeSingle();
+  if (!existing) return { ok: false, error: NOT_FOUND };
+  if (existing.household_id !== session.householdId) {
+    return { ok: false, error: NOT_FOUND };
+  }
+  if (existing.name === PROTECTED_NAME) {
+    return { ok: false, error: PROTECTED };
+  }
+
+  // Procura "Outros" da mesma kind pra herdar os lançamentos órfãos.
+  // Se não existir, deixa o ON DELETE SET NULL fazer o trabalho (orfana).
+  const { data: backup } = await supabase
+    .from('categories')
+    .select('id')
+    .eq('household_id', session.householdId)
+    .eq('name', PROTECTED_NAME)
+    .eq('kind', existing.kind)
+    .maybeSingle();
+
+  if (backup) {
+    // Reassign em paralelo. ON DELETE SET NULL cuida do resto se algum falhar.
+    await Promise.all([
+      supabase
+        .from('transactions')
+        .update({ category_id: backup.id })
+        .eq('category_id', parsed.data.categoryId),
+      supabase
+        .from('recurring_rules')
+        .update({ category_id: backup.id })
+        .eq('category_id', parsed.data.categoryId),
+      supabase
+        .from('installment_plans')
+        .update({ category_id: backup.id })
+        .eq('category_id', parsed.data.categoryId),
+    ]);
+  }
+
+  const { error } = await supabase
+    .from('categories')
+    .delete()
+    .eq('id', parsed.data.categoryId);
+  if (error) return { ok: false, error: GENERIC };
   return { ok: true };
 }
 

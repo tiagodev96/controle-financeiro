@@ -6,6 +6,7 @@ import { getSession } from '@/lib/auth/session';
 import {
   archiveCategoryCore,
   createCategoryCore,
+  deleteCategoryCore,
   renameCategoryCore,
   unarchiveCategoryCore,
   type CategoryActionInput,
@@ -57,6 +58,16 @@ export async function unarchiveCategoryAction(
   const session = await getSession();
   const supabase = await getServerSupabase();
   const result = await unarchiveCategoryCore({ supabase, session }, input);
+  if (result.ok) revalidateAll();
+  return result;
+}
+
+export async function deleteCategoryAction(
+  input: CategoryActionInput,
+): Promise<CategoryMutationResult> {
+  const session = await getSession();
+  const supabase = await getServerSupabase();
+  const result = await deleteCategoryCore({ supabase, session }, input);
   if (result.ok) revalidateAll();
   return result;
 }

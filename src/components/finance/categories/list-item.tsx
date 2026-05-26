@@ -1,15 +1,18 @@
 'use client';
 
 import { createElement, useState, useTransition, useRef, useEffect } from 'react';
-import { Archive, Edit3, MoreHorizontal, Undo2 } from 'lucide-react';
+import { Archive, Edit3, MoreHorizontal, Trash2, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { iconForCategory } from '@/lib/finance/category-icons';
 import {
   archiveCategoryAction,
+  deleteCategoryAction,
   renameCategoryAction,
   unarchiveCategoryAction,
 } from '@/server/actions/categories/actions';
 import { cn } from '@/lib/utils';
+
+const PROTECTED_NAME = 'Outros';
 
 type Props = {
   id: string;
@@ -74,6 +77,17 @@ export function CategoryListItem({ id, name, archived }: Props) {
     });
   }
 
+  function handleDelete() {
+    setMenuOpen(false);
+    startTransition(async () => {
+      const result = await deleteCategoryAction({ categoryId: id });
+      if (!result.ok) toast.error(result.error);
+      else toast.success('Categoria excluída. Lançamentos movidos pra "Outros".');
+    });
+  }
+
+  const isProtected = name === PROTECTED_NAME;
+
   return (
     <div
       className={cn(
@@ -133,8 +147,8 @@ export function CategoryListItem({ id, name, archived }: Props) {
               onClick={() => setMenuOpen(false)}
               className="fixed inset-0 z-30 cursor-default"
             />
-            <div className="absolute right-0 top-9 z-40 min-w-[140px] rounded-md border border-border-soft bg-bg-raised py-1 shadow-md">
-              {!archived && (
+            <div className="absolute right-0 top-9 z-40 min-w-40 rounded-md border border-border-soft bg-bg-raised py-1 shadow-md">
+              {!archived && !isProtected && (
                 <button
                   type="button"
                   onClick={() => {
@@ -165,6 +179,21 @@ export function CategoryListItem({ id, name, archived }: Props) {
                   <Archive className="size-3.5" strokeWidth={1.6} aria-hidden />
                   Arquivar
                 </button>
+              )}
+              {!isProtected && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-money-negative hover:bg-bg-inset"
+                >
+                  <Trash2 className="size-3.5" strokeWidth={1.6} aria-hidden />
+                  Excluir
+                </button>
+              )}
+              {isProtected && (
+                <p className="px-3 py-1.5 text-[11px] text-fg4">
+                  Backup das categorias excluídas.
+                </p>
               )}
             </div>
           </>
