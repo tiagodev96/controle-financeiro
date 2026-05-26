@@ -89,11 +89,11 @@ describe('<LancarForm>', () => {
     await user.click(pendingButton);
     expect(createTransaction).toHaveBeenCalledTimes(1);
 
-    // Resolve pra evitar warning de unmount com promise pendente.
+    // Resolve pra evitar warning de unmount com promise pendente. No success path
+    // o pending fica true (componente espera a navegação), então não dá pra
+    // assertar que o label "Lançando…" sumiu — só que o router.push foi chamado.
     resolveAction({ ok: true, transaction: { id: 'txn-1' } });
-    await waitFor(() => {
-      expect(screen.queryByRole('button', { name: /lançando/i })).not.toBeInTheDocument();
-    });
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/transacoes'));
   });
 
   it('C4 — erro do servidor aparece inline em role=alert e botão volta a habilitar', async () => {
@@ -136,12 +136,12 @@ describe('<LancarForm>', () => {
   });
 
   it.each([
-    ['válido na lista', 'acc-revolut', 'acc-revolut'],
-    ['null', null, 'acc-itau'],
-    ['inexistente na lista', 'acc-inexistente', 'acc-itau'],
+    ['válido na lista', 'acc-revolut', 'Revolut'],
+    ['null', null, 'Itaú'],
+    ['inexistente na lista', 'acc-inexistente', 'Itaú'],
   ] as const)(
-    'C6 — lastAccountId %s → select inicial = %s',
-    (_label, lastAccountId, expected) => {
+    'C6 — lastAccountId %s → select inicial mostra %s',
+    (_label, lastAccountId, expectedLabel) => {
       render(
         <LancarForm
           categories={categories}
@@ -149,7 +149,9 @@ describe('<LancarForm>', () => {
           lastAccountId={lastAccountId}
         />,
       );
-      expect(screen.getByLabelText('Conta')).toHaveValue(expected);
+      // FormSelect (Base UI) renderiza o trigger como botão com o label da
+      // option ativa — `toHaveValue` não se aplica.
+      expect(screen.getByLabelText('Conta')).toHaveTextContent(expectedLabel);
     },
   );
 
@@ -171,7 +173,7 @@ describe('<LancarForm>', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/v[áa]lido/i);
   });
 
-  it('C8 — sucesso renderiza confirmação e dispara router.push("/") após o delay', async () => {
+  it('C8 — sucesso redireciona pra /transacoes via router.push', async () => {
     createTransaction.mockResolvedValue({ ok: true, transaction: { id: 'txn-1' } });
 
     const user = userEvent.setup();
@@ -183,9 +185,6 @@ describe('<LancarForm>', () => {
     await user.type(screen.getByLabelText('Descrição'), 'Café');
     await user.click(screen.getByRole('button', { name: /lançar despesa/i }));
 
-    expect(await screen.findByRole('status')).toHaveTextContent('Despesa lançada.');
-    expect(push).not.toHaveBeenCalled();
-
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/'), { timeout: 1500 });
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/transacoes'));
   });
 });
