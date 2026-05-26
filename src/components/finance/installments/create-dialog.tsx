@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { MoneyInput } from '@/components/finance/money-input';
 import { createInstallmentPlanAction } from '@/server/actions/installments/actions';
+import { splitInstallments } from '@/lib/finance/installments';
 
 type Currency = 'EUR' | 'BRL';
 
@@ -35,9 +36,9 @@ export function CreateInstallmentDialog({ categories, accounts }: Props) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [totalCents, setTotalCents] = useState(0);
-  const [totalInstallments, setTotalInstallments] = useState(2);
+  const [installmentsRaw, setInstallmentsRaw] = useState('2');
   const [firstDueDate, setFirstDueDate] = useState(todayIsoDate);
-  const [frequencyMonths, setFrequencyMonths] = useState(1);
+  const [frequencyRaw, setFrequencyRaw] = useState('1');
   const [categoryId, setCategoryId] = useState(expenseCategories[0]?.id ?? '');
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? '');
   const [notes, setNotes] = useState('');
@@ -46,9 +47,29 @@ export function CreateInstallmentDialog({ categories, accounts }: Props) {
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
   const currency: Currency = selectedAccount?.currency ?? 'EUR';
-  const parcelaPreview = totalCents > 0 && totalInstallments > 0
-    ? Math.ceil(totalCents / totalInstallments)
-    : 0;
+
+  function clampInstallments(raw: string): number {
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 2) return 2;
+    if (n > 60) return 60;
+    return Math.trunc(n);
+  }
+  function clampFrequency(raw: string): number {
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 1) return 1;
+    if (n > 12) return 12;
+    return Math.trunc(n);
+  }
+
+  const totalInstallments = clampInstallments(installmentsRaw);
+  const frequencyMonths = clampFrequency(frequencyRaw);
+
+  const parcelaParts =
+    totalCents > 0 && totalInstallments > 0
+      ? splitInstallments(totalCents, totalInstallments)
+      : [];
+  const firstParcela = parcelaParts[0] ?? 0;
+  const lastParcela = parcelaParts[parcelaParts.length - 1] ?? 0;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -124,8 +145,9 @@ export function CreateInstallmentDialog({ categories, accounts }: Props) {
                 required
                 min={2}
                 max={60}
-                value={totalInstallments}
-                onChange={(e) => setTotalInstallments(Math.max(2, Math.min(60, Number(e.target.value))))}
+                value={installmentsRaw}
+                onChange={(e) => setInstallmentsRaw(e.target.value)}
+                onBlur={() => setInstallmentsRaw(String(clampInstallments(installmentsRaw)))}
                 className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </label>
@@ -136,8 +158,9 @@ export function CreateInstallmentDialog({ categories, accounts }: Props) {
                 required
                 min={1}
                 max={12}
-                value={frequencyMonths}
-                onChange={(e) => setFrequencyMonths(Math.max(1, Math.min(12, Number(e.target.value))))}
+                value={frequencyRaw}
+                onChange={(e) => setFrequencyRaw(e.target.value)}
+                onBlur={() => setFrequencyRaw(String(clampFrequency(frequencyRaw)))}
                 className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
             </label>
@@ -199,9 +222,12 @@ export function CreateInstallmentDialog({ categories, accounts }: Props) {
             />
           </label>
 
-          {parcelaPreview > 0 && (
+          {firstParcela > 0 && (
             <p className="text-[12px] text-fg3">
-              Parcela aproximada: ~{(parcelaPreview / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {totalInstallments}× {(firstParcela / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {firstParcela !== lastParcela && (
+                <> · última {(lastParcela / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
+              )}
             </p>
           )}
 
