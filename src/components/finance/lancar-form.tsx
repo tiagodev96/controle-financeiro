@@ -58,7 +58,14 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
   const [amountCents, setAmountCents] = useState(0);
   const [description, setDescription] = useState('');
   const [extraCategories, setExtraCategories] = useState<Category[]>([]);
-  const visibleCategories: Category[] = [...categories, ...extraCategories];
+  // Dedupe: revalidatePath após criar uma categoria pode trazê-la também via
+  // prop `categories`. Mantém só a primeira ocorrência por id.
+  const seenIds = new Set<string>();
+  const visibleCategories: Category[] = [...categories, ...extraCategories].filter((c) => {
+    if (seenIds.has(c.id)) return false;
+    seenIds.add(c.id);
+    return true;
+  });
   const [categoryId, setCategoryId] = useState(initialCategoryId);
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
