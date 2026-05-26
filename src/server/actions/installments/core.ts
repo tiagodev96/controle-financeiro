@@ -45,7 +45,16 @@ const updateSchema = z.object({
     .transform((v) => (v == null || (typeof v === 'string' && v.trim() === '') ? null : v.trim().slice(0, 200))),
   categoryId: z.string().uuid().optional(),
   accountId: z.string().uuid().optional(),
+  totalAmountCents: z.number().int().positive().optional(),
+  totalInstallments: z.number().int().min(2).max(60).optional(),
+  firstDueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  frequencyMonths: z.number().int().min(1).max(12).optional(),
 });
+
+const STRUCT_KEYS = ['totalAmountCents', 'totalInstallments', 'firstDueDate', 'frequencyMonths'] as const;
+
+const PAID_GREATER_THAN_NEW_N = 'Novo número de parcelas é menor que o já pago.';
+const TOTAL_LESS_THAN_PAID = 'Novo valor total é menor que a soma já paga.';
 
 export type CreateInstallmentPlanInput = z.input<typeof createSchema>;
 export type DeleteInstallmentPlanInput = z.input<typeof idSchema>;
@@ -153,7 +162,7 @@ export async function updateInstallmentPlanCore(
 
   const { data: existing } = await supabase
     .from('installment_plans')
-    .select('id, household_id, currency')
+    .select('id, household_id, currency, total_amount_cents, total_installments, first_due_date, frequency_months, category_id, account_id')
     .eq('id', data.planId)
     .maybeSingle();
   if (!existing || existing.household_id !== session.householdId) {
@@ -185,11 +194,90 @@ export async function updateInstallmentPlanCore(
     }
   }
 
+  const structChanged = STRUCT_KEYS.some((k) => data[k] !== undefined);
+
+  // Se mexeu em estrutura, valida + recomputa parcelas pendentes.
+  if (structChanged) {
+    const { data: paidTxns } = await supabase
+      .from('transactions')
+      .select('amount_cents, installment_number')
+      .eq('source_installment_plan_id', data.planId)
+      .eq('status', 'paid');
+    const paidCount = paidTxns?.length ?? 0;
+    const paidSum = (paidTxns ?? []).reduce((s, t) => s + t.amount_cents, 0);
+
+    const newTotal = data.totalAmountCents ?? existing.total_amount_cents;
+    const newN = data.totalInstallments ?? existing.total_installments;
+    const newFirstDue = data.firstDueDate ?? existing.first_due_date;
+    const newFreq = data.frequencyMonths ?? existing.frequency_months;
+
+    if (newN <= paidCount && paidCount > 0) {
+      return { ok: false, error: PAID_GREATER_THAN_NEW_N };
+    }
+    if (newTotal < paidSum) {
+      return { ok: false, error: TOTAL_LESS_THAN_PAID };
+    }
+
+    // Apaga pendentes existentes — vão ser recriadas com novo cronograma.
+    const { error: delError } = await supabase
+      .from('transactions')
+      .delete()
+      .eq('source_installment_plan_id', data.planId)
+      .eq('status', 'pending');
+    if (delError) return { ok: false, error: GENERIC };
+
+    const pendingCount = newN - paidCount;
+    if (pendingCount > 0) {
+      const remainingCents = newTotal - paidSum;
+      const amounts = splitInstallments(remainingCents, pendingCount);
+      const accountForGen = data.accountId ?? existing.account_id;
+      const categoryForGen = data.categoryId ?? existing.category_id;
+      if (!accountForGen || !categoryForGen) {
+        return { ok: false, error: GENERIC };
+      }
+      const titleForGen = data.title ?? '';
+      // Pega title atual do plano se não veio no input
+      let resolvedTitle = titleForGen;
+      if (!resolvedTitle) {
+        const { data: planTitleRow } = await supabase
+          .from('installment_plans')
+          .select('title')
+          .eq('id', data.planId)
+          .maybeSingle();
+        resolvedTitle = planTitleRow?.title ?? '';
+      }
+      const rows = amounts.map((amount, idx) => {
+        const installmentNumber = paidCount + idx + 1;
+        return {
+          household_id: session.householdId,
+          profile_id: session.userId,
+          account_id: accountForGen,
+          category_id: categoryForGen,
+          direction: 'expense' as const,
+          amount_cents: amount,
+          currency: existing.currency,
+          description: `${resolvedTitle} ${installmentNumber}/${newN}`,
+          occurred_on: addMonthsClamped(newFirstDue, idx * newFreq),
+          paid_on: null,
+          status: 'pending' as const,
+          source_installment_plan_id: data.planId,
+          installment_number: installmentNumber,
+        };
+      });
+      const { error: insError } = await supabase.from('transactions').insert(rows);
+      if (insError) return { ok: false, error: GENERIC };
+    }
+  }
+
   const planUpdate: Database['public']['Tables']['installment_plans']['Update'] = {};
   if (data.title !== undefined) planUpdate.title = data.title;
   if ('notes' in data) planUpdate.notes = data.notes;
   if (data.categoryId !== undefined) planUpdate.category_id = data.categoryId;
   if (data.accountId !== undefined) planUpdate.account_id = data.accountId;
+  if (data.totalAmountCents !== undefined) planUpdate.total_amount_cents = data.totalAmountCents;
+  if (data.totalInstallments !== undefined) planUpdate.total_installments = data.totalInstallments;
+  if (data.firstDueDate !== undefined) planUpdate.first_due_date = data.firstDueDate;
+  if (data.frequencyMonths !== undefined) planUpdate.frequency_months = data.frequencyMonths;
 
   if (Object.keys(planUpdate).length > 0) {
     const { error } = await supabase
@@ -199,7 +287,8 @@ export async function updateInstallmentPlanCore(
     if (error) return { ok: false, error: GENERIC };
   }
 
-  // Propaga category/account pra TODAS as parcelas (paid + pending) conforme decisão de produto.
+  // Propaga category/account pra paid também (decisão de produto: opção 2 anterior).
+  // Pendentes recém-criadas já vieram com os novos valores acima.
   const txnUpdate: Database['public']['Tables']['transactions']['Update'] = {};
   if (data.categoryId !== undefined) txnUpdate.category_id = data.categoryId;
   if (data.accountId !== undefined) txnUpdate.account_id = data.accountId;
@@ -209,6 +298,22 @@ export async function updateInstallmentPlanCore(
       .update(txnUpdate)
       .eq('source_installment_plan_id', data.planId);
     if (error) return { ok: false, error: GENERIC };
+  }
+
+  // Se o título mudou, atualiza descrição das paid ("Notebook 1/3" → "Notebook v2 1/3")
+  if (data.title !== undefined) {
+    const { data: allTxns } = await supabase
+      .from('transactions')
+      .select('id, installment_number')
+      .eq('source_installment_plan_id', data.planId);
+    const newN = data.totalInstallments ?? existing.total_installments;
+    for (const t of allTxns ?? []) {
+      if (t.installment_number == null) continue;
+      await supabase
+        .from('transactions')
+        .update({ description: `${data.title} ${t.installment_number}/${newN}` })
+        .eq('id', t.id);
+    }
   }
 
   return { ok: true };

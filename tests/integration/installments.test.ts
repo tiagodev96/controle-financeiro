@@ -256,6 +256,84 @@ describe('installment_plans (integração)', () => {
     expect(txns?.every((t) => t.category_id === SEED_CATEGORY_RESTAURANTE_ID)).toBe(true);
   });
 
+  it('I-PARC-EDIT-TOTAL — editar total recalcula só pendentes, preserva paid', async () => {
+    const supabase = await getAuthedClient();
+    const created = await createInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      {
+        title: 'PARC test total',
+        totalAmountCents: 90_000,
+        currency: 'EUR',
+        totalInstallments: 3,
+        firstDueDate: '2026-06-01',
+        frequencyMonths: 1,
+        categoryId: SEED_CATEGORY_MERCADO_ID,
+        accountId: SEED_ACCOUNT_EUR_ID,
+        notes: null,
+      },
+    );
+    if (!created.ok) throw new Error('setup');
+
+    const admin = getAdminClient();
+    await admin
+      .from('transactions')
+      .update({ status: 'paid', paid_on: '2026-06-01' })
+      .eq('source_installment_plan_id', created.plan.id)
+      .eq('installment_number', 1);
+
+    const result = await updateInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      { planId: created.plan.id, totalAmountCents: 120_000 },
+    );
+    expect(result.ok).toBe(true);
+
+    const { data: txns } = await admin
+      .from('transactions')
+      .select('amount_cents, status, installment_number')
+      .eq('source_installment_plan_id', created.plan.id)
+      .order('installment_number');
+    const paid = txns?.filter((t) => t.status === 'paid') ?? [];
+    const pending = txns?.filter((t) => t.status === 'pending') ?? [];
+
+    expect(paid).toHaveLength(1);
+    expect(paid[0]?.amount_cents).toBe(30_000);
+    expect(pending).toHaveLength(2);
+    const pendingSum = pending.reduce((s, t) => s + t.amount_cents, 0);
+    expect(pendingSum).toBe(90_000);
+  });
+
+  it('I-PARC-EDIT-N-LESS-THAN-PAID — N novo menor que count(paid) rejeita', async () => {
+    const supabase = await getAuthedClient();
+    const created = await createInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      {
+        title: 'PARC test n less',
+        totalAmountCents: 90_000,
+        currency: 'EUR',
+        totalInstallments: 3,
+        firstDueDate: '2026-06-01',
+        frequencyMonths: 1,
+        categoryId: SEED_CATEGORY_MERCADO_ID,
+        accountId: SEED_ACCOUNT_EUR_ID,
+        notes: null,
+      },
+    );
+    if (!created.ok) throw new Error('setup');
+
+    const admin = getAdminClient();
+    await admin
+      .from('transactions')
+      .update({ status: 'paid', paid_on: '2026-06-01' })
+      .eq('source_installment_plan_id', created.plan.id)
+      .in('installment_number', [1, 2]);
+
+    const result = await updateInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      { planId: created.plan.id, totalInstallments: 2 },
+    );
+    expect(result.ok).toBe(false);
+  });
+
   it('I-PARC-EDIT-CURRENCY-MISMATCH — trocar pra conta de outra currency rejeita', async () => {
     const supabase = await getAuthedClient();
     const created = await createInstallmentPlanCore(
