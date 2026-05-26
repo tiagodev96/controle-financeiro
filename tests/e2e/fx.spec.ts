@@ -17,13 +17,20 @@ async function seedFxAndBalances(): Promise<void> {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // Isola: arquiva qualquer conta extra que outros E2E tenham criado.
   await admin
     .from('accounts')
-    .update({ balance_cents: 200000 })
+    .update({ is_archived: true })
+    .eq('household_id', '11111111-1111-4111-8111-111111111111')
+    .not('id', 'in', `(${SEED_ACCOUNT_EUR_ID},${SEED_ACCOUNT_BRL_ID})`);
+
+  await admin
+    .from('accounts')
+    .update({ balance_cents: 200000, is_archived: false })
     .eq('id', SEED_ACCOUNT_EUR_ID);
   await admin
     .from('accounts')
-    .update({ balance_cents: 600000 })
+    .update({ balance_cents: 600000, is_archived: false })
     .eq('id', SEED_ACCOUNT_BRL_ID);
 
   await admin
