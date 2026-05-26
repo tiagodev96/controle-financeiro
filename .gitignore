@@ -21,6 +21,10 @@
 /supabase/.branches
 /supabase/.temp
 
+# private financial data — never commit
+/reference/
+/scripts/seed-history/
+
 # claude code: local settings stay private, skills are project-shared
 /.claude/settings.local.json
 /.claude/cache
