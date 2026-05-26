@@ -12,6 +12,7 @@ import {
   Wallet,
   Share2,
   Settings,
+  CalendarRange,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,7 @@ const items: Item[] = [
   { href: '/transacoes', label: 'Transações', Icon: Receipt },
   { href: '/dividas', label: 'Dívidas', Icon: CreditCard },
   { href: '/recorrentes', label: 'Recorrentes', Icon: Repeat },
+  { href: '/parcelados', label: 'Parcelados', Icon: CalendarRange },
   { href: '/contas', label: 'Contas', Icon: Wallet },
   { href: '/categorias', label: 'Categorias', Icon: Tags },
   { href: '/resumo', label: 'Resumo do mês', Icon: Share2 },
