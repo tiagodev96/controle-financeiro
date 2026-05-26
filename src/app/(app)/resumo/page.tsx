@@ -8,6 +8,7 @@ import { ShareCopyActions } from '@/components/finance/share-copy-actions';
 import { MonthPicker } from '@/components/finance/dashboard-month-picker';
 import { ResumoCurrencyToggle } from '@/components/finance/resumo-currency-toggle';
 import { calculateMonthStats, topCategoriesThisMonth } from '@/lib/finance/dashboard-stats';
+import { projectMonthForFuture, type MonthProjection } from '@/lib/finance/month-projection';
 import { listDebtsForHousehold, sumDebtPaymentsThisMonth } from '@/lib/finance/debts';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { buildMonthSummaryText, type FxRateMap } from '@/lib/finance/month-summary';
@@ -37,24 +38,29 @@ type SearchParams = Promise<{ mes?: string; moeda?: string }>;
 function parseMonthParam(
   raw: string | undefined,
   now: Date,
-): { targetDate: Date; monthIso: string; isPast: boolean } {
+): { targetDate: Date; monthIso: string; isPast: boolean; isFuture: boolean } {
   const currentIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const match = raw && /^(\d{4})-(\d{2})$/.exec(raw);
   if (!match) {
-    return { targetDate: now, monthIso: currentIso, isPast: false };
+    return { targetDate: now, monthIso: currentIso, isPast: false, isFuture: false };
   }
   const y = Number(match[1]);
   const m = Number(match[2]);
   if (!Number.isFinite(y) || m < 1 || m > 12) {
-    return { targetDate: now, monthIso: currentIso, isPast: false };
+    return { targetDate: now, monthIso: currentIso, isPast: false, isFuture: false };
   }
   const monthIso = `${y}-${String(m).padStart(2, '0')}`;
   if (monthIso === currentIso) {
-    return { targetDate: now, monthIso: currentIso, isPast: false };
+    return { targetDate: now, monthIso: currentIso, isPast: false, isFuture: false };
   }
   // Último dia do mês alvo — preserva semântica de "fim do mês" pra stats.
   const targetDate = new Date(y, m, 0);
-  return { targetDate, monthIso, isPast: monthIso < currentIso };
+  return {
+    targetDate,
+    monthIso,
+    isPast: monthIso < currentIso,
+    isFuture: monthIso > currentIso,
+  };
 }
 
 function parseMoedaParam(raw: string | undefined, fallback: Currency): Currency {
@@ -68,7 +74,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   const supabase = await getServerSupabase();
   const now = new Date();
   const params = await searchParams;
-  const { targetDate, monthIso, isPast } = parseMonthParam(params.mes, now);
+  const { targetDate, monthIso, isPast, isFuture } = parseMonthParam(params.mes, now);
   const currentMonthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const primary: Currency = parseMoedaParam(params.moeda, 'EUR');
 
@@ -121,6 +127,17 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
     targetDate,
   );
 
+  const projection: MonthProjection | null = isFuture
+    ? await projectMonthForFuture({
+        supabase,
+        householdId: session.householdId,
+        currency: primary,
+        balanceCents,
+        targetDate,
+        topCategoriesLimit: 3,
+      })
+    : null;
+
   const entradasMesCents = (paidIncomeRes.data ?? []).reduce(
     (sum, r) => sum + r.amount_cents,
     0,
@@ -131,7 +148,8 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
     openDebts.length > 0 ||
     topCats.length > 0 ||
     stats.paid.totalCents > 0 ||
-    stats.pending.totalCents > 0;
+    stats.pending.totalCents > 0 ||
+    (projection !== null && projection.expenseProjectedCents > 0);
 
   const hasBothCurrencies =
     accounts.some((a) => a.currency === 'EUR') &&
@@ -183,15 +201,35 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   });
 
   const monthFlowNetCents = entradasMesCents - stats.paid.totalCents;
-  const heroLabel = isPast
-    ? `Sobra de ${monthEyebrow(targetDate)}`
-    : 'Saldo previsto fim do mês';
-  const heroValue = isPast ? monthFlowNetCents : saldoPrevistoFimDoMesCents;
+  const heroLabel = isFuture
+    ? `Sobra projetada de ${monthEyebrow(targetDate)}`
+    : isPast
+      ? `Sobra de ${monthEyebrow(targetDate)}`
+      : 'Saldo previsto fim do mês';
+  const heroValue = isFuture
+    ? projection!.sobraProjetadaCents
+    : isPast
+      ? monthFlowNetCents
+      : saldoPrevistoFimDoMesCents;
+
+  const displayEntradas = isFuture ? projection!.incomeProjectedCents : entradasMesCents;
+  const displayDespesas = isFuture
+    ? projection!.expenseProjectedCents
+    : stats.paid.totalCents + stats.pending.totalCents;
+  const displayTopCats = isFuture
+    ? projection!.topCategoriesProjected
+    : topCats.map((c) => ({ id: c.id, name: c.name, totalCents: c.totalCents }));
+
+  const eyebrow = isFuture
+    ? `projetando ${monthEyebrow(targetDate)}`
+    : isPast
+      ? `visualizando ${monthEyebrow(targetDate)}`
+      : monthEyebrow(now);
 
   return (
     <section className="space-y-6 cf-fade-up">
       <AppTopBar
-        eyebrow={isPast ? `visualizando ${monthEyebrow(targetDate)}` : monthEyebrow(now)}
+        eyebrow={eyebrow}
         title="Resumo do mês"
         trailing={
           <div className="flex items-center gap-2">
@@ -210,7 +248,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
       />
 
       {!hasData ? (
-        <EmptyHero isPast={isPast} />
+        <EmptyHero isPast={isPast || isFuture} />
       ) : (
         <>
           <section className="space-y-4 rounded-md border border-border-soft bg-bg-surface p-5">
@@ -218,7 +256,12 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
               <p className="text-[13px] text-fg3">{heroLabel}</p>
               <HeroNumber cents={heroValue} currency={primary} />
             </div>
-            {!isPast && (
+            {isFuture && (
+              <p className="text-[11px] text-fg4">
+                projeção: recorrentes ativas + parcelas previstas + saldo atual
+              </p>
+            )}
+            {!isPast && !isFuture && (
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-fg3">
                 <span>Sobra prevista:</span>
                 <Num
@@ -236,36 +279,58 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
           </section>
 
           <section className="space-y-2">
-            <p className="eyebrow px-1">Movimentação do mês</p>
+            <p className="eyebrow px-1">
+              {isFuture ? 'Movimentação projetada' : 'Movimentação do mês'}
+            </p>
             <div className="grid grid-cols-2 gap-2.5">
-              <Tile label="Entradas" cents={entradasMesCents} currency={primary} tone="positive" />
               <Tile
-                label="Despesas"
-                cents={stats.paid.totalCents + stats.pending.totalCents}
+                label={isFuture ? 'Entradas previstas' : 'Entradas'}
+                cents={displayEntradas}
+                currency={primary}
+                tone="positive"
+              />
+              <Tile
+                label={isFuture ? 'Despesas previstas' : 'Despesas'}
+                cents={displayDespesas}
                 currency={primary}
                 tone="negative"
               />
             </div>
-            <p className="px-1 text-[12px] text-fg4">
-              Já pago{' '}
-              <Num cents={stats.paid.totalCents} currency={primary} className="text-fg2" /> ·
-              {' '}pendente{' '}
-              <Num cents={stats.pending.totalCents} currency={primary} className="text-fg2" />
-              {stats.overdue.count > 0 && (
-                <>
-                  {' '}·{' '}em atraso{' '}
-                  <Num cents={stats.overdue.totalCents} currency={primary} className="text-money-negative" />{' '}
-                  ({stats.overdue.count})
-                </>
-              )}
-            </p>
+            {isFuture ? (
+              <p className="px-1 text-[12px] text-fg4">
+                Recorrentes projetadas{' '}
+                <Num
+                  cents={projection!.recurringPendingExpenseCents}
+                  currency={primary}
+                  className="text-fg2"
+                />{' '}
+                · parcelas a vencer{' '}
+                <Num cents={stats.pending.totalCents} currency={primary} className="text-fg2" />
+              </p>
+            ) : (
+              <p className="px-1 text-[12px] text-fg4">
+                Já pago{' '}
+                <Num cents={stats.paid.totalCents} currency={primary} className="text-fg2" /> ·
+                {' '}pendente{' '}
+                <Num cents={stats.pending.totalCents} currency={primary} className="text-fg2" />
+                {stats.overdue.count > 0 && (
+                  <>
+                    {' '}·{' '}em atraso{' '}
+                    <Num cents={stats.overdue.totalCents} currency={primary} className="text-money-negative" />{' '}
+                    ({stats.overdue.count})
+                  </>
+                )}
+              </p>
+            )}
           </section>
 
-          {topCats.length > 0 && (
+          {displayTopCats.length > 0 && (
             <section className="space-y-2">
-              <p className="eyebrow px-1">Top categorias</p>
+              <p className="eyebrow px-1">
+                {isFuture ? 'Top categorias previstas' : 'Top categorias'}
+              </p>
               <ul className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3 py-1">
-                {topCats.map((c) => (
+                {displayTopCats.map((c) => (
                   <li key={c.id} className="flex items-center justify-between py-2.5 text-[14px]">
                     <span className="text-fg2">{c.name}</span>
                     <Num cents={c.totalCents} currency={primary} className="font-semibold text-fg1" />
@@ -365,7 +430,7 @@ function EmptyHero({ isPast }: { isPast: boolean }) {
   if (isPast) {
     return (
       <div className="rounded-md border border-border-soft bg-bg-surface p-8 text-center text-sm text-fg3">
-        Sem dados deste mês.
+        Sem dados pro mês selecionado.
       </div>
     );
   }
