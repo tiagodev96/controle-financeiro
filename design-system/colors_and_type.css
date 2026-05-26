@@ -33,16 +33,27 @@
   --line:         oklch(30.0% 0.008 90);   /* default borders */
   --line-soft:    oklch(24.0% 0.008 90);   /* dividers, ledger rules */
 
-  /* Signature — brass / old-gold. The single brand accent.
-     Used for: primary actions, "active nav", focus rings. NEVER for money. */
+  /* Currency badge family — brass / old-gold. Used only on currency chips
+     (EUR badge), legacy ramp kept for that single use case. */
   --brass-100: oklch(96.0% 0.060 85);
   --brass-200: oklch(88.0% 0.090 85);
-  --brass-300: oklch(80.0% 0.120 82);   /* tertiary / link hover */
-  --brass-400: oklch(73.0% 0.135 80);   /* primary action */
-  --brass-500: oklch(66.0% 0.140 78);   /* default brand */
-  --brass-600: oklch(56.0% 0.125 76);   /* pressed */
-  --brass-700: oklch(40.0% 0.080 76);   /* tinted bg */
-  --brass-bg:  oklch(24.0% 0.040 82);   /* selected chip bg */
+  --brass-300: oklch(80.0% 0.120 82);
+  --brass-400: oklch(73.0% 0.135 80);
+  --brass-500: oklch(66.0% 0.140 78);
+  --brass-600: oklch(56.0% 0.125 76);
+  --brass-700: oklch(40.0% 0.080 76);
+  --brass-bg:  oklch(24.0% 0.040 82);
+
+  /* Signature — wine borgonha. The single brand accent.
+     Used for: primary actions, "active nav", focus rings. NEVER for money. */
+  --wine-100: oklch(95.0% 0.045 12);
+  --wine-200: oklch(86.0% 0.090 14);
+  --wine-300: oklch(76.0% 0.130 14);    /* tertiary / hover dark */
+  --wine-400: oklch(64.0% 0.165 15);    /* default brand dark */
+  --wine-500: oklch(54.0% 0.175 14);    /* pressed dark */
+  --wine-600: oklch(42.0% 0.170 12);    /* default brand light */
+  --wine-700: oklch(32.0% 0.130 12);    /* pressed light */
+  --wine-bg:  oklch(26.0% 0.050 15);    /* selected chip bg dark */
 
   /* Income — sage (positive money, ENTRADAS only) */
   --sage-300: oklch(80.0% 0.070 150);
@@ -80,7 +91,7 @@
   --fg3:          var(--paper-2);
   --fg4:          var(--paper-3);
   --fg5:          var(--paper-4);
-  --fg-on-brand:  oklch(14.0% 0.020 85);   /* text on brass btn */
+  --fg-on-brand:  oklch(97.5% 0.010 15);   /* text on wine btn */
 
   /* Lines */
   --border:        var(--line);
@@ -88,11 +99,11 @@
   --border-strong: var(--line-strong);
 
   /* Brand */
-  --brand:          var(--brass-500);
-  --brand-hover:    var(--brass-400);
-  --brand-pressed:  var(--brass-600);
-  --brand-quiet-bg: var(--brass-bg);
-  --brand-quiet-fg: var(--brass-300);
+  --brand:          var(--wine-400);
+  --brand-hover:    var(--wine-300);
+  --brand-pressed:  var(--wine-500);
+  --brand-quiet-bg: var(--wine-bg);
+  --brand-quiet-fg: var(--wine-300);
 
   /* Money signals — semantic. Used by transaction rows, stat cards, charts. */
   --money-positive:    var(--sage-400);
@@ -113,7 +124,7 @@
   --brl:  var(--sage-300);
 
   /* Focus ring */
-  --ring: var(--brass-400);
+  --ring: var(--wine-300);
 
   /* ---------------------------------------------------------------------------
      3. TYPE — family, weight, scale
@@ -229,13 +240,13 @@
   --line:         oklch(80.0% 0.010 90);
   --line-soft:    oklch(88.0% 0.010 90);
 
-  /* Brass — deepen for contrast on cream */
-  --brand:          oklch(56.0% 0.125 76);
-  --brand-hover:    oklch(50.0% 0.130 76);
-  --brand-pressed:  oklch(46.0% 0.130 76);
-  --brand-quiet-bg: oklch(93.0% 0.055 82);
-  --brand-quiet-fg: oklch(38.0% 0.110 76);
-  --fg-on-brand:    oklch(98.0% 0.010 85);
+  /* Wine — deepen for contrast on cream */
+  --brand:          oklch(42.0% 0.170 12);
+  --brand-hover:    oklch(36.0% 0.175 12);
+  --brand-pressed:  oklch(32.0% 0.170 12);
+  --brand-quiet-bg: oklch(95.0% 0.045 12);
+  --brand-quiet-fg: oklch(42.0% 0.170 12);
+  --fg-on-brand:    oklch(97.0% 0.010 15);
 
   /* Money — deeper, more saturated for legibility */
   --money-positive:    oklch(42.0% 0.110 150);
@@ -256,7 +267,7 @@
   --brl:  oklch(45.0% 0.105 150);
 
   /* Focus */
-  --ring: oklch(50.0% 0.130 76);
+  --ring: oklch(46.0% 0.175 12);
 
   /* Overlay */
   --bg-overlay: oklch(20.0% 0.008 95 / 0.42);
@@ -287,12 +298,12 @@
     --line-strong:  oklch(60.0% 0.010 90);
     --line:         oklch(80.0% 0.010 90);
     --line-soft:    oklch(88.0% 0.010 90);
-    --brand:          oklch(56.0% 0.125 76);
-    --brand-hover:    oklch(50.0% 0.130 76);
-    --brand-pressed:  oklch(46.0% 0.130 76);
-    --brand-quiet-bg: oklch(93.0% 0.055 82);
-    --brand-quiet-fg: oklch(38.0% 0.110 76);
-    --fg-on-brand:    oklch(98.0% 0.010 85);
+    --brand:          oklch(42.0% 0.170 12);
+    --brand-hover:    oklch(36.0% 0.175 12);
+    --brand-pressed:  oklch(32.0% 0.170 12);
+    --brand-quiet-bg: oklch(95.0% 0.045 12);
+    --brand-quiet-fg: oklch(42.0% 0.170 12);
+    --fg-on-brand:    oklch(97.0% 0.010 15);
     --money-positive:    oklch(42.0% 0.110 150);
     --money-positive-bg: oklch(94.0% 0.040 150);
     --money-negative:    oklch(48.0% 0.165 30);
@@ -303,7 +314,7 @@
     --status-pending-bg: oklch(94.0% 0.060 65);
     --status-overdue-fg: oklch(46.0% 0.165 30);
     --status-overdue-bg: oklch(94.0% 0.050 30);
-    --ring: oklch(50.0% 0.130 76);
+    --ring: oklch(46.0% 0.175 12);
     --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.04);
     --shadow-2: 0 8px 24px -8px oklch(0% 0 0 / 0.12), 0 2px 4px oklch(0% 0 0 / 0.06);
     --shadow-3: 0 24px 48px -12px oklch(0% 0 0 / 0.18), 0 8px 16px -4px oklch(0% 0 0 / 0.08);
