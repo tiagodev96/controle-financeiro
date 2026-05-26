@@ -21,6 +21,9 @@ import {
   getRateMap,
   type RateMap,
 } from '@/lib/fx';
+import { listDebtsForHousehold } from '@/lib/finance/debts';
+import { computeDebtSuggestion } from '@/lib/finance/debt-suggestion';
+import { DebtSuggestionCard } from '@/components/finance/debt-suggestion-card';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -116,7 +119,7 @@ export default async function DashboardPage() {
       )
     : balanceByCurrency[displayCurrency];
 
-  const [stats, topCats, txnsRes] = await Promise.all([
+  const [stats, topCats, txnsRes, debts] = await Promise.all([
     calculateMonthStats(supabase, session.householdId, statsCurrency, balanceByCurrency[statsCurrency], now),
     topCategoriesThisMonth(supabase, session.householdId, statsCurrency, 5, now),
     supabase
@@ -127,11 +130,28 @@ export default async function DashboardPage() {
       .eq('household_id', session.householdId)
       .order('occurred_on', { ascending: false })
       .limit(10),
+    listDebtsForHousehold(supabase, session.householdId),
   ]);
 
   const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
   const grouped = groupByDay(txns);
   const hasData = txns.length > 0 || accounts.some((a) => a.balance_cents !== 0);
+
+  const suggestion = computeDebtSuggestion({
+    sobraEurCents: stats.sobraPrevistaCents - balanceByCurrency.EUR,
+    openDebts: debts.open.map((d) => ({
+      id: d.id,
+      title: d.title,
+      currency: d.currency,
+      priority: d.priority,
+      remainingCents: d.remaining_amount_cents,
+    })),
+    fxRateMap: rateMap ? { EUR_BRL: rateMap.EUR_BRL, BRL_EUR: rateMap.BRL_EUR } : null,
+  });
+
+  const suggestionAccounts = accounts
+    .filter((a) => suggestion && a.currency === suggestion.debt.currency)
+    .map((a) => ({ id: a.id, name: a.name, currency: a.currency as Currency }));
 
   return (
     <section className="space-y-6 cf-fade-up">
@@ -172,6 +192,19 @@ export default async function DashboardPage() {
           </section>
 
           <StatTrio stats={stats} currency={statsCurrency} />
+
+          {suggestion && (
+            <DebtSuggestionCard
+              debtId={suggestion.debt.id}
+              debtTitle={suggestion.debt.title}
+              debtCurrency={suggestion.debt.currency}
+              debtRemainingCents={suggestion.debt.remainingCents}
+              suggestedCents={suggestion.suggestedCents}
+              percOfDebt={suggestion.percOfDebt}
+              sobraEurCents={stats.sobraPrevistaCents - balanceByCurrency.EUR}
+              accounts={suggestionAccounts}
+            />
+          )}
 
           <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
             <section className="space-y-3">
