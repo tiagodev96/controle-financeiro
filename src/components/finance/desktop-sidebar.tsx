@@ -63,6 +63,7 @@ export function DesktopSidebar({ theme }: Props) {
             <Link
               key={href}
               href={href}
+              prefetch={false}
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors',
