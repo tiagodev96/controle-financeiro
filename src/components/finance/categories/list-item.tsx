@@ -18,10 +18,19 @@ type Props = {
   id: string;
   name: string;
   icon: string | null;
+  monthlyLimitCents: number | null;
+  isExpenseKind: boolean;
   archived: boolean;
 };
 
-export function CategoryListItem({ id, name, icon, archived }: Props) {
+export function CategoryListItem({
+  id,
+  name,
+  icon,
+  monthlyLimitCents,
+  isExpenseKind,
+  archived,
+}: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,9 +81,14 @@ export function CategoryListItem({ id, name, icon, archived }: Props) {
         type="button"
         onClick={() => !archived && setEditOpen(true)}
         disabled={archived || pending}
-        className="min-w-0 flex-1 truncate text-left text-[15px] text-fg1 disabled:cursor-default"
+        className="flex min-w-0 flex-1 flex-col text-left disabled:cursor-default"
       >
-        {name}
+        <span className="truncate text-[15px] text-fg1">{name}</span>
+        {isExpenseKind && monthlyLimitCents != null && monthlyLimitCents > 0 && (
+          <span className="mono text-[10px] text-fg4">
+            limite € {(monthlyLimitCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+          </span>
+        )}
       </button>
 
       <div className="relative">
@@ -152,7 +166,9 @@ export function CategoryListItem({ id, name, icon, archived }: Props) {
           categoryId={id}
           currentName={name}
           currentIcon={icon}
+          currentMonthlyLimitCents={monthlyLimitCents}
           nameLocked={isProtected}
+          isExpenseKind={isExpenseKind}
           open={editOpen}
           onOpenChange={setEditOpen}
         />

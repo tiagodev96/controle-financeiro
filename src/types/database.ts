@@ -140,6 +140,7 @@ export type Database = {
           id: string
           is_archived: boolean
           kind: string
+          monthly_limit_cents: number | null
           name: string
           sort_order: number
           updated_at: string
@@ -152,6 +153,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           kind?: string
+          monthly_limit_cents?: number | null
           name: string
           sort_order?: number
           updated_at?: string
@@ -164,6 +166,7 @@ export type Database = {
           id?: string
           is_archived?: boolean
           kind?: string
+          monthly_limit_cents?: number | null
           name?: string
           sort_order?: number
           updated_at?: string

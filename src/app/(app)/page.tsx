@@ -27,6 +27,8 @@ import { computeDebtSuggestion } from '@/lib/finance/debt-suggestion';
 import { DebtSuggestionCard } from '@/components/finance/debt-suggestion-card';
 import { listUpcomingPending } from '@/lib/finance/upcoming';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
+import { listCategoriesWithLimits } from '@/lib/finance/category-limits';
+import { CategoryLimitsCard } from '@/components/finance/category-limits-card';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -185,7 +187,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const monthStartIso = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-01`;
   const monthEndIso = isoLocal(new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0));
 
-  const [stats, topCats, txnsRes, debts, upcoming] = await Promise.all([
+  const [stats, topCats, txnsRes, debts, upcoming, categoryLimits] = await Promise.all([
     calculateMonthStats(supabase, session.householdId, statsCurrency, balanceByCurrency[statsCurrency], targetDate),
     topCategoriesThisMonth(supabase, session.householdId, statsCurrency, 5, targetDate),
     supabase
@@ -200,6 +202,9 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
       .limit(10),
     listDebtsForHousehold(supabase, session.householdId),
     isPast ? Promise.resolve([]) : listUpcomingPending(supabase, session.householdId, now, 7),
+    isPast
+      ? Promise.resolve([])
+      : listCategoriesWithLimits(supabase, session.householdId, statsCurrency, targetDate),
   ]);
 
   const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
@@ -328,6 +333,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
               sobraEurCents={stats.sobraPrevistaCents}
               accounts={suggestionAccounts}
             />
+          )}
+
+          {!isPast && categoryLimits.length > 0 && (
+            <CategoryLimitsCard limits={categoryLimits} currency={statsCurrency} />
           )}
 
           {!isPast && upcoming.length > 0 && (

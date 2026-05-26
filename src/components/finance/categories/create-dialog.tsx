@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { createCategoryAction } from '@/server/actions/categories/actions';
 import { IconPicker } from './icon-picker';
+import { MoneyInput } from '@/components/finance/money-input';
 import { cn } from '@/lib/utils';
 
 type Kind = 'expense' | 'income';
@@ -21,6 +22,7 @@ export function CreateCategoryDialog() {
   const [name, setName] = useState('');
   const [kind, setKind] = useState<Kind>('expense');
   const [icon, setIcon] = useState<string | null>(null);
+  const [monthlyLimitCents, setMonthlyLimitCents] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +32,12 @@ export function CreateCategoryDialog() {
     setPending(true);
     setError(null);
 
-    const result = await createCategoryAction({ name, kind, icon });
+    const result = await createCategoryAction({
+      name,
+      kind,
+      icon,
+      monthlyLimitCents: kind === 'expense' && monthlyLimitCents > 0 ? monthlyLimitCents : null,
+    });
     setPending(false);
 
     if (!result.ok) {
@@ -42,6 +49,7 @@ export function CreateCategoryDialog() {
     setName('');
     setKind('expense');
     setIcon(null);
+    setMonthlyLimitCents(0);
     setOpen(false);
   }
 
@@ -99,6 +107,19 @@ export function CreateCategoryDialog() {
           </label>
 
           <IconPicker value={icon} onChange={setIcon} />
+
+          {kind === 'expense' && (
+            <div className="space-y-2">
+              <MoneyInput
+                label="Limite mensal (opcional)"
+                valueCents={monthlyLimitCents}
+                onChange={setMonthlyLimitCents}
+              />
+              <p className="text-[11px] text-fg4">
+                Quando atingir 80%, aparece alerta no dashboard. Deixe 0 pra desabilitar.
+              </p>
+            </div>
+          )}
 
           {error && (
             <p role="alert" className="text-sm text-money-negative">

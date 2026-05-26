@@ -23,10 +23,19 @@ const iconSchema = z
   .optional()
   .transform((v) => (v == null || v === '' ? null : v));
 
+const monthlyLimitSchema = z
+  .number()
+  .int()
+  .positive()
+  .nullable()
+  .optional()
+  .transform((v) => (v == null || v === 0 ? null : v));
+
 const createSchema = z.object({
   name: nameSchema,
   kind: z.enum(['expense', 'income']),
   icon: iconSchema,
+  monthlyLimitCents: monthlyLimitSchema,
 });
 
 const renameSchema = z.object({
@@ -39,6 +48,7 @@ const updateSchema = z.object({
   patch: z.object({
     name: nameSchema.optional(),
     icon: iconSchema,
+    monthlyLimitCents: monthlyLimitSchema,
   }),
 });
 
@@ -81,6 +91,7 @@ export async function createCategoryCore(
       name: parsed.data.name,
       kind: parsed.data.kind,
       icon: parsed.data.icon ?? null,
+      monthly_limit_cents: parsed.data.monthlyLimitCents ?? null,
     })
     .select()
     .single();
@@ -151,6 +162,7 @@ export async function updateCategoryCore(
   const update: Database['public']['Tables']['categories']['Update'] = {};
   if (patch.name !== undefined) update.name = patch.name;
   if (patch.icon !== undefined) update.icon = patch.icon;
+  if (patch.monthlyLimitCents !== undefined) update.monthly_limit_cents = patch.monthlyLimitCents;
 
   if (Object.keys(update).length === 0) return { ok: true };
 

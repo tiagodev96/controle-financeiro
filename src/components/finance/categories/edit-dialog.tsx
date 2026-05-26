@@ -10,13 +10,17 @@ import {
 } from '@/components/ui/dialog';
 import { updateCategoryAction } from '@/server/actions/categories/actions';
 import { IconPicker } from './icon-picker';
+import { MoneyInput } from '@/components/finance/money-input';
 
 type Props = {
   categoryId: string;
   currentName: string;
   currentIcon: string | null;
+  currentMonthlyLimitCents: number | null;
   /** Outros pode trocar ícone mas não pode renomear. */
   nameLocked?: boolean;
+  /** Só categorias expense suportam limite. */
+  isExpenseKind?: boolean;
   open: boolean;
   onOpenChange: (next: boolean) => void;
 };
@@ -25,12 +29,15 @@ export function EditCategoryDialog({
   categoryId,
   currentName,
   currentIcon,
+  currentMonthlyLimitCents,
   nameLocked = false,
+  isExpenseKind = true,
   open,
   onOpenChange,
 }: Props) {
   const [name, setName] = useState(currentName);
   const [icon, setIcon] = useState<string | null>(currentIcon);
+  const [monthlyLimitCents, setMonthlyLimitCents] = useState(currentMonthlyLimitCents ?? 0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +52,9 @@ export function EditCategoryDialog({
       patch: {
         name: nameLocked ? undefined : name,
         icon,
+        monthlyLimitCents: isExpenseKind
+          ? monthlyLimitCents > 0 ? monthlyLimitCents : null
+          : undefined,
       },
     });
     setPending(false);
@@ -83,6 +93,19 @@ export function EditCategoryDialog({
           </label>
 
           <IconPicker value={icon} onChange={setIcon} />
+
+          {isExpenseKind && (
+            <div className="space-y-2">
+              <MoneyInput
+                label="Limite mensal (opcional)"
+                valueCents={monthlyLimitCents}
+                onChange={setMonthlyLimitCents}
+              />
+              <p className="text-[11px] text-fg4">
+                Quando atingir 80%, aparece alerta no dashboard. Deixe 0 pra desabilitar.
+              </p>
+            </div>
+          )}
 
           {error && (
             <p role="alert" className="text-sm text-money-negative">
