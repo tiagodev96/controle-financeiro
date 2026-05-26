@@ -7,28 +7,22 @@ import { HeroNumber, Num, type Currency } from '@/components/finance/num';
 import { SharePngActions } from '@/components/finance/share-png-actions';
 import { MonthPicker } from '@/components/finance/dashboard-month-picker';
 import { ResumoCurrencyToggle } from '@/components/finance/resumo-currency-toggle';
-import { calculateMonthStats, topCategoriesThisMonth } from '@/lib/finance/dashboard-stats';
+import {
+  calculateCrossCurrencyMonthStats,
+  type CrossCurrencyMonthStats,
+} from '@/lib/finance/cross-currency-stats';
 import { projectMonthForFuture, type MonthProjection } from '@/lib/finance/month-projection';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
 import { listDebtsForHousehold, sumDebtPaymentsThisMonth } from '@/lib/finance/debts';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { buildMonthSummaryText, type FxRateMap } from '@/lib/finance/month-summary';
-import { convertCents, getRateMap, FxUnavailableError } from '@/lib/fx';
+import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
 import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 
 const MONTHS_PT = [
   'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
 ];
-
-function monthRange(date: Date): { start: string; end: string } {
-  const y = date.getFullYear();
-  const m = date.getMonth();
-  return {
-    start: new Date(y, m, 1).toISOString().slice(0, 10),
-    end: new Date(y, m + 1, 1).toISOString().slice(0, 10),
-  };
-}
 
 function monthEyebrow(d: Date): string {
   return `${MONTHS_PT[d.getMonth()]} · ${d.getFullYear()}`;
@@ -79,84 +73,32 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   const currentMonthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const primary: Currency = parseMoedaParam(params.moeda, 'EUR');
 
-  const { start, end } = monthRange(targetDate);
+  const [accountsAll, { open: openDebts }, debtPaymentsByDebtId] = await Promise.all([
+    listAllAccountsForHousehold(supabase, session.householdId),
+    listDebtsForHousehold(supabase, session.householdId),
+    sumDebtPaymentsThisMonth(supabase, session.householdId, targetDate),
+  ]);
 
-  const [accountsAll, { open: openDebts }, debtPaymentsByDebtId, topCats, paidIncomeRes] =
-    await Promise.all([
-      listAllAccountsForHousehold(supabase, session.householdId),
-      listDebtsForHousehold(supabase, session.householdId),
-      sumDebtPaymentsThisMonth(supabase, session.householdId, targetDate),
-      topCategoriesThisMonth(supabase, session.householdId, primary, 3, targetDate),
-      supabase
-        .from('transactions')
-        .select('amount_cents')
-        .eq('household_id', session.householdId)
-        .eq('currency', primary)
-        .eq('direction', 'income')
-        .eq('status', 'paid')
-        .gte('paid_on', start)
-        .lt('paid_on', end),
-    ]);
-
-  let fxRateMap: FxRateMap | null = null;
+  let fxRateMap: RateMap | null = null;
   try {
-    const map = await getRateMap({
+    fxRateMap = await getRateMap({
       supabase,
       serviceSupabase: getServiceRoleSupabase(),
       when: now,
     });
-    fxRateMap = { EUR_BRL: map.EUR_BRL, BRL_EUR: map.BRL_EUR };
   } catch (err) {
     if (!(err instanceof FxUnavailableError)) throw err;
   }
-
-  const accounts = accountsAll.filter((a) => !a.is_archived);
-  const balanceByCurrency = accounts.reduce<Record<Currency, number>>(
-    (acc, a) => {
-      acc[a.currency] = (acc[a.currency] ?? 0) + a.balance_cents;
-      return acc;
-    },
-    { BRL: 0, EUR: 0 },
-  );
-  const balanceCents = balanceByCurrency[primary];
-
-  const stats = await calculateMonthStats(
-    supabase,
-    session.householdId,
-    primary,
-    balanceCents,
-    targetDate,
-  );
-
-  const projection: MonthProjection | null = isFuture
-    ? await projectMonthForFuture({
-        supabase,
-        householdId: session.householdId,
-        currency: primary,
-        balanceCents,
-        targetDate,
-        topCategoriesLimit: 3,
-      })
+  const fxRateMapSlim: FxRateMap | null = fxRateMap
+    ? { EUR_BRL: fxRateMap.EUR_BRL, BRL_EUR: fxRateMap.BRL_EUR }
     : null;
 
-  const entradasMesCents = (paidIncomeRes.data ?? []).reduce(
-    (sum, r) => sum + r.amount_cents,
-    0,
-  );
-
-  const hasData =
-    accounts.length > 0 ||
-    openDebts.length > 0 ||
-    topCats.length > 0 ||
-    stats.paid.totalCents > 0 ||
-    stats.pending.totalCents > 0 ||
-    (projection !== null && projection.expenseProjectedCents > 0);
-
+  const accounts = accountsAll.filter((a) => !a.is_archived);
   const hasBothCurrencies =
     accounts.some((a) => a.currency === 'EUR') &&
     accounts.some((a) => a.currency === 'BRL');
 
-  // Soma de todas as contas, convertendo cada uma pra `primary` (moeda
+  // Soma de TODAS as contas, convertendo cada uma pra `primary` (moeda
   // selecionada no toggle). Se não tem fxRateMap e há contas em currency
   // diferente da primary, essas viram 0 e marcamos `fxIncomplete`.
   const accountsTotalInPrimary = (() => {
@@ -175,20 +117,56 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
     return { cents: total, fxIncomplete };
   })();
 
-  const saldoPrevistoFimDoMesCents = stats.sobraPrevistaCents;
-  const sobraPrevistaCents = saldoPrevistoFimDoMesCents - balanceCents;
+  // Stats cross-currency (tudo já convertido pra primary). Aqui dentro
+  // rodam paid/pending income+expense, overdue, top categorias e o
+  // saldoPrevistoFimDoMes (= accountsTotalInPrimary + pendingIncome - pendingExpense).
+  const stats: CrossCurrencyMonthStats = await calculateCrossCurrencyMonthStats({
+    supabase,
+    householdId: session.householdId,
+    targetCurrency: primary,
+    fxRateMap,
+    accountsTotalInTargetCents: accountsTotalInPrimary.cents,
+    targetDate,
+    topCategoriesLimit: 3,
+  });
+
+  const projection: MonthProjection | null = isFuture
+    ? await projectMonthForFuture({
+        supabase,
+        householdId: session.householdId,
+        targetCurrency: primary,
+        fxRateMap,
+        accountsTotalInTargetCents: accountsTotalInPrimary.cents,
+        targetDate,
+        topCategoriesLimit: 3,
+      })
+    : null;
+
+  const entradasMesCents = stats.paidIncomeCents;
+  const despesasPaidCents = stats.paidExpenseCents;
+  const despesasPendingCents = stats.pendingExpenseCents;
+  const saldoPrevistoFimDoMesCents = stats.saldoPrevistoFimDoMesCents;
+  const monthFlowNetCents = entradasMesCents - despesasPaidCents;
+
+  const hasData =
+    accounts.length > 0 ||
+    openDebts.length > 0 ||
+    stats.topCategories.length > 0 ||
+    despesasPaidCents > 0 ||
+    despesasPendingCents > 0 ||
+    (projection !== null && projection.expenseProjectedCents > 0);
 
   const summaryText = buildMonthSummaryText({
     now: targetDate,
     primaryCurrency: primary,
     saldoPrevistoFimDoMesCents,
-    sobraPrevistaCents,
+    sobraPrevistaCents: saldoPrevistoFimDoMesCents - accountsTotalInPrimary.cents,
     entradasMesCents,
-    despesasPaidCents: stats.paid.totalCents,
-    despesasPendingCents: stats.pending.totalCents,
-    overdueCents: stats.overdue.totalCents,
-    overdueCount: stats.overdue.count,
-    topCategories: topCats.map((c) => ({ name: c.name, totalCents: c.totalCents })),
+    despesasPaidCents,
+    despesasPendingCents,
+    overdueCents: stats.overdueCents,
+    overdueCount: stats.overdueCount,
+    topCategories: stats.topCategories.map((c) => ({ name: c.name, totalCents: c.totalCents })),
     openDebts: openDebts.map((d) => ({
       id: d.id,
       title: d.title,
@@ -201,40 +179,53 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
       currency: a.currency,
       balanceCents: a.balance_cents,
     })),
-    fxRateMap,
+    fxRateMap: fxRateMapSlim,
   });
 
-  const monthFlowNetCents = entradasMesCents - stats.paid.totalCents;
-
   // Saldo histórico: pra mês passado, busca snapshot mais recente <= fim do
-  // mês. Se TODAS as accounts da currency primária têm snapshot, usa como
-  // hero ("Saldo no fim do mês"); senão cai pro fluxo ("Sobra do mês").
-  const accountsPrimary = accounts.filter((a) => a.currency === primary);
+  // mês pra TODAS as accounts. Soma converte cada uma pra `primary`. Se
+  // todas têm snapshot E não tem fx incompleta, usa como hero
+  // ("Saldo em X"); senão cai pro fluxo ("Sobra de X").
   const historicalLookup = isPast
     ? await getBalanceByAccountOn(
         supabase,
-        accountsPrimary.map((a) => ({ id: a.id, balance_cents: a.balance_cents })),
+        accounts.map((a) => ({ id: a.id, balance_cents: a.balance_cents })),
         targetDate,
       )
     : null;
-  const historicalBalanceCents = historicalLookup
-    ? Object.values(historicalLookup).reduce((sum, l) => sum + l.cents, 0)
-    : 0;
-  const historicalAllFromSnapshot = historicalLookup
-    ? accountsPrimary.length > 0 &&
-      accountsPrimary.every((a) => historicalLookup[a.id]?.source === 'snapshot')
-    : false;
+  let historicalBalanceCents = 0;
+  let historicalAllFromSnapshot = accounts.length > 0;
+  let historicalFxIncomplete = false;
+  if (historicalLookup) {
+    for (const a of accounts) {
+      const lookup = historicalLookup[a.id];
+      if (!lookup) {
+        historicalAllFromSnapshot = false;
+        continue;
+      }
+      if (lookup.source !== 'snapshot') historicalAllFromSnapshot = false;
+      if (a.currency === primary) {
+        historicalBalanceCents += lookup.cents;
+      } else if (fxRateMap) {
+        const rate = primary === 'EUR' ? fxRateMap.BRL_EUR : fxRateMap.EUR_BRL;
+        historicalBalanceCents += convertCents(lookup.cents, rate);
+      } else {
+        historicalFxIncomplete = true;
+      }
+    }
+  }
+  const showHistoricalBalance = historicalAllFromSnapshot && !historicalFxIncomplete;
 
   const heroLabel = isFuture
     ? `Sobra projetada de ${monthEyebrow(targetDate)}`
-    : isPast && historicalAllFromSnapshot
+    : isPast && showHistoricalBalance
       ? `Saldo em ${monthEyebrow(targetDate)}`
       : isPast
         ? `Sobra de ${monthEyebrow(targetDate)}`
         : 'Saldo previsto fim do mês';
   const heroValue = isFuture
     ? projection!.sobraProjetadaCents
-    : isPast && historicalAllFromSnapshot
+    : isPast && showHistoricalBalance
       ? historicalBalanceCents
       : isPast
         ? monthFlowNetCents
@@ -243,10 +234,10 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   const displayEntradas = isFuture ? projection!.incomeProjectedCents : entradasMesCents;
   const displayDespesas = isFuture
     ? projection!.expenseProjectedCents
-    : stats.paid.totalCents + stats.pending.totalCents;
+    : despesasPaidCents + despesasPendingCents;
   const displayTopCats = isFuture
     ? projection!.topCategoriesProjected
-    : topCats.map((c) => ({ id: c.id, name: c.name, totalCents: c.totalCents }));
+    : stats.topCategories.map((c) => ({ id: c.id, name: c.name, totalCents: c.totalCents }));
 
   const eyebrow = isFuture
     ? `projetando ${monthEyebrow(targetDate)}`
@@ -289,14 +280,17 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
                 projeção: recorrentes ativas + parcelas previstas + saldo atual
               </p>
             )}
-            {isPast && historicalAllFromSnapshot && (
+            {isPast && showHistoricalBalance && (
               <p className="text-[11px] text-fg4">
                 saldo do snapshot mais recente do mês
+                {hasBothCurrencies && ` em ${primary}`}
               </p>
             )}
-            {isPast && !historicalAllFromSnapshot && (
+            {isPast && !showHistoricalBalance && (
               <p className="text-[11px] text-fg4">
-                estimado a partir do fluxo — snapshot ainda não capturado pra essa data
+                {historicalFxIncomplete
+                  ? 'fx indisponível — saldo histórico em outra moeda não foi convertido'
+                  : 'estimado a partir do fluxo — snapshot ainda não capturado pra essa data'}
               </p>
             )}
           </section>
@@ -328,36 +322,40 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
                   className="text-fg2"
                 />{' '}
                 · parcelas a vencer{' '}
-                <Num cents={stats.pending.totalCents} currency={primary} className="text-fg2" />
+                <Num cents={despesasPendingCents} currency={primary} className="text-fg2" />
               </p>
             ) : isPast ? (
               <p className="px-1 text-[12px] text-fg4">
                 Já pago{' '}
-                <Num cents={stats.paid.totalCents} currency={primary} className="text-fg2" />
-                {stats.pending.totalCents > 0 && (
+                <Num cents={despesasPaidCents} currency={primary} className="text-fg2" />
+                {despesasPendingCents > 0 && (
                   <>
                     {' '}·{' '}esquecido{' '}
                     <Num
-                      cents={stats.pending.totalCents}
+                      cents={despesasPendingCents}
                       currency={primary}
                       className="text-money-negative"
                     />{' '}
-                    ({stats.pending.count} {stats.pending.count === 1 ? 'item' : 'itens'} sem
-                    marcar pago)
+                    ({stats.pendingExpenseCount}{' '}
+                    {stats.pendingExpenseCount === 1 ? 'item' : 'itens'} sem marcar pago)
                   </>
                 )}
               </p>
             ) : (
               <p className="px-1 text-[12px] text-fg4">
                 Já pago{' '}
-                <Num cents={stats.paid.totalCents} currency={primary} className="text-fg2" /> ·
+                <Num cents={despesasPaidCents} currency={primary} className="text-fg2" /> ·
                 {' '}pendente{' '}
-                <Num cents={stats.pending.totalCents} currency={primary} className="text-fg2" />
-                {stats.overdue.count > 0 && (
+                <Num cents={despesasPendingCents} currency={primary} className="text-fg2" />
+                {stats.overdueCount > 0 && (
                   <>
                     {' '}·{' '}em atraso{' '}
-                    <Num cents={stats.overdue.totalCents} currency={primary} className="text-money-negative" />{' '}
-                    ({stats.overdue.count})
+                    <Num
+                      cents={stats.overdueCents}
+                      currency={primary}
+                      className="text-money-negative"
+                    />{' '}
+                    ({stats.overdueCount})
                   </>
                 )}
               </p>

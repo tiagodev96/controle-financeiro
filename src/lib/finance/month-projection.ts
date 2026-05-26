@@ -1,11 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Currency } from '@/components/finance/num';
+import { convertCents, type RateMap } from '@/lib/fx';
 import {
-  calculateMonthStats,
-  topCategoriesThisMonth,
-  type MonthStats,
-} from './dashboard-stats';
+  calculateCrossCurrencyMonthStats,
+  type CrossCurrencyMonthStats,
+} from './cross-currency-stats';
 
 export type ProjectionTopCategory = {
   id: string;
@@ -14,9 +14,9 @@ export type ProjectionTopCategory = {
 };
 
 export type MonthProjection = {
-  /** Base stats do mês alvo (paid normalmente 0; pending = installments + outras). */
-  stats: MonthStats;
-  /** Soma das recurring rules ativas no mês que ainda não geraram transaction. */
+  /** Stats cross-currency em targetCurrency (paid normalmente 0; pending = installments + outras). */
+  stats: CrossCurrencyMonthStats;
+  /** Soma das recurring rules ativas no mês que ainda não geraram transaction (em targetCurrency). */
   recurringPendingExpenseCents: number;
   recurringPendingIncomeCents: number;
   /** Despesas totais projetadas (pending real + recurring virtual). */
@@ -27,6 +27,8 @@ export type MonthProjection = {
   sobraProjetadaCents: number;
   /** Top categorias somando despesas reais + recurring virtual. */
   topCategoriesProjected: ProjectionTopCategory[];
+  /** True se algum txn ou rule em currency diferente da target ficou fora por fx. */
+  fxIncomplete: boolean;
 };
 
 function monthBoundaries(targetDate: Date): { start: string; end: string } {
@@ -38,41 +40,63 @@ function monthBoundaries(targetDate: Date): { start: string; end: string } {
   };
 }
 
+function convertToTarget(
+  cents: number,
+  from: Currency,
+  target: Currency,
+  fxRateMap: RateMap | null,
+): number | null {
+  if (from === target) return cents;
+  if (!fxRateMap) return null;
+  const rate = target === 'EUR' ? fxRateMap.BRL_EUR : fxRateMap.EUR_BRL;
+  return convertCents(cents, rate);
+}
+
 /**
- * Projeção pra um mês futuro: combina pending já no banco (installments,
- * txns criadas à mão) com recurring rules ativas que ainda não geraram
- * transaction pro mês alvo (virtualizadas pra preview).
+ * Projeção pra mês futuro em `targetCurrency`: combina pending já no banco
+ * (installments, txns criadas à mão) com recurring rules ativas que ainda
+ * não geraram transaction (virtualizadas pra preview). Tudo agregado em
+ * `targetCurrency` via fxRateMap.
  *
- * Não materializa nada no banco — é só simulação pra UI mostrar "se nada
- * mudar, esse vai ser o resultado do mês".
+ * Não materializa nada no banco — é só simulação pra UI.
  */
 export async function projectMonthForFuture({
   supabase,
   householdId,
-  currency,
-  balanceCents,
+  targetCurrency,
+  fxRateMap,
+  accountsTotalInTargetCents,
   targetDate,
   topCategoriesLimit = 3,
 }: {
   supabase: SupabaseClient<Database>;
   householdId: string;
-  currency: Currency;
-  balanceCents: number;
+  targetCurrency: Currency;
+  fxRateMap: RateMap | null;
+  accountsTotalInTargetCents: number;
   targetDate: Date;
   topCategoriesLimit?: number;
 }): Promise<MonthProjection> {
   const { start, end } = monthBoundaries(targetDate);
 
-  const [stats, topCatsReal, rulesRes] = await Promise.all([
-    calculateMonthStats(supabase, householdId, currency, balanceCents, targetDate),
-    topCategoriesThisMonth(supabase, householdId, currency, 10, targetDate),
+  // 1) Stats cross-currency (pega installments + outras pending já no banco).
+  // 2) Recurring rules de TODAS as currencies (filtra ativas em JS).
+  const [stats, rulesRes] = await Promise.all([
+    calculateCrossCurrencyMonthStats({
+      supabase,
+      householdId,
+      targetCurrency,
+      fxRateMap,
+      accountsTotalInTargetCents,
+      targetDate,
+      topCategoriesLimit: 10, // mais larga aqui; recortamos no fim depois de mergear virtuais
+    }),
     supabase
       .from('recurring_rules')
       .select(
         'id, amount_cents, currency, direction, category_id, is_paused, active_from, active_until',
       )
-      .eq('household_id', householdId)
-      .eq('currency', currency),
+      .eq('household_id', householdId),
   ]);
 
   const activeRules = (rulesRes.data ?? []).filter((r) => {
@@ -105,25 +129,36 @@ export async function projectMonthForFuture({
 
   let recurringPendingExpenseCents = 0;
   let recurringPendingIncomeCents = 0;
+  let recurringFxIncomplete = false;
   const virtualByCategory = new Map<string, number>();
 
   for (const rule of ungenerated) {
+    const converted = convertToTarget(
+      rule.amount_cents,
+      rule.currency as Currency,
+      targetCurrency,
+      fxRateMap,
+    );
+    if (converted === null) {
+      recurringFxIncomplete = true;
+      continue;
+    }
     if (rule.direction === 'expense') {
-      recurringPendingExpenseCents += rule.amount_cents;
+      recurringPendingExpenseCents += converted;
       if (rule.category_id) {
         virtualByCategory.set(
           rule.category_id,
-          (virtualByCategory.get(rule.category_id) ?? 0) + rule.amount_cents,
+          (virtualByCategory.get(rule.category_id) ?? 0) + converted,
         );
       }
     } else {
-      recurringPendingIncomeCents += rule.amount_cents;
+      recurringPendingIncomeCents += converted;
     }
   }
 
-  // Resolve nomes das categorias virtuais (que não apareceram em topCatsReal).
+  // Resolve nomes das categorias virtuais (que não apareceram em stats.topCategories).
   const missingCategoryIds = Array.from(virtualByCategory.keys()).filter(
-    (id) => !topCatsReal.some((c) => c.id === id),
+    (id) => !stats.topCategories.some((c) => c.id === id),
   );
   let categoryNameById = new Map<string, string>();
   if (missingCategoryIds.length > 0) {
@@ -135,7 +170,7 @@ export async function projectMonthForFuture({
   }
 
   const mergedTopByCategory = new Map<string, ProjectionTopCategory>();
-  for (const c of topCatsReal) {
+  for (const c of stats.topCategories) {
     mergedTopByCategory.set(c.id, { id: c.id, name: c.name, totalCents: c.totalCents });
   }
   for (const [catId, addCents] of virtualByCategory.entries()) {
@@ -156,10 +191,10 @@ export async function projectMonthForFuture({
     .slice(0, topCategoriesLimit);
 
   const expenseProjectedCents =
-    stats.paid.totalCents + stats.pending.totalCents + recurringPendingExpenseCents;
-  const incomeProjectedCents = stats.incomePaid.totalCents + recurringPendingIncomeCents;
+    stats.paidExpenseCents + stats.pendingExpenseCents + recurringPendingExpenseCents;
+  const incomeProjectedCents = stats.paidIncomeCents + recurringPendingIncomeCents;
   const sobraProjetadaCents =
-    balanceCents + incomeProjectedCents - expenseProjectedCents;
+    accountsTotalInTargetCents + incomeProjectedCents - expenseProjectedCents;
 
   return {
     stats,
@@ -169,5 +204,6 @@ export async function projectMonthForFuture({
     incomeProjectedCents,
     sobraProjetadaCents,
     topCategoriesProjected,
+    fxIncomplete: stats.fxIncomplete || recurringFxIncomplete,
   };
 }

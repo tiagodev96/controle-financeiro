@@ -2,11 +2,13 @@ import { ImageResponse } from 'next/og';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getServerSupabase } from '@/lib/supabase/server';
+import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession, UnauthorizedError } from '@/lib/auth/session';
-import { calculateMonthStats, topCategoriesThisMonth } from '@/lib/finance/dashboard-stats';
+import { calculateCrossCurrencyMonthStats } from '@/lib/finance/cross-currency-stats';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { listDebtsForHousehold } from '@/lib/finance/debts';
 import { projectMonthForFuture } from '@/lib/finance/month-projection';
+import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
 import type { Currency } from '@/components/finance/num';
 
 // Node runtime (default). Mover pra edge depois se latência incomodar —
@@ -88,59 +90,63 @@ export async function GET(request: Request) {
 
   const supabase = await getServerSupabase();
   const session = await getSession();
-  const { start, end } = monthBounds(targetDate);
 
-  const [accountsAll, { open: openDebts }, topCatsRealRes, paidIncomeRes] = await Promise.all([
+  const [accountsAll, { open: openDebts }] = await Promise.all([
     listAllAccountsForHousehold(supabase, session.householdId),
     listDebtsForHousehold(supabase, session.householdId),
-    topCategoriesThisMonth(supabase, session.householdId, moeda, 4, targetDate),
-    supabase
-      .from('transactions')
-      .select('amount_cents')
-      .eq('household_id', session.householdId)
-      .eq('currency', moeda)
-      .eq('direction', 'income')
-      .eq('status', 'paid')
-      .gte('paid_on', start)
-      .lt('paid_on', end),
   ]);
-  const accounts = accountsAll.filter((a) => !a.is_archived);
-  const balanceByCurrency = accounts.reduce<Record<Currency, number>>(
-    (acc, a) => {
-      acc[a.currency] = (acc[a.currency] ?? 0) + a.balance_cents;
-      return acc;
-    },
-    { BRL: 0, EUR: 0 },
-  );
-  const balanceCents = balanceByCurrency[moeda];
 
-  const stats = await calculateMonthStats(
+  let fxRateMap: RateMap | null = null;
+  try {
+    fxRateMap = await getRateMap({
+      supabase,
+      serviceSupabase: getServiceRoleSupabase(),
+      when: now,
+    });
+  } catch (err) {
+    if (!(err instanceof FxUnavailableError)) throw err;
+  }
+
+  const accounts = accountsAll.filter((a) => !a.is_archived);
+  // Soma cross-currency em `moeda`.
+  let accountsTotalInMoeda = 0;
+  for (const a of accounts) {
+    if (a.currency === moeda) {
+      accountsTotalInMoeda += a.balance_cents;
+    } else if (fxRateMap) {
+      const rate = moeda === 'EUR' ? fxRateMap.BRL_EUR : fxRateMap.EUR_BRL;
+      accountsTotalInMoeda += convertCents(a.balance_cents, rate);
+    }
+  }
+
+  const stats = await calculateCrossCurrencyMonthStats({
     supabase,
-    session.householdId,
-    moeda,
-    balanceCents,
+    householdId: session.householdId,
+    targetCurrency: moeda,
+    fxRateMap,
+    accountsTotalInTargetCents: accountsTotalInMoeda,
     targetDate,
-  );
+    topCategoriesLimit: 4,
+  });
 
   const projection = isFuture
     ? await projectMonthForFuture({
         supabase,
         householdId: session.householdId,
-        currency: moeda,
-        balanceCents,
+        targetCurrency: moeda,
+        fxRateMap,
+        accountsTotalInTargetCents: accountsTotalInMoeda,
         targetDate,
         topCategoriesLimit: 4,
       })
     : null;
 
-  const entradasMesCents = (paidIncomeRes.data ?? []).reduce((s, r) => s + r.amount_cents, 0);
-
   const hasData =
     accounts.length > 0 ||
     openDebts.length > 0 ||
-    topCatsRealRes.length > 0 ||
-    stats.paid.totalCents > 0 ||
-    stats.pending.totalCents > 0 ||
+    stats.topCategories.length > 0 ||
+    stats.paidExpenseCents > 0 ||
+    stats.pendingExpenseCents > 0 ||
     (projection !== null && projection.expenseProjectedCents > 0);
 
   if (!hasData) {
@@ -150,19 +156,22 @@ export async function GET(request: Request) {
   const heroValue = isFuture
     ? projection!.sobraProjetadaCents
     : isPast
-      ? entradasMesCents - stats.paid.totalCents
-      : stats.sobraPrevistaCents;
+      ? stats.paidIncomeCents - stats.paidExpenseCents
+      : stats.saldoPrevistoFimDoMesCents;
   const heroLabel = isFuture
     ? 'Sobra projetada'
     : isPast
       ? 'Sobra do mês'
       : 'Saldo previsto fim do mês';
 
-  const entradasDisplay = isFuture ? projection!.incomeProjectedCents : entradasMesCents;
+  const entradasDisplay = isFuture ? projection!.incomeProjectedCents : stats.paidIncomeCents;
   const despesasDisplay = isFuture
     ? projection!.expenseProjectedCents
-    : stats.paid.totalCents + stats.pending.totalCents;
-  const topCatsDisplay = (isFuture ? projection!.topCategoriesProjected : topCatsRealRes).slice(0, 4);
+    : stats.paidExpenseCents + stats.pendingExpenseCents;
+  const topCatsDisplay = (isFuture ? projection!.topCategoriesProjected : stats.topCategories).slice(
+    0,
+    4,
+  );
 
   const monthTitle = `${MONTHS_PT[targetDate.getMonth()]} · ${targetDate.getFullYear()}`;
   const contextLabel = isFuture ? 'projeção' : isPast ? 'fechado' : 'mês atual';
@@ -389,14 +398,6 @@ export async function GET(request: Request) {
   );
 }
 
-function monthBounds(d: Date): { start: string; end: string } {
-  const y = d.getFullYear();
-  const m = d.getMonth();
-  return {
-    start: new Date(y, m, 1).toISOString().slice(0, 10),
-    end: new Date(y, m + 1, 1).toISOString().slice(0, 10),
-  };
-}
 
 function Tile({
   label,
