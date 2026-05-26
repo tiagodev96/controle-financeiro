@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, X } from 'lucide-react';
+import { Search, X, FilterX } from 'lucide-react';
 import { FormSelect } from './form-select';
 import { MonthInput } from './month-input';
 
@@ -110,8 +110,39 @@ export function TransactionFilters({ accounts, categories, defaultMonth }: Props
 
   const showsAllMonths = mes === 'all';
 
+  // Algum filtro fora do default? Default = mes corrente, resto vazio/all.
+  const hasActiveFilters =
+    status !== 'all' ||
+    conta !== 'all' ||
+    categoria !== 'all' ||
+    mes !== defaultMonth ||
+    Boolean(dataInicio) ||
+    Boolean(dataFim) ||
+    queryFromUrl !== '';
+
+  function clearAll() {
+    setSearchInput('');
+    setDataInicioLocal('');
+    setDataFimLocal('');
+    setDateMode('mes');
+    router.push('/transacoes');
+  }
+
   return (
     <div className="space-y-2">
+      {hasActiveFilters && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={clearAll}
+            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border-soft bg-bg-inset px-2.5 text-[11px] font-medium text-fg2 transition-colors hover:border-border-strong hover:text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <FilterX className="size-3" strokeWidth={1.8} aria-hidden />
+            Limpar filtros
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <FormSelect
           label="Status"
