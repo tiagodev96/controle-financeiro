@@ -17,6 +17,7 @@ export type CategoryFull = {
   is_archived: boolean;
   sort_order: number;
   monthly_limit_cents: number | null;
+  limit_currency: 'EUR' | 'BRL' | null;
 };
 
 /**
@@ -29,7 +30,7 @@ export async function listAllCategoriesForHousehold(
 ): Promise<CategoryFull[]> {
   const { data, error } = await supabase
     .from('categories')
-    .select('id, name, icon, kind, is_archived, sort_order, monthly_limit_cents')
+    .select('id, name, icon, kind, is_archived, sort_order, monthly_limit_cents, limit_currency')
     .eq('household_id', householdId)
     .neq('kind', 'transfer')
     .order('sort_order', { ascending: true });

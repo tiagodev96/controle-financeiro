@@ -11,12 +11,16 @@ import {
 import { updateCategoryAction } from '@/server/actions/categories/actions';
 import { IconPicker } from './icon-picker';
 import { MoneyInput } from '@/components/finance/money-input';
+import { cn } from '@/lib/utils';
+
+type LimitCurrency = 'EUR' | 'BRL';
 
 type Props = {
   categoryId: string;
   currentName: string;
   currentIcon: string | null;
   currentMonthlyLimitCents: number | null;
+  currentLimitCurrency: LimitCurrency | null;
   /** Outros pode trocar ícone mas não pode renomear. */
   nameLocked?: boolean;
   /** Só categorias expense suportam limite. */
@@ -30,6 +34,7 @@ export function EditCategoryDialog({
   currentName,
   currentIcon,
   currentMonthlyLimitCents,
+  currentLimitCurrency,
   nameLocked = false,
   isExpenseKind = true,
   open,
@@ -38,6 +43,7 @@ export function EditCategoryDialog({
   const [name, setName] = useState(currentName);
   const [icon, setIcon] = useState<string | null>(currentIcon);
   const [monthlyLimitCents, setMonthlyLimitCents] = useState(currentMonthlyLimitCents ?? 0);
+  const [limitCurrency, setLimitCurrency] = useState<LimitCurrency>(currentLimitCurrency ?? 'EUR');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,13 +53,17 @@ export function EditCategoryDialog({
     setPending(true);
     setError(null);
 
+    const hasLimit = isExpenseKind && monthlyLimitCents > 0;
     const result = await updateCategoryAction({
       categoryId,
       patch: {
         name: nameLocked ? undefined : name,
         icon,
         monthlyLimitCents: isExpenseKind
-          ? monthlyLimitCents > 0 ? monthlyLimitCents : null
+          ? hasLimit ? monthlyLimitCents : null
+          : undefined,
+        limitCurrency: isExpenseKind
+          ? hasLimit ? limitCurrency : null
           : undefined,
       },
     });
@@ -96,13 +106,31 @@ export function EditCategoryDialog({
 
           {isExpenseKind && (
             <div className="space-y-2">
-              <MoneyInput
-                label="Limite mensal (opcional)"
-                valueCents={monthlyLimitCents}
-                onChange={setMonthlyLimitCents}
-              />
+              <div className="grid grid-cols-[1fr_auto] items-end gap-2">
+                <MoneyInput
+                  label="Limite mensal (opcional)"
+                  valueCents={monthlyLimitCents}
+                  onChange={setMonthlyLimitCents}
+                />
+                <div className="grid h-13 grid-cols-2 gap-0.5 rounded-md border border-border-soft bg-bg-inset p-1">
+                  {(['EUR', 'BRL'] as const).map((c) => (
+                    <button
+                      type="button"
+                      key={c}
+                      onClick={() => setLimitCurrency(c)}
+                      aria-pressed={limitCurrency === c}
+                      className={cn(
+                        'rounded-sm px-2 text-xs font-medium transition-colors',
+                        limitCurrency === c ? 'bg-bg-surface text-fg1 shadow-sm' : 'text-fg3 hover:text-fg1',
+                      )}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <p className="text-[11px] text-fg4">
-                Quando atingir 80%, aparece alerta no dashboard. Deixe 0 pra desabilitar.
+                Conta gastos em EUR + BRL convertidos pra moeda escolhida. Alerta a 80%. Deixe 0 pra desabilitar.
               </p>
             </div>
           )}

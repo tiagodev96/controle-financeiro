@@ -38,6 +38,7 @@ type Row = {
   icon: string | null;
   kind: 'expense' | 'income';
   monthly_limit_cents: number | null;
+  limit_currency: 'EUR' | 'BRL' | null;
 };
 
 function Section({ label, rows, archived = false }: { label: string; rows: Row[]; archived?: boolean }) {
@@ -62,6 +63,7 @@ function Section({ label, rows, archived = false }: { label: string; rows: Row[]
             name={c.name}
             icon={c.icon}
             monthlyLimitCents={c.monthly_limit_cents}
+            limitCurrency={c.limit_currency}
             isExpenseKind={c.kind === 'expense'}
             archived={archived}
           />

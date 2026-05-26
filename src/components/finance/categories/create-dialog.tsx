@@ -16,6 +16,7 @@ import { MoneyInput } from '@/components/finance/money-input';
 import { cn } from '@/lib/utils';
 
 type Kind = 'expense' | 'income';
+type LimitCurrency = 'EUR' | 'BRL';
 
 export function CreateCategoryDialog() {
   const [open, setOpen] = useState(false);
@@ -23,6 +24,7 @@ export function CreateCategoryDialog() {
   const [kind, setKind] = useState<Kind>('expense');
   const [icon, setIcon] = useState<string | null>(null);
   const [monthlyLimitCents, setMonthlyLimitCents] = useState(0);
+  const [limitCurrency, setLimitCurrency] = useState<LimitCurrency>('EUR');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,11 +34,13 @@ export function CreateCategoryDialog() {
     setPending(true);
     setError(null);
 
+    const hasLimit = kind === 'expense' && monthlyLimitCents > 0;
     const result = await createCategoryAction({
       name,
       kind,
       icon,
-      monthlyLimitCents: kind === 'expense' && monthlyLimitCents > 0 ? monthlyLimitCents : null,
+      monthlyLimitCents: hasLimit ? monthlyLimitCents : null,
+      limitCurrency: hasLimit ? limitCurrency : null,
     });
     setPending(false);
 
@@ -50,6 +54,7 @@ export function CreateCategoryDialog() {
     setKind('expense');
     setIcon(null);
     setMonthlyLimitCents(0);
+    setLimitCurrency('EUR');
     setOpen(false);
   }
 
@@ -110,13 +115,31 @@ export function CreateCategoryDialog() {
 
           {kind === 'expense' && (
             <div className="space-y-2">
-              <MoneyInput
-                label="Limite mensal (opcional)"
-                valueCents={monthlyLimitCents}
-                onChange={setMonthlyLimitCents}
-              />
+              <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+                <MoneyInput
+                  label="Limite mensal (opcional)"
+                  valueCents={monthlyLimitCents}
+                  onChange={setMonthlyLimitCents}
+                />
+                <div className="grid h-13 grid-cols-2 gap-0.5 rounded-md border border-border-soft bg-bg-inset p-1">
+                  {(['EUR', 'BRL'] as const).map((c) => (
+                    <button
+                      type="button"
+                      key={c}
+                      onClick={() => setLimitCurrency(c)}
+                      aria-pressed={limitCurrency === c}
+                      className={cn(
+                        'rounded-sm px-2 text-xs font-medium transition-colors',
+                        limitCurrency === c ? 'bg-bg-surface text-fg1 shadow-sm' : 'text-fg3 hover:text-fg1',
+                      )}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <p className="text-[11px] text-fg4">
-                Quando atingir 80%, aparece alerta no dashboard. Deixe 0 pra desabilitar.
+                Conta gastos em EUR + BRL convertidos pra moeda escolhida. Alerta a 80%. Deixe 0 pra desabilitar.
               </p>
             </div>
           )}

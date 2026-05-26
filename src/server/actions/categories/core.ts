@@ -31,11 +31,14 @@ const monthlyLimitSchema = z
   .optional()
   .transform((v) => (v == null || v === 0 ? null : v));
 
+const limitCurrencySchema = z.enum(['EUR', 'BRL']).nullable().optional();
+
 const createSchema = z.object({
   name: nameSchema,
   kind: z.enum(['expense', 'income']),
   icon: iconSchema,
   monthlyLimitCents: monthlyLimitSchema,
+  limitCurrency: limitCurrencySchema,
 });
 
 const renameSchema = z.object({
@@ -49,6 +52,7 @@ const updateSchema = z.object({
     name: nameSchema.optional(),
     icon: iconSchema,
     monthlyLimitCents: monthlyLimitSchema,
+    limitCurrency: limitCurrencySchema,
   }),
 });
 
@@ -84,6 +88,7 @@ export async function createCategoryCore(
     return { ok: false, error: parsed.error.issues[0]?.message ?? GENERIC };
   }
 
+  const hasLimit = parsed.data.monthlyLimitCents != null && parsed.data.monthlyLimitCents > 0;
   const { data, error } = await supabase
     .from('categories')
     .insert({
@@ -91,7 +96,8 @@ export async function createCategoryCore(
       name: parsed.data.name,
       kind: parsed.data.kind,
       icon: parsed.data.icon ?? null,
-      monthly_limit_cents: parsed.data.monthlyLimitCents ?? null,
+      monthly_limit_cents: hasLimit ? parsed.data.monthlyLimitCents : null,
+      limit_currency: hasLimit ? (parsed.data.limitCurrency ?? 'EUR') : null,
     })
     .select()
     .single();
@@ -162,7 +168,13 @@ export async function updateCategoryCore(
   const update: Database['public']['Tables']['categories']['Update'] = {};
   if (patch.name !== undefined) update.name = patch.name;
   if (patch.icon !== undefined) update.icon = patch.icon;
-  if (patch.monthlyLimitCents !== undefined) update.monthly_limit_cents = patch.monthlyLimitCents;
+  if (patch.monthlyLimitCents !== undefined) {
+    update.monthly_limit_cents = patch.monthlyLimitCents;
+    // Limpa currency junto quando o limite vira null. Quando setando limite,
+    // o caller é responsável por mandar limitCurrency junto.
+    if (patch.monthlyLimitCents === null) update.limit_currency = null;
+  }
+  if (patch.limitCurrency !== undefined) update.limit_currency = patch.limitCurrency;
 
   if (Object.keys(update).length === 0) return { ok: true };
 

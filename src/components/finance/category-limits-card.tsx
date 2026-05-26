@@ -2,17 +2,15 @@ import { createElement } from 'react';
 import { AlertTriangle, Gauge } from 'lucide-react';
 import Link from 'next/link';
 import type { CategoryLimit } from '@/lib/finance/category-limits';
-import type { Currency } from './num';
 import { resolveCategoryIcon } from '@/lib/finance/category-icons';
 import { Num } from './num';
 import { cn } from '@/lib/utils';
 
 type Props = {
   limits: CategoryLimit[];
-  currency: Currency;
 };
 
-export function CategoryLimitsCard({ limits, currency }: Props) {
+export function CategoryLimitsCard({ limits }: Props) {
   // Mostra só warning/over no dashboard. "ok" não polui.
   const flagged = limits.filter((l) => l.status !== 'ok');
   if (flagged.length === 0) return null;
@@ -75,10 +73,13 @@ export function CategoryLimitsCard({ limits, currency }: Props) {
               </div>
               <div className="flex justify-between text-[10px] text-fg4">
                 <span>
-                  <Num cents={l.spentCents} currency={currency} className="text-fg3" /> gastos
+                  <Num cents={l.spentCents} currency={l.limitCurrency} className="text-fg3" /> gastos
+                  {l.fxIncomplete && (
+                    <span className="ml-1 text-money-negative">· fx parcial</span>
+                  )}
                 </span>
                 <span>
-                  limite <Num cents={l.limitCents} currency={currency} className="text-fg3" />
+                  limite <Num cents={l.limitCents} currency={l.limitCurrency} className="text-fg3" />
                 </span>
               </div>
             </div>

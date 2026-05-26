@@ -19,6 +19,7 @@ type Props = {
   name: string;
   icon: string | null;
   monthlyLimitCents: number | null;
+  limitCurrency: 'EUR' | 'BRL' | null;
   isExpenseKind: boolean;
   archived: boolean;
 };
@@ -28,6 +29,7 @@ export function CategoryListItem({
   name,
   icon,
   monthlyLimitCents,
+  limitCurrency,
   isExpenseKind,
   archived,
 }: Props) {
@@ -86,7 +88,8 @@ export function CategoryListItem({
         <span className="truncate text-[15px] text-fg1">{name}</span>
         {isExpenseKind && monthlyLimitCents != null && monthlyLimitCents > 0 && (
           <span className="mono text-[10px] text-fg4">
-            limite € {(monthlyLimitCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+            limite {limitCurrency === 'BRL' ? 'R$' : '€'}{' '}
+            {(monthlyLimitCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
           </span>
         )}
       </button>
@@ -167,6 +170,7 @@ export function CategoryListItem({
           currentName={name}
           currentIcon={icon}
           currentMonthlyLimitCents={monthlyLimitCents}
+          currentLimitCurrency={limitCurrency}
           nameLocked={isProtected}
           isExpenseKind={isExpenseKind}
           open={editOpen}

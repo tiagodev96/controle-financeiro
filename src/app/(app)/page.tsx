@@ -205,7 +205,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
     isPast ? Promise.resolve([]) : listUpcomingPending(supabase, session.householdId, now, 7),
     isPast
       ? Promise.resolve([])
-      : listCategoriesWithLimits(supabase, session.householdId, statsCurrency, targetDate),
+      : listCategoriesWithLimits(supabase, session.householdId, rateMap, targetDate),
     isPast
       ? Promise.resolve({ EUR: 0, BRL: 0 } as Record<Currency, number>)
       : sumEnvelopesByCurrency(supabase, session.householdId),
@@ -365,7 +365,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
           )}
 
           {!isPast && categoryLimits.length > 0 && (
-            <CategoryLimitsCard limits={categoryLimits} currency={statsCurrency} />
+            <CategoryLimitsCard limits={categoryLimits} />
           )}
 
           {!isPast && upcoming.length > 0 && (
