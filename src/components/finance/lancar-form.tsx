@@ -30,18 +30,14 @@ function todayIsoDate(): string {
   return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
 }
 
-const COPY: Record<Direction, { cta: string; toast: string; numClass: string; sign: boolean }> = {
+const COPY: Record<Direction, { cta: string; toast: string }> = {
   expense: {
     cta: 'Lançar despesa',
     toast: 'Despesa lançada.',
-    numClass: 'text-money-negative',
-    sign: false,
   },
   income: {
     cta: 'Lançar entrada',
     toast: 'Entrada lançada.',
-    numClass: 'text-money-positive',
-    sign: true,
   },
 };
 
@@ -347,8 +343,12 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
         <span>{pending ? 'Lançando…' : copy.cta}</span>
         {!pending && amountCents > 0 && selectedAccount && (
           <>
-            <span aria-hidden className="opacity-50">·</span>
-            <Num cents={direction === 'expense' ? -amountCents : amountCents} currency={selectedAccount.currency} sign={copy.sign} className={copy.numClass} />
+            <span aria-hidden className="text-fg-on-brand/60">·</span>
+            <Num
+              cents={amountCents}
+              currency={selectedAccount.currency}
+              className="text-fg-on-brand/90"
+            />
           </>
         )}
       </button>
