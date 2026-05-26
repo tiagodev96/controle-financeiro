@@ -35,8 +35,21 @@ const createSchema = z.object({
 
 const idSchema = z.object({ planId: z.string().uuid() });
 
+const updateSchema = z.object({
+  planId: z.string().uuid(),
+  title: titleSchema.optional(),
+  notes: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => (v == null || (typeof v === 'string' && v.trim() === '') ? null : v.trim().slice(0, 200))),
+  categoryId: z.string().uuid().optional(),
+  accountId: z.string().uuid().optional(),
+});
+
 export type CreateInstallmentPlanInput = z.input<typeof createSchema>;
 export type DeleteInstallmentPlanInput = z.input<typeof idSchema>;
+export type UpdateInstallmentPlanInput = z.input<typeof updateSchema>;
 
 export type CreateInstallmentPlanResult =
   | { ok: true; plan: PlanRow }
@@ -126,6 +139,79 @@ export async function createInstallmentPlanCore(
   }
 
   return { ok: true, plan: inserted };
+}
+
+export async function updateInstallmentPlanCore(
+  { supabase, session }: Deps,
+  input: UpdateInstallmentPlanInput,
+): Promise<InstallmentPlanMutationResult> {
+  const parsed = updateSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? GENERIC };
+  }
+  const data = parsed.data;
+
+  const { data: existing } = await supabase
+    .from('installment_plans')
+    .select('id, household_id, currency')
+    .eq('id', data.planId)
+    .maybeSingle();
+  if (!existing || existing.household_id !== session.householdId) {
+    return { ok: false, error: NOT_FOUND };
+  }
+
+  if (data.categoryId) {
+    const { data: cat } = await supabase
+      .from('categories')
+      .select('id, household_id')
+      .eq('id', data.categoryId)
+      .maybeSingle();
+    if (!cat || cat.household_id !== session.householdId) {
+      return { ok: false, error: INVALID_CATEGORY };
+    }
+  }
+
+  if (data.accountId) {
+    const { data: acc } = await supabase
+      .from('accounts')
+      .select('id, household_id, currency')
+      .eq('id', data.accountId)
+      .maybeSingle();
+    if (!acc || acc.household_id !== session.householdId) {
+      return { ok: false, error: INVALID_ACCOUNT };
+    }
+    if (acc.currency !== existing.currency) {
+      return { ok: false, error: CURRENCY_MISMATCH };
+    }
+  }
+
+  const planUpdate: Database['public']['Tables']['installment_plans']['Update'] = {};
+  if (data.title !== undefined) planUpdate.title = data.title;
+  if ('notes' in data) planUpdate.notes = data.notes;
+  if (data.categoryId !== undefined) planUpdate.category_id = data.categoryId;
+  if (data.accountId !== undefined) planUpdate.account_id = data.accountId;
+
+  if (Object.keys(planUpdate).length > 0) {
+    const { error } = await supabase
+      .from('installment_plans')
+      .update(planUpdate)
+      .eq('id', data.planId);
+    if (error) return { ok: false, error: GENERIC };
+  }
+
+  // Propaga category/account pra TODAS as parcelas (paid + pending) conforme decisão de produto.
+  const txnUpdate: Database['public']['Tables']['transactions']['Update'] = {};
+  if (data.categoryId !== undefined) txnUpdate.category_id = data.categoryId;
+  if (data.accountId !== undefined) txnUpdate.account_id = data.accountId;
+  if (Object.keys(txnUpdate).length > 0) {
+    const { error } = await supabase
+      .from('transactions')
+      .update(txnUpdate)
+      .eq('source_installment_plan_id', data.planId);
+    if (error) return { ok: false, error: GENERIC };
+  }
+
+  return { ok: true };
 }
 
 export async function deleteInstallmentPlanCore(

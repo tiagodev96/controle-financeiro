@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   createInstallmentPlanCore,
   deleteInstallmentPlanCore,
+  updateInstallmentPlanCore,
 } from '@/server/actions/installments/core';
 import {
   getAuthedClient,
@@ -10,6 +11,7 @@ import {
   SEED_ACCOUNT_EUR_ID,
   SEED_ACCOUNT_BRL_ID,
   SEED_CATEGORY_MERCADO_ID,
+  SEED_CATEGORY_RESTAURANTE_ID,
 } from './helpers/auth';
 import { getAdminClient, truncateHouseholdTransactions } from './helpers/db';
 
@@ -167,6 +169,116 @@ describe('installment_plans (integração)', () => {
         categoryId: SEED_CATEGORY_MERCADO_ID,
         accountId: SEED_ACCOUNT_EUR_ID,
         notes: null,
+      },
+    );
+    expect(result.ok).toBe(false);
+  });
+
+  it('I-PARC-EDIT-TITLE — editar só title e notes preserva transactions', async () => {
+    const supabase = await getAuthedClient();
+    const created = await createInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      {
+        title: 'PARC test edit base',
+        totalAmountCents: 9000,
+        currency: 'EUR',
+        totalInstallments: 3,
+        firstDueDate: '2026-06-01',
+        frequencyMonths: 1,
+        categoryId: SEED_CATEGORY_MERCADO_ID,
+        accountId: SEED_ACCOUNT_EUR_ID,
+        notes: null,
+      },
+    );
+    if (!created.ok) throw new Error('setup');
+
+    const result = await updateInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      {
+        planId: created.plan.id,
+        title: 'PARC test edit renamed',
+        notes: 'observação nova',
+      },
+    );
+    expect(result.ok).toBe(true);
+
+    const admin = getAdminClient();
+    const { data: plan } = await admin
+      .from('installment_plans')
+      .select('title, notes, category_id, account_id')
+      .eq('id', created.plan.id)
+      .single();
+    expect(plan?.title).toBe('PARC test edit renamed');
+    expect(plan?.notes).toBe('observação nova');
+    expect(plan?.category_id).toBe(SEED_CATEGORY_MERCADO_ID);
+    expect(plan?.account_id).toBe(SEED_ACCOUNT_EUR_ID);
+  });
+
+  it('I-PARC-EDIT-PROPAGATE — editar category/account propaga pra todas as parcelas (paid + pending)', async () => {
+    const supabase = await getAuthedClient();
+    const created = await createInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      {
+        title: 'PARC test propagate',
+        totalAmountCents: 9000,
+        currency: 'EUR',
+        totalInstallments: 3,
+        firstDueDate: '2026-06-01',
+        frequencyMonths: 1,
+        categoryId: SEED_CATEGORY_MERCADO_ID,
+        accountId: SEED_ACCOUNT_EUR_ID,
+        notes: null,
+      },
+    );
+    if (!created.ok) throw new Error('setup');
+
+    const admin = getAdminClient();
+    // Marca a primeira parcela como paid pra confirmar que propagação inclui paid.
+    await admin
+      .from('transactions')
+      .update({ status: 'paid', paid_on: '2026-06-01' })
+      .eq('source_installment_plan_id', created.plan.id)
+      .eq('installment_number', 1);
+
+    const result = await updateInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      {
+        planId: created.plan.id,
+        categoryId: SEED_CATEGORY_RESTAURANTE_ID,
+      },
+    );
+    expect(result.ok).toBe(true);
+
+    const { data: txns } = await admin
+      .from('transactions')
+      .select('category_id, status')
+      .eq('source_installment_plan_id', created.plan.id);
+    expect(txns?.every((t) => t.category_id === SEED_CATEGORY_RESTAURANTE_ID)).toBe(true);
+  });
+
+  it('I-PARC-EDIT-CURRENCY-MISMATCH — trocar pra conta de outra currency rejeita', async () => {
+    const supabase = await getAuthedClient();
+    const created = await createInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      {
+        title: 'PARC test mismatch edit',
+        totalAmountCents: 9000,
+        currency: 'EUR',
+        totalInstallments: 3,
+        firstDueDate: '2026-06-01',
+        frequencyMonths: 1,
+        categoryId: SEED_CATEGORY_MERCADO_ID,
+        accountId: SEED_ACCOUNT_EUR_ID,
+        notes: null,
+      },
+    );
+    if (!created.ok) throw new Error('setup');
+
+    const result = await updateInstallmentPlanCore(
+      { supabase, session: SEED_TIAGO_SESSION },
+      {
+        planId: created.plan.id,
+        accountId: SEED_ACCOUNT_BRL_ID,
       },
     );
     expect(result.ok).toBe(false);

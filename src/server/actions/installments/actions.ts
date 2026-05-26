@@ -6,10 +6,12 @@ import { getSession } from '@/lib/auth/session';
 import {
   createInstallmentPlanCore,
   deleteInstallmentPlanCore,
+  updateInstallmentPlanCore,
   type CreateInstallmentPlanInput,
   type CreateInstallmentPlanResult,
   type DeleteInstallmentPlanInput,
   type InstallmentPlanMutationResult,
+  type UpdateInstallmentPlanInput,
 } from './core';
 
 function revalidateAll(): void {
@@ -34,6 +36,16 @@ export async function deleteInstallmentPlanAction(
   const session = await getSession();
   const supabase = await getServerSupabase();
   const result = await deleteInstallmentPlanCore({ supabase, session }, input);
+  if (result.ok) revalidateAll();
+  return result;
+}
+
+export async function updateInstallmentPlanAction(
+  input: UpdateInstallmentPlanInput,
+): Promise<InstallmentPlanMutationResult> {
+  const session = await getSession();
+  const supabase = await getServerSupabase();
+  const result = await updateInstallmentPlanCore({ supabase, session }, input);
   if (result.ok) revalidateAll();
   return result;
 }
