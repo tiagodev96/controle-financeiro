@@ -9,6 +9,7 @@ import { MonthPicker } from '@/components/finance/dashboard-month-picker';
 import { ResumoCurrencyToggle } from '@/components/finance/resumo-currency-toggle';
 import { calculateMonthStats, topCategoriesThisMonth } from '@/lib/finance/dashboard-stats';
 import { projectMonthForFuture, type MonthProjection } from '@/lib/finance/month-projection';
+import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
 import { listDebtsForHousehold, sumDebtPaymentsThisMonth } from '@/lib/finance/debts';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { buildMonthSummaryText, type FxRateMap } from '@/lib/finance/month-summary';
@@ -201,16 +202,40 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   });
 
   const monthFlowNetCents = entradasMesCents - stats.paid.totalCents;
+
+  // Saldo histórico: pra mês passado, busca snapshot mais recente <= fim do
+  // mês. Se TODAS as accounts da currency primária têm snapshot, usa como
+  // hero ("Saldo no fim do mês"); senão cai pro fluxo ("Sobra do mês").
+  const accountsPrimary = accounts.filter((a) => a.currency === primary);
+  const historicalLookup = isPast
+    ? await getBalanceByAccountOn(
+        supabase,
+        accountsPrimary.map((a) => ({ id: a.id, balance_cents: a.balance_cents })),
+        targetDate,
+      )
+    : null;
+  const historicalBalanceCents = historicalLookup
+    ? Object.values(historicalLookup).reduce((sum, l) => sum + l.cents, 0)
+    : 0;
+  const historicalAllFromSnapshot = historicalLookup
+    ? accountsPrimary.length > 0 &&
+      accountsPrimary.every((a) => historicalLookup[a.id]?.source === 'snapshot')
+    : false;
+
   const heroLabel = isFuture
     ? `Sobra projetada de ${monthEyebrow(targetDate)}`
-    : isPast
-      ? `Sobra de ${monthEyebrow(targetDate)}`
-      : 'Saldo previsto fim do mês';
+    : isPast && historicalAllFromSnapshot
+      ? `Saldo em ${monthEyebrow(targetDate)}`
+      : isPast
+        ? `Sobra de ${monthEyebrow(targetDate)}`
+        : 'Saldo previsto fim do mês';
   const heroValue = isFuture
     ? projection!.sobraProjetadaCents
-    : isPast
-      ? monthFlowNetCents
-      : saldoPrevistoFimDoMesCents;
+    : isPast && historicalAllFromSnapshot
+      ? historicalBalanceCents
+      : isPast
+        ? monthFlowNetCents
+        : saldoPrevistoFimDoMesCents;
 
   const displayEntradas = isFuture ? projection!.incomeProjectedCents : entradasMesCents;
   const displayDespesas = isFuture
@@ -259,6 +284,16 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
             {isFuture && (
               <p className="text-[11px] text-fg4">
                 projeção: recorrentes ativas + parcelas previstas + saldo atual
+              </p>
+            )}
+            {isPast && historicalAllFromSnapshot && (
+              <p className="text-[11px] text-fg4">
+                saldo do snapshot mais recente do mês
+              </p>
+            )}
+            {isPast && !historicalAllFromSnapshot && (
+              <p className="text-[11px] text-fg4">
+                estimado a partir do fluxo — snapshot ainda não capturado pra essa data
               </p>
             )}
           </section>

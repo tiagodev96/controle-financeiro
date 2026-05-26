@@ -26,6 +26,7 @@ import { listDebtsForHousehold } from '@/lib/finance/debts';
 import { computeDebtSuggestion } from '@/lib/finance/debt-suggestion';
 import { DebtSuggestionCard } from '@/components/finance/debt-suggestion-card';
 import { listUpcomingPending } from '@/lib/finance/upcoming';
+import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -223,6 +224,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
 
   const monthFlowNetCents = stats.incomePaid.totalCents - stats.paid.totalCents;
 
+  // Saldo histórico do mês passado (snapshot mais recente <= fim do mês).
+  // Usa accounts da statsCurrency (EUR) pra alinhar com o resto da página.
+  const accountsStats = accounts.filter((a) => a.currency === statsCurrency);
+  const historicalLookup = isPast
+    ? await getBalanceByAccountOn(
+        supabase,
+        accountsStats.map((a) => ({ id: a.id, balance_cents: a.balance_cents })),
+        targetDate,
+      )
+    : null;
+  const historicalBalanceCents = historicalLookup
+    ? Object.values(historicalLookup).reduce((sum, l) => sum + l.cents, 0)
+    : 0;
+  const historicalAllFromSnapshot = historicalLookup
+    ? accountsStats.length > 0 &&
+      accountsStats.every((a) => historicalLookup[a.id]?.source === 'snapshot')
+    : false;
+
   return (
     <section className="space-y-6 cf-fade-up">
       <AppTopBar
@@ -237,8 +256,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
         <>
           {isPast ? (
             <section className="rounded-md border border-border-soft bg-bg-surface p-5 lg:p-6 space-y-3">
-              <p className="text-[15px] text-fg3">Resumo de {monthEyebrow(targetDate)}</p>
-              <HeroNumber cents={monthFlowNetCents} currency={statsCurrency} />
+              <p className="text-[15px] text-fg3">
+                {historicalAllFromSnapshot
+                  ? `Saldo em ${monthEyebrow(targetDate)}`
+                  : `Resumo de ${monthEyebrow(targetDate)}`}
+              </p>
+              <HeroNumber
+                cents={historicalAllFromSnapshot ? historicalBalanceCents : monthFlowNetCents}
+                currency={statsCurrency}
+              />
+              {!historicalAllFromSnapshot && (
+                <p className="text-[11px] text-fg4">
+                  estimado a partir do fluxo — snapshot ainda não capturado pra essa data
+                </p>
+              )}
               <div className="grid grid-cols-3 gap-3 pt-2">
                 <FlowStat label="Recebido" cents={stats.incomePaid.totalCents} currency={statsCurrency} tone="positive" />
                 <FlowStat label="Gasto" cents={stats.paid.totalCents} currency={statsCurrency} tone="negative" />
