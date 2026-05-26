@@ -90,12 +90,18 @@ export default async function TransacoesPage({ searchParams }: Props) {
 
   const filterAccounts = (filterAccountsRes.data ?? []).map((a) => ({ id: a.id, name: a.name }));
 
-  let expenseCents = 0;
-  let incomeCents = 0;
+  const totalsByCurrency: Record<'EUR' | 'BRL', { expense: number; income: number }> = {
+    EUR: { expense: 0, income: 0 },
+    BRL: { expense: 0, income: 0 },
+  };
   for (const t of txns) {
-    if (t.direction === 'expense') expenseCents += t.amount_cents;
-    else incomeCents += t.amount_cents;
+    const bucket = totalsByCurrency[t.currency];
+    if (t.direction === 'expense') bucket.expense += t.amount_cents;
+    else bucket.income += t.amount_cents;
   }
+  const totalsList = (['EUR', 'BRL'] as const)
+    .map((cur) => ({ currency: cur, ...totalsByCurrency[cur] }))
+    .filter((row) => row.expense > 0 || row.income > 0);
   const grouped = groupByDay(txns as Transaction[]);
   const eyebrow = `${total} ${total === 1 ? 'lançamento' : 'lançamentos'}`;
 
@@ -105,20 +111,37 @@ export default async function TransacoesPage({ searchParams }: Props) {
 
       <TransactionFilters accounts={filterAccounts} monthOptions={monthOptions} />
 
-      {txns.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3 rounded-md border border-border-soft bg-bg-surface px-4 py-3 text-sm">
-          {expenseCents > 0 && (
-            <span className="flex items-baseline gap-1.5">
-              <span className="caption">despesa</span>
-              <Num cents={-expenseCents} sign className="text-[14px] font-semibold text-money-negative" />
-            </span>
-          )}
-          {incomeCents > 0 && (
-            <span className="flex items-baseline gap-1.5">
-              <span className="caption">entrada</span>
-              <Num cents={incomeCents} sign className="text-[14px] font-semibold text-money-positive" />
-            </span>
-          )}
+      {txns.length > 0 && totalsList.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-border-soft bg-bg-surface px-4 py-3 text-sm">
+          {totalsList.map((row) => (
+            <div key={row.currency} className="flex flex-wrap items-baseline gap-3">
+              <span className="mono text-[10px] uppercase tracking-wider text-fg4">
+                {row.currency}
+              </span>
+              {row.expense > 0 && (
+                <span className="flex items-baseline gap-1.5">
+                  <span className="caption">despesa</span>
+                  <Num
+                    cents={-row.expense}
+                    currency={row.currency}
+                    sign
+                    className="text-[14px] font-semibold text-money-negative"
+                  />
+                </span>
+              )}
+              {row.income > 0 && (
+                <span className="flex items-baseline gap-1.5">
+                  <span className="caption">entrada</span>
+                  <Num
+                    cents={row.income}
+                    currency={row.currency}
+                    sign
+                    className="text-[14px] font-semibold text-money-positive"
+                  />
+                </span>
+              )}
+            </div>
+          ))}
           {total > txns.length && (
             <span className="mono ml-auto text-[10px] text-fg4">
               mostrando {txns.length} de {total}
