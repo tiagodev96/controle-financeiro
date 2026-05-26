@@ -15,8 +15,8 @@ test.describe('Lançar despesa', () => {
 
     await page.getByRole('button', { name: /lançar despesa/i }).click();
 
+    await expect(page).toHaveURL('/transacoes');
     await expect(page.getByText(/despesa lançada/i).first()).toBeVisible();
-    await expect(page).toHaveURL('/');
   });
 
   test('E2 — lança despesa marcada como "já pago" sem quebrar', async ({ page, context }) => {
@@ -28,11 +28,13 @@ test.describe('Lançar despesa', () => {
     await page.getByLabel(/descrição/i).fill('Almoço pago no PIX');
     await page.getByRole('button', { name: 'Restaurante' }).click();
     await page.getByRole('button', { name: /já pago/i }).click();
+    // Desliga "Atualizar saldo" pra não bagunçar outros specs que dependem do saldo da conta.
+    await page.getByRole('button', { name: /atualizar saldo da conta/i }).click();
 
     await page.getByRole('button', { name: /lançar despesa/i }).click();
 
+    await expect(page).toHaveURL('/transacoes');
     await expect(page.getByText(/despesa lançada/i).first()).toBeVisible();
-    await expect(page).toHaveURL('/');
   });
 
   test('E3 — household sem categorias mostra empty state com CTA', async ({ page, context }) => {
@@ -63,11 +65,13 @@ test.describe('Lançar despesa', () => {
     await page.getByLabel(/valor/i).fill('2.500,00');
     await page.getByLabel(/descrição/i).fill('Salário maio');
     await page.getByRole('button', { name: 'Salário' }).click();
+    // Entrada vem com "já recebido" ON; desliga "Atualizar saldo" pra isolar.
+    await page.getByRole('button', { name: /atualizar saldo da conta/i }).click();
 
     await page.getByRole('button', { name: /lançar entrada/i }).click();
 
+    await expect(page).toHaveURL('/transacoes', { timeout: 10_000 });
     await expect(page.getByText(/entrada lançada/i).first()).toBeVisible();
-    await expect(page).toHaveURL('/', { timeout: 10_000 });
   });
 
   test('E-IN2 — toggle Entrada navega via searchParam e troca categorias', async ({ page, context }) => {

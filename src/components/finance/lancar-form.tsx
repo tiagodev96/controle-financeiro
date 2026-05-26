@@ -63,7 +63,6 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
   const [updateBalance, setUpdateBalance] = useState(true);
   const [date, setDate] = useState(todayIsoDate);
   const [error, setError] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
   const [pending, setPending] = useState(false);
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
@@ -91,20 +90,8 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
       return;
     }
 
-    setSubmitted(true);
     toast.success(copy.toast);
-    setTimeout(() => router.push('/'), 800);
-  }
-
-  if (submitted) {
-    return (
-      <div
-        role="status"
-        className="rounded-md border border-status-paid-fg/30 bg-status-paid-bg px-4 py-3 text-status-paid-fg"
-      >
-        {copy.toast}
-      </div>
-    );
+    router.push('/transacoes');
   }
 
   return (
