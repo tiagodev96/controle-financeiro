@@ -1,17 +1,26 @@
 import { getServerSupabase } from '@/lib/supabase/server';
 import { getSession } from '@/lib/auth/session';
 import { listAllAccountsForHousehold, type AccountFull } from '@/lib/finance/accounts';
+import { listSnapshotsForChart } from '@/lib/finance/balance-trend';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { CreateAccountDialog } from '@/components/finance/accounts/create-dialog';
 import { AccountListItem } from '@/components/finance/accounts/list-item';
+import { BalanceTrendChart } from '@/components/finance/accounts/balance-trend-chart';
 
 export default async function ContasPage() {
   const session = await getSession();
   const supabase = await getServerSupabase();
 
-  const all = await listAllAccountsForHousehold(supabase, session.householdId);
+  const [all, trendEur, trendBrl] = await Promise.all([
+    listAllAccountsForHousehold(supabase, session.householdId),
+    listSnapshotsForChart(supabase, session.householdId, 'EUR', 26),
+    listSnapshotsForChart(supabase, session.householdId, 'BRL', 26),
+  ]);
   const active = all.filter((a) => !a.is_archived);
   const archived = all.filter((a) => a.is_archived);
+  const hasAnyTrend = trendEur.length > 0 || trendBrl.length > 0;
+  const defaultTrendCurrency =
+    trendEur.length >= trendBrl.length ? 'EUR' : 'BRL';
 
   return (
     <section className="space-y-6">
@@ -22,6 +31,13 @@ export default async function ContasPage() {
       />
 
       <Section rows={active} archived={false} />
+
+      {hasAnyTrend && (
+        <BalanceTrendChart
+          series={{ EUR: trendEur, BRL: trendBrl }}
+          defaultCurrency={defaultTrendCurrency}
+        />
+      )}
 
       {archived.length > 0 && (
         <section className="space-y-2">
