@@ -27,7 +27,14 @@ export type ListFilters = {
   householdId: string;
   status?: Status;
   accountId?: string;
+  /** Filtro por categoria. `'none'` = só sem categoria (orfãs). */
+  categoryId?: string | 'none';
   monthIso?: string;
+  /** Range customizado (YYYY-MM-DD). Tem precedência sobre monthIso. */
+  startDate?: string;
+  endDate?: string;
+  /** Busca case-insensitive na description (ILIKE %query%). */
+  query?: string;
   limit?: number;
 };
 
@@ -63,9 +70,25 @@ export async function listTransactionsForHousehold(
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.accountId) query = query.eq('account_id', filters.accountId);
 
-  if (filters.monthIso) {
+  if (filters.categoryId === 'none') {
+    query = query.is('category_id', null);
+  } else if (filters.categoryId) {
+    query = query.eq('category_id', filters.categoryId);
+  }
+
+  // Date range tem precedência sobre monthIso.
+  if (filters.startDate || filters.endDate) {
+    if (filters.startDate) query = query.gte('occurred_on', filters.startDate);
+    if (filters.endDate) query = query.lte('occurred_on', filters.endDate);
+  } else if (filters.monthIso) {
     const { start, end } = monthRange(filters.monthIso);
     query = query.gte('occurred_on', start).lt('occurred_on', end);
+  }
+
+  if (filters.query && filters.query.trim().length > 0) {
+    // Escapa wildcards do ILIKE pra evitar busca acidental por padrão.
+    const escaped = filters.query.trim().replace(/[%_\\]/g, (m) => `\\${m}`);
+    query = query.ilike('description', `%${escaped}%`);
   }
 
   query = query.order('occurred_on', { ascending: false }).limit(limit);

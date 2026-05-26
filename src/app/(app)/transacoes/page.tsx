@@ -21,9 +21,23 @@ function currentMonthIso(): string {
 }
 
 const VALID_MONTH = /^\d{4}-\d{2}$/;
+const VALID_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function parseStatus(raw: string | undefined): Status | undefined {
   if (raw === 'pending' || raw === 'paid') return raw;
+  return undefined;
+}
+
+function parseDateParam(raw: string | undefined): string | undefined {
+  if (!raw || !VALID_DATE.test(raw)) return undefined;
+  return raw;
+}
+
+function parseCategoryParam(raw: string | undefined): string | 'none' | undefined {
+  if (!raw || raw === 'all') return undefined;
+  if (raw === 'none') return 'none';
+  if (UUID_RE.test(raw)) return raw;
   return undefined;
 }
 
@@ -63,9 +77,21 @@ export default async function TransacoesPage({ searchParams }: Props) {
   const defaultMonth = currentMonthIso();
   const status = parseStatus(typeof params.status === 'string' ? params.status : undefined);
   const accountId = typeof params.conta === 'string' && params.conta !== 'all' ? params.conta : undefined;
+  const categoryId = parseCategoryParam(typeof params.categoria === 'string' ? params.categoria : undefined);
+  const startDate = parseDateParam(typeof params.dataInicio === 'string' ? params.dataInicio : undefined);
+  const endDate = parseDateParam(typeof params.dataFim === 'string' ? params.dataFim : undefined);
+  const queryStr = typeof params.q === 'string' ? params.q.slice(0, 100) : undefined;
+
+  // Se há range de datas, ignora o mês (precedência no helper).
   const mesRaw = typeof params.mes === 'string' ? params.mes : defaultMonth;
   const monthIso =
-    mesRaw === 'all' ? undefined : VALID_MONTH.test(mesRaw) ? mesRaw : defaultMonth;
+    startDate || endDate
+      ? undefined
+      : mesRaw === 'all'
+        ? undefined
+        : VALID_MONTH.test(mesRaw)
+          ? mesRaw
+          : defaultMonth;
 
   const [{ transactions: txns, total }, filterAccountsRes, allCategories, allAccounts] =
     await Promise.all([
@@ -73,7 +99,11 @@ export default async function TransacoesPage({ searchParams }: Props) {
         householdId: session.householdId,
         status,
         accountId,
+        categoryId,
         monthIso,
+        startDate,
+        endDate,
+        query: queryStr,
       }),
       supabase
         .from('accounts')
@@ -85,6 +115,9 @@ export default async function TransacoesPage({ searchParams }: Props) {
     ]);
 
   const filterAccounts = (filterAccountsRes.data ?? []).map((a) => ({ id: a.id, name: a.name }));
+  const filterCategories = allCategories
+    .filter((c) => !c.is_archived)
+    .map((c) => ({ id: c.id, name: c.name }));
 
   const totalsByCurrency: Record<'EUR' | 'BRL', { expense: number; income: number }> = {
     EUR: { expense: 0, income: 0 },
@@ -135,7 +168,11 @@ export default async function TransacoesPage({ searchParams }: Props) {
     <section className="space-y-5">
       <AppTopBar eyebrow={eyebrow} title="Transações" />
 
-      <TransactionFilters accounts={filterAccounts} defaultMonth={defaultMonth} />
+      <TransactionFilters
+        accounts={filterAccounts}
+        categories={filterCategories}
+        defaultMonth={defaultMonth}
+      />
 
       {txns.length > 0 && totalsList.length > 0 && (
         <div className="space-y-2 rounded-md border border-border-soft bg-bg-surface px-4 py-3 text-sm">
