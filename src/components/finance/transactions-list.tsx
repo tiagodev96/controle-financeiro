@@ -20,7 +20,11 @@ export type Transaction = {
   paid_on: string | null;
   category_id: string | null;
   account_id: string;
+  source_recurring_rule_id: string | null;
+  source_installment_plan_id: string | null;
+  installment_number: number | null;
   categories: { name: string } | null;
+  installment_plans: { total_installments: number } | null;
 };
 
 type CategoryFull = {
@@ -43,6 +47,21 @@ type Props = {
   accounts: AccountFull[];
 };
 
+function txnSource(t: Transaction):
+  | { kind: 'recurring' }
+  | { kind: 'installment'; number: number; total: number }
+  | null {
+  if (t.source_installment_plan_id && t.installment_number && t.installment_plans) {
+    return {
+      kind: 'installment',
+      number: t.installment_number,
+      total: t.installment_plans.total_installments,
+    };
+  }
+  if (t.source_recurring_rule_id) return { kind: 'recurring' };
+  return null;
+}
+
 export function TransactionsList({ groups, categories, accounts }: Props) {
   const [editing, setEditing] = useState<Transaction | null>(null);
 
@@ -62,6 +81,7 @@ export function TransactionsList({ groups, categories, accounts }: Props) {
                     currency={t.currency}
                     direction={t.direction}
                     status={t.status}
+                    source={txnSource(t)}
                     action={
                       <TxnRowMenu
                         transactionId={t.id}

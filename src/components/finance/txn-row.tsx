@@ -2,6 +2,8 @@ import { cn } from '@/lib/utils';
 import { formatCentsToBRL } from '@/lib/money/format';
 import { StatusPill, type Status } from './status-pill';
 
+type SourcePill = { kind: 'recurring' } | { kind: 'installment'; number: number; total: number };
+
 type Props = {
   description: string;
   category: string;
@@ -9,6 +11,7 @@ type Props = {
   currency?: 'BRL' | 'EUR';
   direction: 'income' | 'expense';
   status?: Status;
+  source?: SourcePill | null;
   action?: React.ReactNode;
   className?: string;
 };
@@ -25,6 +28,7 @@ export function TxnRow({
   currency = 'BRL',
   direction,
   status,
+  source,
   action,
   className,
 }: Props) {
@@ -39,6 +43,16 @@ export function TxnRow({
         <div className="flex items-center gap-2 text-xs text-fg3">
           <span className="truncate">{category}</span>
           {status && <StatusPill status={status} />}
+          {source?.kind === 'recurring' && (
+            <span className="mono inline-flex h-4 items-center rounded-xs bg-brand-quiet-bg px-1 text-[9px] font-semibold uppercase tracking-wider text-brand-quiet-fg">
+              REC
+            </span>
+          )}
+          {source?.kind === 'installment' && (
+            <span className="mono inline-flex h-4 items-center rounded-xs bg-brand-quiet-bg px-1 text-[9px] font-semibold tabular-nums text-brand-quiet-fg">
+              {source.number}/{source.total}
+            </span>
+          )}
         </div>
       </div>
       <p

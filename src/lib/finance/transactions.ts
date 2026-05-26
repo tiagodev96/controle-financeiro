@@ -16,7 +16,11 @@ export type TxnListRow = {
   paid_on: string | null;
   account_id: string;
   category_id: string | null;
+  source_recurring_rule_id: string | null;
+  source_installment_plan_id: string | null;
+  installment_number: number | null;
   categories: { name: string } | null;
+  installment_plans: { total_installments: number } | null;
 };
 
 export type ListFilters = {
@@ -51,7 +55,7 @@ export async function listTransactionsForHousehold(
   let query = supabase
     .from('transactions')
     .select(
-      'id, description, amount_cents, currency, direction, status, occurred_on, paid_on, account_id, category_id, categories(name)',
+      'id, description, amount_cents, currency, direction, status, occurred_on, paid_on, account_id, category_id, source_recurring_rule_id, source_installment_plan_id, installment_number, categories(name), installment_plans(total_installments)',
       { count: 'exact' },
     )
     .eq('household_id', filters.householdId);

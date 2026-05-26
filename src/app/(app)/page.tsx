@@ -36,7 +36,11 @@ type TxnRowData = {
   direction: Direction;
   status: Status;
   occurred_on: string;
+  source_recurring_rule_id: string | null;
+  source_installment_plan_id: string | null;
+  installment_number: number | null;
   categories: { name: string } | null;
+  installment_plans: { total_installments: number } | null;
 };
 
 const MONTHS_PT = [
@@ -53,6 +57,21 @@ function monthEyebrow(d: Date): string {
 function endOfMonthLabel(d: Date): string {
   const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
   return `${String(last.getDate()).padStart(2, '0')} ${MONTHS_PT_SHORT[last.getMonth()]}`;
+}
+
+function txnSource(t: TxnRowData):
+  | { kind: 'recurring' }
+  | { kind: 'installment'; number: number; total: number }
+  | null {
+  if (t.source_installment_plan_id && t.installment_number && t.installment_plans) {
+    return {
+      kind: 'installment',
+      number: t.installment_number,
+      total: t.installment_plans.total_installments,
+    };
+  }
+  if (t.source_recurring_rule_id) return { kind: 'recurring' };
+  return null;
 }
 
 function formatRate(rate: number): string {
@@ -125,7 +144,7 @@ export default async function DashboardPage() {
     supabase
       .from('transactions')
       .select(
-        'id, description, amount_cents, currency, direction, status, occurred_on, categories(name)',
+        'id, description, amount_cents, currency, direction, status, occurred_on, source_recurring_rule_id, source_installment_plan_id, installment_number, categories(name), installment_plans(total_installments)',
       )
       .eq('household_id', session.householdId)
       .order('occurred_on', { ascending: false })
@@ -236,6 +255,7 @@ export default async function DashboardPage() {
                           currency={t.currency}
                           direction={t.direction}
                           status={t.status === 'paid' ? 'paid' : 'pending'}
+                          source={txnSource(t)}
                         />
                       ))}
                     </div>
