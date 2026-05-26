@@ -5,6 +5,7 @@ import {
   Wallet,
   Share2,
   CalendarRange,
+  PiggyBank,
   type LucideIcon,
 } from 'lucide-react';
 import { AppTopBar } from '@/components/finance/app-top-bar';
@@ -19,6 +20,7 @@ type Item = {
 const items: Item[] = [
   { href: '/recorrentes', label: 'Recorrentes', description: 'Regras mensais', Icon: Repeat },
   { href: '/parcelados', label: 'Parcelados', description: 'Compras em N×', Icon: CalendarRange },
+  { href: '/caixinhas', label: 'Caixinhas', description: 'Envelopes virtuais', Icon: PiggyBank },
   { href: '/categorias', label: 'Categorias', description: 'Cadastro', Icon: Tags },
   { href: '/contas', label: 'Contas', description: 'Cadastro', Icon: Wallet },
   { href: '/resumo', label: 'Resumo', description: 'Exportar o mês', Icon: Share2 },

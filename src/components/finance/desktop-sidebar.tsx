@@ -13,6 +13,7 @@ import {
   Share2,
   Settings,
   CalendarRange,
+  PiggyBank,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,6 +34,7 @@ const items: Item[] = [
   { href: '/dividas', label: 'Dívidas', Icon: CreditCard },
   { href: '/recorrentes', label: 'Recorrentes', Icon: Repeat },
   { href: '/parcelados', label: 'Parcelados', Icon: CalendarRange },
+  { href: '/caixinhas', label: 'Caixinhas', Icon: PiggyBank },
   { href: '/contas', label: 'Contas', Icon: Wallet },
   { href: '/categorias', label: 'Categorias', Icon: Tags },
   { href: '/resumo', label: 'Resumo do mês', Icon: Share2 },

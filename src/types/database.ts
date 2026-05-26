@@ -240,6 +240,50 @@ export type Database = {
           },
         ]
       }
+      envelopes: {
+        Row: {
+          created_at: string
+          currency: string
+          current_cents: number
+          household_id: string
+          id: string
+          name: string
+          sort_order: number
+          target_cents: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency: string
+          current_cents?: number
+          household_id: string
+          id?: string
+          name: string
+          sort_order?: number
+          target_cents?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          current_cents?: number
+          household_id?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          target_cents?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelopes_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fx_rates_cache: {
         Row: {
           base: string

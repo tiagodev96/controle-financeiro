@@ -29,6 +29,7 @@ import { listUpcomingPending } from '@/lib/finance/upcoming';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
 import { listCategoriesWithLimits } from '@/lib/finance/category-limits';
 import { CategoryLimitsCard } from '@/components/finance/category-limits-card';
+import { sumEnvelopesByCurrency } from '@/lib/finance/envelopes';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -187,7 +188,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
   const monthStartIso = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-01`;
   const monthEndIso = isoLocal(new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0));
 
-  const [stats, topCats, txnsRes, debts, upcoming, categoryLimits] = await Promise.all([
+  const [stats, topCats, txnsRes, debts, upcoming, categoryLimits, envelopeAllocations] = await Promise.all([
     calculateMonthStats(supabase, session.householdId, statsCurrency, balanceByCurrency[statsCurrency], targetDate),
     topCategoriesThisMonth(supabase, session.householdId, statsCurrency, 5, targetDate),
     supabase
@@ -205,7 +206,21 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
     isPast
       ? Promise.resolve([])
       : listCategoriesWithLimits(supabase, session.householdId, statsCurrency, targetDate),
+    isPast
+      ? Promise.resolve({ EUR: 0, BRL: 0 } as Record<Currency, number>)
+      : sumEnvelopesByCurrency(supabase, session.householdId),
   ]);
+
+  const totalAllocatedCents =
+    envelopeAllocations.EUR + envelopeAllocations.BRL;
+  const allocatedInDisplay = rateMap
+    ? envelopeAllocations[displayCurrency] +
+      convertCents(
+        envelopeAllocations[otherCurrency],
+        displayCurrency === 'EUR' ? rateMap.BRL_EUR : rateMap.EUR_BRL,
+      )
+    : envelopeAllocations[displayCurrency];
+  const freeInDisplay = totalInDisplay - allocatedInDisplay;
 
   const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
   const grouped = groupByDay(txns);
@@ -308,6 +323,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Se
                     </span>
                   ) : null}
                 </div>
+                {totalAllocatedCents > 0 && (
+                  <div className="flex items-baseline justify-between gap-2 border-t border-border-soft pt-3 text-[12px]">
+                    <span className="text-fg3">Livre (fora das caixinhas)</span>
+                    <Num
+                      cents={freeInDisplay}
+                      currency={displayCurrency}
+                      className={
+                        freeInDisplay < 0
+                          ? 'text-[14px] font-semibold text-money-negative'
+                          : 'text-[14px] font-semibold text-fg1'
+                      }
+                    />
+                  </div>
+                )}
               </div>
               <SobraPrevistaCard
                 stats={stats}
