@@ -4,6 +4,8 @@ Itens encontrados durante o primeiro smoke real em produção, após o deploy p�
 
 ## Categorias
 
+- **Criar categoria inline no /lancar**. Hoje se a categoria não existe, o usuário precisa sair do form (perdendo o que digitou), criar em /categorias, e voltar. Adicionar um chip "+ Nova" no final do chip selector que abre um mini-dialog inline com `name` + `kind` (inferido do `direction` corrente) e ao salvar: cria via action, adiciona ao state local de categorias, e seleciona a nova como ativa. Sem perder valor/descrição já digitados.
+
 - **Selector de ícone no dialog "Nova categoria"**. Hoje a categoria é criada só com nome — o ícone é inferido por `iconForCategory(name)` (heurística baseada em palavras-chave). Permitir escolher explicitamente um ícone de uma grade Lucide (8-12 opções comuns) durante a criação. Editar categoria também deveria permitir trocar o ícone.
 
 ## Componentes / design system
