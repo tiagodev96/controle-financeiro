@@ -10,6 +10,7 @@ import { iconForCategory } from '@/lib/finance/category-icons';
 import { MoneyInput } from './money-input';
 import { Field } from './field';
 import { CCY } from './ccy';
+import { FormSelect } from './form-select';
 import { Num } from './num';
 import { cn } from '@/lib/utils';
 
@@ -219,23 +220,18 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
 
       <div className="grid grid-cols-2 gap-2.5">
         <Field label="Conta">
-          <label className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
             {selectedAccount && <CCY code={selectedAccount.currency} />}
-            <select
-              name="conta"
-              aria-label="Conta"
+            <FormSelect
+              bare
+              ariaLabel="Conta"
               required
               value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-              className="min-w-0 flex-1 bg-transparent text-sm font-medium text-fg1 focus-visible:outline-none"
-            >
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.name}
-                </option>
-              ))}
-            </select>
-          </label>
+              onChange={setAccountId}
+              triggerClassName="border-0 bg-transparent min-h-0 py-0 px-0 hover:border-0 focus-visible:ring-0 text-sm font-medium"
+              options={accounts.map((acc) => ({ value: acc.id, label: acc.name }))}
+            />
+          </div>
         </Field>
         <Field label="Data">
           <label className="flex items-center gap-1.5">

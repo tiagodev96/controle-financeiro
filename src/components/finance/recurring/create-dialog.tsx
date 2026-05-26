@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { MoneyInput } from '@/components/finance/money-input';
+import { FormSelect } from '@/components/finance/form-select';
 import { createRecurringAction } from '@/server/actions/recurring/actions';
 import { cn } from '@/lib/utils';
 
@@ -133,40 +134,22 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
             onChange={setAmountCents}
           />
 
-          <label className="block space-y-2">
-            <span className="eyebrow">Categoria</span>
-            <select
-              aria-label="Categoria"
-              required
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {visibleCategories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <FormSelect
+            label="Categoria"
+            required
+            value={categoryId}
+            onChange={setCategoryId}
+            options={visibleCategories.map((c) => ({ value: c.id, label: c.name }))}
+          />
 
           <div className="grid grid-cols-2 gap-2.5">
-            <label className="block space-y-2">
-              <span className="eyebrow">Conta</span>
-              <select
-                aria-label="Conta"
-                required
-                value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
-                className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} ({a.currency})
-                  </option>
-                ))}
-              </select>
-            </label>
+            <FormSelect
+              label="Conta"
+              required
+              value={accountId}
+              onChange={setAccountId}
+              options={accounts.map((a) => ({ value: a.id, label: `${a.name} (${a.currency})` }))}
+            />
             <label className="block space-y-2">
               <span className="eyebrow">Dia do mês</span>
               <input

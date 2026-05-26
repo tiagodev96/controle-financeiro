@@ -16,7 +16,8 @@ test.describe('Transações', () => {
 
     await page.goto('/transacoes');
 
-    await page.getByLabel(/status/i).selectOption('pending');
+    await page.getByLabel('Status').click();
+    await page.getByRole('option', { name: /pendente/i }).click();
 
     await expect(page).toHaveURL(/[?&]status=pending/);
   });
@@ -93,10 +94,9 @@ test.describe('Transações', () => {
     await row.getByRole('button', { name: /mais ações/i }).click();
     await page.getByRole('button', { name: /^editar$/i }).click();
 
-    await page
-      .getByRole('dialog', { name: /editar lançamento/i })
-      .getByLabel('Conta')
-      .selectOption({ label: 'Conta principal BRL' });
+    const dialog = page.getByRole('dialog', { name: /editar lançamento/i });
+    await dialog.getByLabel('Conta').click();
+    await page.getByRole('option', { name: 'Conta principal BRL' }).click();
     await page.getByRole('button', { name: /salvar alterações/i }).click();
 
     await expect(page.getByText(/lançamento atualizado/i).first()).toBeVisible();

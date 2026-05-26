@@ -12,6 +12,7 @@ import {
 import { MoneyInput } from '@/components/finance/money-input';
 import { Field } from '@/components/finance/field';
 import { CCY } from '@/components/finance/ccy';
+import { FormSelect } from '@/components/finance/form-select';
 import { iconForCategory } from '@/lib/finance/category-icons';
 import { updateTransactionAction } from '@/server/actions/transactions/update';
 import type { Currency } from '@/components/finance/num';
@@ -178,22 +179,18 @@ export function EditTransactionDialog({
 
           <div className="grid grid-cols-2 gap-2.5">
             <Field label="Conta">
-              <label className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 {selectedAccount && <CCY code={selectedAccount.currency} />}
-                <select
-                  aria-label="Conta"
+                <FormSelect
+                  bare
+                  ariaLabel="Conta"
                   required
                   value={accountId}
-                  onChange={(e) => setAccountId(e.target.value)}
-                  className="min-w-0 flex-1 bg-transparent text-sm font-medium text-fg1 focus-visible:outline-none"
-                >
-                  {visibleAccounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>
-                      {acc.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  onChange={setAccountId}
+                  triggerClassName="border-0 bg-transparent min-h-0 py-0 px-0 hover:border-0 focus-visible:ring-0 text-sm font-medium"
+                  options={visibleAccounts.map((acc) => ({ value: acc.id, label: acc.name }))}
+                />
+              </div>
             </Field>
             <Field label="Data">
               <label className="flex items-center gap-1.5">

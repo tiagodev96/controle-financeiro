@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
+import { FormSelect } from './form-select';
 
 type Account = { id: string; name: string };
 
@@ -27,36 +28,26 @@ export function TransactionFilters({ accounts, defaultMonth }: Props) {
 
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-      <label className="flex flex-col gap-1">
-        <span className="eyebrow">Status</span>
-        <select
-          aria-label="Status"
-          value={status}
-          onChange={(e) => setParam('status', e.target.value)}
-          className="min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <option value="all">Todos</option>
-          <option value="pending">Pendente</option>
-          <option value="paid">Pago</option>
-        </select>
-      </label>
+      <FormSelect
+        label="Status"
+        value={status}
+        onChange={(v) => setParam('status', v)}
+        options={[
+          { value: 'all', label: 'Todos' },
+          { value: 'pending', label: 'Pendente' },
+          { value: 'paid', label: 'Pago' },
+        ]}
+      />
 
-      <label className="flex flex-col gap-1">
-        <span className="eyebrow">Conta</span>
-        <select
-          aria-label="Conta"
-          value={conta}
-          onChange={(e) => setParam('conta', e.target.value)}
-          className="min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-sm text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <option value="all">Todas</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <FormSelect
+        label="Conta"
+        value={conta}
+        onChange={(v) => setParam('conta', v)}
+        options={[
+          { value: 'all', label: 'Todas' },
+          ...accounts.map((a) => ({ value: a.id, label: a.name })),
+        ]}
+      />
 
       <label className="flex flex-col gap-1">
         <span className="eyebrow">Mês</span>
