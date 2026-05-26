@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition, useRef, useEffect } from 'react';
-import { Archive, Coins, Edit3, MoreHorizontal, Undo2 } from 'lucide-react';
+import { Archive, Coins, Edit3, History, MoreHorizontal, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   archiveAccountAction,
@@ -11,6 +11,7 @@ import {
 import { CCY } from '@/components/finance/ccy';
 import { Num, type Currency } from '@/components/finance/num';
 import { EditBalanceDialog } from './edit-balance-dialog';
+import { BalanceHistoryDialog } from './balance-history-dialog';
 import { cn } from '@/lib/utils';
 
 type Props = {
@@ -34,6 +35,7 @@ export function AccountListItem({ id, name, currency, balanceCents, archived }: 
   const [pending, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
   const [balanceOpen, setBalanceOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -140,6 +142,15 @@ export function AccountListItem({ id, name, currency, balanceCents, archived }: 
             onOpenChange={setBalanceOpen}
           />
         )}
+        {historyOpen && (
+          <BalanceHistoryDialog
+            accountId={id}
+            accountName={name}
+            currency={currency}
+            open={historyOpen}
+            onOpenChange={setHistoryOpen}
+          />
+        )}
         {menuOpen && (
           <>
             <button
@@ -172,6 +183,17 @@ export function AccountListItem({ id, name, currency, balanceCents, archived }: 
                   >
                     <Edit3 className="size-3.5" strokeWidth={1.6} aria-hidden />
                     Renomear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setHistoryOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-fg1 hover:bg-bg-inset"
+                  >
+                    <History className="size-3.5" strokeWidth={1.6} aria-hidden />
+                    Histórico
                   </button>
                 </>
               )}
