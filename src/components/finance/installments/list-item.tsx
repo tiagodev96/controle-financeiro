@@ -1,15 +1,22 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { MoreHorizontal, Trash2 } from 'lucide-react';
+import { Edit3, MoreHorizontal, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { deleteInstallmentPlanAction } from '@/server/actions/installments/actions';
 import { Num, type Currency } from '@/components/finance/num';
+import { EditInstallmentDialog } from './edit-dialog';
 import { cn } from '@/lib/utils';
+
+type Category = { id: string; name: string; kind: 'expense' | 'income' };
+type Account = { id: string; name: string; currency: Currency };
 
 type Props = {
   id: string;
   title: string;
+  notes: string | null;
+  categoryId: string | null;
+  accountId: string | null;
   totalCents: number;
   perInstallmentCents: number;
   currency: Currency;
@@ -18,6 +25,8 @@ type Props = {
   pendingCount: number;
   isFinished: boolean;
   firstDueDate: string;
+  categories: Category[];
+  accounts: Account[];
 };
 
 function formatShortDate(iso: string): string {
@@ -27,6 +36,9 @@ function formatShortDate(iso: string): string {
 export function InstallmentListItem({
   id,
   title,
+  notes,
+  categoryId,
+  accountId,
   totalCents,
   perInstallmentCents,
   currency,
@@ -35,8 +47,11 @@ export function InstallmentListItem({
   pendingCount,
   isFinished,
   firstDueDate,
+  categories,
+  accounts,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const completed = totalInstallments - pendingCount;
@@ -92,6 +107,17 @@ export function InstallmentListItem({
               <div className="absolute right-0 top-9 z-40 min-w-[180px] rounded-md border border-border-soft bg-bg-raised py-1 shadow-md">
                 <button
                   type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setEditOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-fg1 hover:bg-bg-inset"
+                >
+                  <Edit3 className="size-3.5" strokeWidth={1.6} aria-hidden />
+                  Editar
+                </button>
+                <button
+                  type="button"
                   onClick={handleDelete}
                   className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-money-negative hover:bg-bg-inset"
                 >
@@ -126,6 +152,21 @@ export function InstallmentListItem({
           />
         </div>
       </div>
+
+      {editOpen && (
+        <EditInstallmentDialog
+          planId={id}
+          initialTitle={title}
+          initialNotes={notes}
+          initialCategoryId={categoryId}
+          initialAccountId={accountId}
+          planCurrency={currency}
+          categories={categories}
+          accounts={accounts}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
+      )}
     </div>
   );
 }

@@ -48,9 +48,16 @@ export default async function ParceladosPage() {
         </p>
       ) : (
         <>
-          {active.length > 0 && <Section label="Em andamento" plans={active} />}
+          {active.length > 0 && (
+            <Section label="Em andamento" plans={active} categories={categories} accounts={accounts} />
+          )}
           {finished.length > 0 && (
-            <Section label={`Quitados (${finished.length})`} plans={finished} />
+            <Section
+              label={`Quitados (${finished.length})`}
+              plans={finished}
+              categories={categories}
+              accounts={accounts}
+            />
           )}
         </>
       )}
@@ -58,12 +65,19 @@ export default async function ParceladosPage() {
   );
 }
 
+type CategoryProp = { id: string; name: string; kind: 'expense' | 'income' };
+type AccountProp = { id: string; name: string; currency: 'EUR' | 'BRL' };
+
 function Section({
   label,
   plans,
+  categories,
+  accounts,
 }: {
   label: string;
   plans: InstallmentPlanWithProgress[];
+  categories: CategoryProp[];
+  accounts: AccountProp[];
 }) {
   return (
     <section className="space-y-2">
@@ -77,6 +91,9 @@ function Section({
               key={p.id}
               id={p.id}
               title={p.title}
+              notes={p.notes}
+              categoryId={p.category_id}
+              accountId={p.account_id}
               totalCents={p.total_amount_cents}
               perInstallmentCents={perInstallment}
               currency={p.currency}
@@ -85,6 +102,8 @@ function Section({
               pendingCount={p.pendingCount}
               isFinished={p.isFinished}
               firstDueDate={p.first_due_date}
+              categories={categories}
+              accounts={accounts}
             />
           );
         })}
