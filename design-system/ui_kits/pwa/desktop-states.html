@@ -180,16 +180,16 @@
 
     try {
       ReactDOM.createRoot(document.getElementById('states-host')).render(
-        <Section width={1280} height={780} url="controle.tiago.dev"><DesktopStatesDemo /></Section>
+        <Section width={1280} height={780} url="controle.example.com"><DesktopStatesDemo /></Section>
       );
       ReactDOM.createRoot(document.getElementById('modals-host')).render(
-        <Section width={1280} height={780} url="controle.tiago.dev/categorias"><DesktopModalsDemo /></Section>
+        <Section width={1280} height={780} url="controle.example.com/categorias"><DesktopModalsDemo /></Section>
       );
       ReactDOM.createRoot(document.getElementById('toasts-host')).render(
-        <Section width={1280} height={680} url="controle.tiago.dev"><DesktopToastsDemo /></Section>
+        <Section width={1280} height={680} url="controle.example.com"><DesktopToastsDemo /></Section>
       );
       ReactDOM.createRoot(document.getElementById('tablet-host')).render(
-        <Section width={1024} height={720} url="controle.tiago.dev" tab="Controle · CF · tablet"><TabletApp /></Section>
+        <Section width={1024} height={720} url="controle.example.com" tab="Controle · CF · tablet"><TabletApp /></Section>
       );
     } catch (e) {
       console.error('CF desktop-states render failed:', e);

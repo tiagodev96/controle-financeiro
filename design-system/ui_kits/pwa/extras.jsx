@@ -383,7 +383,7 @@ function OnboardingLoginScreen() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 4 }}>
         <FormField label="Email">
-          <TextInput value="tiago@email.pt" mono />
+          <TextInput value="owner@email.pt" mono />
         </FormField>
 
         <Btn size="lg" variant="primary" style={{ width: '100%' }}>
@@ -400,7 +400,7 @@ function OnboardingLoginScreen() {
       }}>
         <Icon.Alert size={16} style={{ color: T.fg3, marginTop: 2, flexShrink: 0 }} />
         <span style={{ fontFamily: T.fontSans, fontSize: 12.5, color: T.fg3, lineHeight: 1.45 }}>
-          Apenas <b style={{ color: T.fg2 }}>Tiago</b> e <b style={{ color: T.fg2 }}>Laine</b> têm acesso a este household — allowlist do env. Outros emails não recebem link válido.
+          Apenas <b style={{ color: T.fg2 }}>Owner</b> e <b style={{ color: T.fg2 }}>Member</b> têm acesso a este household — allowlist do env. Outros emails não recebem link válido.
         </span>
       </div>
     </div>
@@ -498,7 +498,7 @@ function OnboardingReadyScreen() {
 
       <div>
         <h1 style={{ margin: 0, fontFamily: T.fontSans, fontSize: 26, fontWeight: 600, color: T.fg1, letterSpacing: '-0.025em' }}>
-          Tudo pronto, Tiago.
+          Tudo pronto, Owner.
         </h1>
         <p style={{ margin: '6px 0 0', color: T.fg3, fontSize: 14, lineHeight: 1.45 }}>
           Sua conta está criada. Lance a primeira despesa ou explore o dashboard.
@@ -519,7 +519,7 @@ function OnboardingReadyScreen() {
       <div style={{ flex: 1 }} />
 
       <span style={{ fontFamily: T.fontMono, fontSize: 10.5, color: T.fg4, textAlign: 'center' }}>
-        Logado como tiago@email.pt
+        Logado como owner@email.pt
       </span>
     </div>
   );

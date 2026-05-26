@@ -66,6 +66,7 @@ export async function runRecurringCron(
     const session: Session = {
       userId: profile.id,
       householdId,
+      displayName: 'cron',
       preferredDisplayCurrency: 'EUR',
     };
 

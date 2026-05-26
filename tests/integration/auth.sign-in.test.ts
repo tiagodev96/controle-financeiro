@@ -17,7 +17,7 @@ describe('signInCore (integração)', () => {
     vi.stubEnv('AUTH_ENABLED', 'true');
     vi.stubEnv(
       'AUTH_ALLOWED_EMAILS',
-      'tiago@example.com,empty@example.com',
+      'owner@example.com,empty@example.com',
     );
   });
 
@@ -29,19 +29,19 @@ describe('signInCore (integração)', () => {
     const supabase = freshAnonClient();
     const result = await signInCore(
       { supabase },
-      { email: 'tiago@example.com', password: 'password-local' },
+      { email: 'owner@example.com', password: 'password-local' },
     );
 
     expect(result.ok).toBe(true);
     const { data } = await supabase.auth.getSession();
-    expect(data.session?.user.email).toBe('tiago@example.com');
+    expect(data.session?.user.email).toBe('owner@example.com');
   });
 
   it('I-A2 — senha errada → ok:false com mensagem genérica, sem distinção', async () => {
     const supabase = freshAnonClient();
     const result = await signInCore(
       { supabase },
-      { email: 'tiago@example.com', password: 'senha-errada' },
+      { email: 'owner@example.com', password: 'senha-errada' },
     );
 
     expect(result).toEqual({ ok: false, error: 'Email ou senha inválidos.' });
@@ -67,7 +67,7 @@ describe('signInCore (integração)', () => {
 
     const result = await signInCore(
       { supabase },
-      { email: 'tiago@example.com', password: 'password-local' },
+      { email: 'owner@example.com', password: 'password-local' },
     );
 
     expect(result).toEqual({ ok: false, error: 'Email ou senha inválidos.' });

@@ -1,6 +1,6 @@
 # Controle Financeiro — Design System
 
-> Sistema visual completo para o **Controle Financeiro**, portal web pessoal de um casal (Tiago + Laine) acompanhar finanças do mês. Mobile-first PWA, dark mode, PT-BR, multi-moeda EUR/BRL, **zero gamificação**.
+> Sistema visual completo para o **Controle Financeiro**, portal web pessoal de um casal (Owner + Member) acompanhar finanças do mês. Mobile-first PWA, dark mode, PT-BR, multi-moeda EUR/BRL, **zero gamificação**.
 
 Esta pasta substitui inteiramente o sistema anterior (`docs/design-system/` do repo, reaproveitado de outro produto). É a fonte única de verdade para tipografia, cor, espaço, motion e componentes.
 
@@ -154,7 +154,7 @@ Linear-esque: `cubic-bezier(0.2, 0, 0, 1)` para `--ease-out`, 150ms para transi�
 
 ### Cantos de imagem
 
-Não aplicável — este sistema usa zero imagens. Avatares de Tiago/Laine são monogramas de uma letra em chip circular brass-bg / sage-bg.
+Não aplicável — este sistema usa zero imagens. Avatares de Owner/Member são monogramas de uma letra em chip circular brass-bg / sage-bg.
 
 ---
 
@@ -164,7 +164,7 @@ Não aplicável — este sistema usa zero imagens. Avatares de Tiago/Laine são 
 
 **PT-BR exclusivamente.** Sentence case em todos os títulos e labels — nunca Title Case americano. Tom **direto e operacional**, como anotação de quem usa o app todo dia. Sem entusiasmo performático.
 
-- ❌ "Bem-vindo de volta, Tiago!" / "Boa tarde 👋"
+- ❌ "Bem-vindo de volta, Owner!" / "Boa tarde 👋"
 - ✅ "Dashboard" / "Maio · 2026"
 
 ### Vocabulário canônico (não traduzir, não inventar sinônimos)
@@ -354,4 +354,4 @@ Todos com `cubic-bezier(0.2, 0, 0, 1)`. Sem bounces.
 
 ## Caveats e próximos passos
 
-Veja a mensagem ao final da geração — itens que precisam de validação do Tiago antes de fechar.
+Veja a mensagem ao final da geração — itens que precisam de validação do Owner antes de fechar.

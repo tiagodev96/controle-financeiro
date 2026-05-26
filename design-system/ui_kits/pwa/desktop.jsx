@@ -87,8 +87,8 @@ function DesktopSidebar({ active, onChange }) {
           fontWeight: 700, fontSize: 12,
         }}>T</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 0, flex: 1, minWidth: 0 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color: T.fg1 }}>Tiago</span>
-          <span style={{ fontFamily: T.fontMono, fontSize: 10, color: T.fg4 }}>+ Laine</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: T.fg1 }}>Owner</span>
+          <span style={{ fontFamily: T.fontMono, fontSize: 10, color: T.fg4 }}>+ Member</span>
         </div>
       </div>
     </aside>
@@ -242,11 +242,11 @@ function DesktopDashboardScreen() {
         <div>
           <Eyebrow>Atividade · hoje</Eyebrow>
           <Card padded={false} style={{ marginTop: 8 }}>
-            <DActivity time="09:12" who="Tiago" what="Lançou Mercado · Pingo Doce" cents={-14255} />
+            <DActivity time="09:12" who="Owner" what="Lançou Mercado · Pingo Doce" cents={-14255} />
             <div style={{ height: 1, background: T.borderSoft }} />
-            <DActivity time="08:45" who="Laine" what="Marcou NOS como pago" cents={-4400} />
+            <DActivity time="08:45" who="Member" what="Marcou NOS como pago" cents={-4400} />
             <div style={{ height: 1, background: T.borderSoft }} />
-            <DActivity time="08:02" who="Tiago" what="Ajustou saldo Revolut" cents={120000} />
+            <DActivity time="08:02" who="Owner" what="Ajustou saldo Revolut" cents={120000} />
           </Card>
         </div>
 
@@ -425,15 +425,15 @@ function DesktopLancarScreen() {
 // ============================================================================
 function DesktopTransacoesScreen() {
   const rows = [
-    { date: '25 mai',  desc: 'Mercado · Pingo Doce', cat: 'Alimentação',   who: 'Tiago', cents: -14255, currency: 'EUR', status: 'paid' },
-    { date: '24 mai',  desc: 'Café · A Brasileira',   cat: 'Alimentação',   who: 'Tiago', cents: -380,   currency: 'EUR', status: 'paid' },
-    { date: '24 mai',  desc: 'Uber · centro',         cat: 'Transporte',    who: 'Laine', cents: -1200,  currency: 'EUR', status: 'paid' },
-    { date: '24 mai',  desc: 'Cinema · Nimas',        cat: 'Lazer',         who: 'Laine', cents: -1800,  currency: 'EUR', status: 'paid' },
-    { date: '21 mai',  desc: 'Vet · Lupita',          cat: 'Pet',           who: 'Tiago', cents: -9200,  currency: 'EUR', status: 'overdue' },
-    { date: '15 mai',  desc: 'Salário · maio',        cat: 'Trabalho',      who: 'Tiago', cents: 248000, currency: 'EUR', status: 'paid', positive: true },
-    { date: '10 mai',  desc: 'Aluguel',               cat: 'Moradia · rec.',who: 'Tiago', cents: -80000, currency: 'EUR', status: 'paid' },
-    { date: '01 mai',  desc: 'NOS internet',          cat: 'Casa · rec.',   who: 'Tiago', cents: -4400,  currency: 'EUR', status: 'pending' },
-    { date: '01 mai',  desc: 'Spotify família',       cat: 'Lazer · rec.',  who: 'Tiago', cents: -1799,  currency: 'EUR', status: 'paid' },
+    { date: '25 mai',  desc: 'Mercado · Pingo Doce', cat: 'Alimentação',   who: 'Owner', cents: -14255, currency: 'EUR', status: 'paid' },
+    { date: '24 mai',  desc: 'Café · A Brasileira',   cat: 'Alimentação',   who: 'Owner', cents: -380,   currency: 'EUR', status: 'paid' },
+    { date: '24 mai',  desc: 'Uber · centro',         cat: 'Transporte',    who: 'Member', cents: -1200,  currency: 'EUR', status: 'paid' },
+    { date: '24 mai',  desc: 'Cinema · Nimas',        cat: 'Lazer',         who: 'Member', cents: -1800,  currency: 'EUR', status: 'paid' },
+    { date: '21 mai',  desc: 'Vet · Lupita',          cat: 'Pet',           who: 'Owner', cents: -9200,  currency: 'EUR', status: 'overdue' },
+    { date: '15 mai',  desc: 'Salário · maio',        cat: 'Trabalho',      who: 'Owner', cents: 248000, currency: 'EUR', status: 'paid', positive: true },
+    { date: '10 mai',  desc: 'Aluguel',               cat: 'Moradia · rec.',who: 'Owner', cents: -80000, currency: 'EUR', status: 'paid' },
+    { date: '01 mai',  desc: 'NOS internet',          cat: 'Casa · rec.',   who: 'Owner', cents: -4400,  currency: 'EUR', status: 'pending' },
+    { date: '01 mai',  desc: 'Spotify família',       cat: 'Lazer · rec.',  who: 'Owner', cents: -1799,  currency: 'EUR', status: 'paid' },
   ];
   return (
     <React.Fragment>
@@ -469,7 +469,7 @@ function DesktopTransacoesScreen() {
 
         {/* Filter chips */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
-          {['Tudo', 'Pago', 'Pendente', 'Atraso', 'EUR', 'BRL', 'Tiago', 'Laine'].map((l, i) => (
+          {['Tudo', 'Pago', 'Pendente', 'Atraso', 'EUR', 'BRL', 'Owner', 'Member'].map((l, i) => (
             <button key={l} style={{
               padding: '5px 11px', borderRadius: 9999,
               background: i === 0 ? T.brandBg : T.inset,
@@ -552,9 +552,9 @@ function DesktopDividasScreen() {
         <h2 style={{ margin: '0 0 10px', fontSize: 16, fontWeight: 600, color: T.fg1 }}>Histórico de pagamentos</h2>
         <Card padded={false}>
           {[
-            { date: '15 mai', who: 'Tiago', what: 'Empréstimo Jefferson', cents: -25000 },
-            { date: '05 mai', who: 'Tiago', what: 'Notebook · parcela 4', cents: -17590 },
-            { date: '01 mai', who: 'Tiago', what: 'Cartão Nubank · parcial', cents: -10000 },
+            { date: '15 mai', who: 'Owner', what: 'Empréstimo Jefferson', cents: -25000 },
+            { date: '05 mai', who: 'Owner', what: 'Notebook · parcela 4', cents: -17590 },
+            { date: '01 mai', who: 'Owner', what: 'Cartão Nubank · parcial', cents: -10000 },
           ].map((h, i, arr) => (
             <React.Fragment key={i}>
               <div style={{
@@ -623,9 +623,9 @@ function DDebtCard({ name, priority, currency, total, paid, pct, note, installme
 // ============================================================================
 function DesktopContasScreen() {
   const accounts = [
-    { name: 'Revolut · principal', who: 'Tiago', currency: 'EUR', balance: 124000, updated: 'há 12 min' },
-    { name: 'CGD · ordenado',      who: 'Tiago', currency: 'EUR', balance: 60000,  updated: 'há 2 dias' },
-    { name: 'Itaú · BR',           who: 'Tiago', currency: 'BRL', balance: 210380, updated: 'há 1 semana' },
+    { name: 'Revolut · principal', who: 'Owner', currency: 'EUR', balance: 124000, updated: 'há 12 min' },
+    { name: 'CGD · ordenado',      who: 'Owner', currency: 'EUR', balance: 60000,  updated: 'há 2 dias' },
+    { name: 'Itaú · BR',           who: 'Owner', currency: 'BRL', balance: 210380, updated: 'há 1 semana' },
   ];
   return (
     <DesktopMain>
@@ -1023,11 +1023,11 @@ function DesktopMaisScreen() {
 
         {section === 'household' && (
           <Card padded={false} style={{ maxWidth: 600 }}>
-            <DMaisRow label="Nome do household" value="Tiago + Laine" editable />
+            <DMaisRow label="Nome do household" value="Owner + Member" editable />
             <div style={{ height: 1, background: T.borderSoft }} />
-            <DMaisRow label="Email · Tiago" value="tiago@email.pt" mono />
+            <DMaisRow label="Email · Owner" value="owner@email.pt" mono />
             <div style={{ height: 1, background: T.borderSoft }} />
-            <DMaisRow label="Email · Laine" value="laine@email.pt" mono />
+            <DMaisRow label="Email · Member" value="member@email.pt" mono />
             <div style={{ height: 1, background: T.borderSoft }} />
             <DMaisRow label="Moeda base" value="EUR · Euro" editable />
             <div style={{ height: 1, background: T.borderSoft }} />
@@ -1090,7 +1090,7 @@ function DesktopMaisScreen() {
             <p style={{ margin: 0, color: T.fg2, fontSize: 14 }}>
               Sair encerra a sessão. Magic link via email pra entrar de novo.
             </p>
-            <Btn size="md" variant="danger" style={{ marginTop: 14 }}>Sair de tiago@email.pt</Btn>
+            <Btn size="md" variant="danger" style={{ marginTop: 14 }}>Sair de owner@email.pt</Btn>
           </Card>
         )}
       </DesktopMain>

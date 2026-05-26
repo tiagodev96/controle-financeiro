@@ -2,8 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { setPreferredDisplayCurrencyCore } from '@/server/actions/profile/preferences-core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
-  SEED_TIAGO_USER_ID,
+  SEED_SESSION,
+  SEED_USER_ID,
 } from './helpers/auth';
 import { getAdminClient } from './helpers/db';
 
@@ -12,7 +12,7 @@ async function resetPref(): Promise<void> {
   await admin
     .from('profiles')
     .update({ preferred_display_currency: 'EUR' })
-    .eq('id', SEED_TIAGO_USER_ID);
+    .eq('id', SEED_USER_ID);
 }
 
 describe('setPreferredDisplayCurrencyCore (integração)', () => {
@@ -21,7 +21,7 @@ describe('setPreferredDisplayCurrencyCore (integração)', () => {
   it('I-PREF1 — salva BRL no profile do usuário autenticado', async () => {
     const supabase = await getAuthedClient();
     const result = await setPreferredDisplayCurrencyCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { currency: 'BRL' },
     );
     expect(result.ok).toBe(true);
@@ -30,7 +30,7 @@ describe('setPreferredDisplayCurrencyCore (integração)', () => {
     const { data } = await admin
       .from('profiles')
       .select('preferred_display_currency')
-      .eq('id', SEED_TIAGO_USER_ID)
+      .eq('id', SEED_USER_ID)
       .single();
     expect(data?.preferred_display_currency).toBe('BRL');
   });
@@ -38,7 +38,7 @@ describe('setPreferredDisplayCurrencyCore (integração)', () => {
   it('I-PREF2 — rejeita currency fora de EUR/BRL', async () => {
     const supabase = await getAuthedClient();
     const result = await setPreferredDisplayCurrencyCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       // @ts-expect-error caso garantido pelo runtime
       { currency: 'USD' },
     );

@@ -6,7 +6,7 @@ import {
 } from '@/server/actions/debts/core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
 } from './helpers/auth';
 import { getAdminClient } from './helpers/db';
@@ -26,7 +26,7 @@ describe('debts CRUD core (integração)', () => {
   it('I-DB-CRUD — cria debt e retorna row com remaining=original', async () => {
     const supabase = await getAuthedClient();
     const result = await createDebtCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'DB test Jefferson',
         originalAmountCents: 300_000,
@@ -51,7 +51,7 @@ describe('debts CRUD core (integração)', () => {
   it('I-DB-CLOSE-MANUAL — close + reopen', async () => {
     const supabase = await getAuthedClient();
     const created = await createDebtCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'DB test perdoada',
         originalAmountCents: 100_000,
@@ -63,7 +63,7 @@ describe('debts CRUD core (integração)', () => {
     if (!created.ok) throw new Error('setup');
 
     const closed = await closeDebtManuallyCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { debtId: created.debt.id },
     );
     expect(closed.ok).toBe(true);
@@ -80,7 +80,7 @@ describe('debts CRUD core (integração)', () => {
     expect(afterClose?.remaining_amount_cents).toBe(100_000);
 
     const reopened = await reopenDebtCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { debtId: created.debt.id },
     );
     expect(reopened.ok).toBe(true);

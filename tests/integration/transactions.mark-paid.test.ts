@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { markPaidCore } from '@/server/actions/transactions/mark-paid-core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_CATEGORY_MERCADO_ID,
@@ -22,7 +22,7 @@ async function seedPendingTxn(householdId = SEED_DEMO_HOUSEHOLD_ID): Promise<str
     .from('transactions')
     .insert({
       household_id: householdId,
-      profile_id: SEED_TIAGO_SESSION.userId,
+      profile_id: SEED_SESSION.userId,
       account_id: SEED_ACCOUNT_EUR_ID,
       category_id: SEED_CATEGORY_MERCADO_ID,
       direction: 'expense',
@@ -48,7 +48,7 @@ describe('markPaidCore (integração)', () => {
     const supabase = await getAuthedClient();
 
     const result = await markPaidCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { transactionId: txnId },
     );
 
@@ -67,10 +67,10 @@ describe('markPaidCore (integração)', () => {
   it('I-M2 — já pago retorna ok:false (não silencia)', async () => {
     const txnId = await seedPendingTxn();
     const supabase = await getAuthedClient();
-    await markPaidCore({ supabase, session: SEED_TIAGO_SESSION }, { transactionId: txnId });
+    await markPaidCore({ supabase, session: SEED_SESSION }, { transactionId: txnId });
 
     const result = await markPaidCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { transactionId: txnId },
     );
 
@@ -85,7 +85,7 @@ describe('markPaidCore (integração)', () => {
         .from('transactions')
         .insert({
           household_id: isolated.householdId,
-          profile_id: SEED_TIAGO_SESSION.userId,
+          profile_id: SEED_SESSION.userId,
           account_id: SEED_ACCOUNT_EUR_ID,
           category_id: isolated.categoryId,
           direction: 'expense',
@@ -101,7 +101,7 @@ describe('markPaidCore (integração)', () => {
 
       const supabase = await getAuthedClient();
       const result = await markPaidCore(
-        { supabase, session: SEED_TIAGO_SESSION },
+        { supabase, session: SEED_SESSION },
         { transactionId: data.id },
       );
 
@@ -114,7 +114,7 @@ describe('markPaidCore (integração)', () => {
   it('I-M4 — txn inexistente → ok:false', async () => {
     const supabase = await getAuthedClient();
     const result = await markPaidCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { transactionId: '00000000-0000-4000-8000-000000000000' },
     );
     expect(result.ok).toBe(false);

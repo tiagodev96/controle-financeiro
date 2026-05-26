@@ -1,6 +1,6 @@
 # Login com email + senha + allowlist
 
-> Esta PRD substitui a proposta original de magic link (arquivo anterior `magic-link-auth.md`, renomeado). Magic link foi descartado: depende de SMTP, tem risco cross-device, e a complexidade não se justifica pra 2 usuários onde o Tiago provisiona contas manualmente.
+> Esta PRD substitui a proposta original de magic link (arquivo anterior `magic-link-auth.md`, renomeado). Magic link foi descartado: depende de SMTP, tem risco cross-device, e a complexidade não se justifica pra 2 usuários onde o owner provisiona contas manualmente.
 
 ## Problema
 
@@ -8,11 +8,11 @@ Hoje o app não tem como autenticar ninguém em produção. `/login` mostra um c
 
 ## Usuário afetado
 
-Tiago e Laine no primeiro acesso pela Vercel a partir do celular (peso alto, é o uso real). Tiago em dev quando quer validar o fluxo de auth real sem cair no atalho do helper (peso médio). Não é pra: signup self-service, usuários novos, recuperação de senha — nada disso existe no produto e não vai existir nesta versão.
+owner e co-membro no primeiro acesso pela Vercel a partir do celular (peso alto, é o uso real). owner em dev quando quer validar o fluxo de auth real sem cair no atalho do helper (peso médio). Não é pra: signup self-service, usuários novos, recuperação de senha — nada disso existe no produto e não vai existir nesta versão.
 
 ## Métrica de sucesso
 
-Com 2 usuários só, a métrica é binária: **Tiago e Laine conseguem entrar no app pela Vercel em iPhone Safari e Chrome Android, sem suporte técnico do Tiago além do compartilhamento inicial da senha**. Verificado manualmente uma vez por usuário no primeiro deploy de produção.
+Com 2 usuários só, a métrica é binária: **owner e co-membro conseguem entrar no app pela Vercel em iPhone Safari e Chrome Android, sem suporte técnico do owner além do compartilhamento inicial da senha**. Verificado manualmente uma vez por usuário no primeiro deploy de produção.
 
 Sem proxy de tempo ou adoção. Latência de `signInWithPassword` é ~200ms — não há ganho em medir. Ou os dois entram, ou a feature falhou.
 
@@ -20,13 +20,13 @@ Sem proxy de tempo ou adoção. Latência de `signInWithPassword` é ~200ms — 
 
 ### Dentro
 
-- `/login` funcional gated por feature flag `AUTH_ENABLED` (env server-only, valores `true`/`false`). Quando ligado: input de email, input de senha, botão **Entrar**. Quando desligado: mantém a UI "Em breve" atual. Default em `.env.example`: `true`. Em produção: começa `false`, vira `true` após smoke test do Tiago.
+- `/login` funcional gated por feature flag `AUTH_ENABLED` (env server-only, valores `true`/`false`). Quando ligado: input de email, input de senha, botão **Entrar**. Quando desligado: mantém a UI "Em breve" atual. Default em `.env.example`: `true`. Em produção: começa `false`, vira `true` após smoke test do owner.
 - Server Action `signInWithEmail({ email, password })` em `src/server/actions/auth/sign-in.ts`. Valida formato (Zod), confere `AUTH_ENABLED`, checa allowlist server-side, chama `supabase.auth.signInWithPassword`. Em sucesso, `@supabase/ssr` seta cookies via `cookies()` e a action retorna `{ ok: true }`. Em erro: mensagem **genérica** sempre — `'Email ou senha inválidos'`. Não distinguir "email não cadastrado" de "senha errada" (evita enumeração de emails válidos).
 - Allowlist via env server-only `AUTH_ALLOWED_EMAILS` (csv com 2 entradas). Defense in depth: o Supabase só vai ter esses 2 emails cadastrados de qualquer jeito (provisionamento manual), mas a allowlist garante que qualquer outro email que apareça no banco por engano também é barrado.
 - Redirect pós-login: para `/`. Sem destination preservation no v1.
 - `/login` com sessão ativa **redireciona pra `/`** (single-account flow, sem "trocar de conta").
 - **Middleware** Next.js (`src/middleware.ts`) novo: refresh de sessão a cada request via `@supabase/ssr` e redirect `/login → /` quando já autenticado, redirect `(app)/* → /login` quando anônimo. Substitui o `try { getSession() } catch redirect('/login')` que hoje vive em cada page autenticada. Matcher explícito excluindo `_next/static`, `_next/image`, `favicon.ico` e qualquer rota de assets.
-- `tiago@example.com` (fixture user já existente no seed) **fica fora** da allowlist em produção. Em local/dev, a allowlist do `.env.local` inclui o fixture user pra desenvolvimento manual funcionar.
+- `owner@example.com` (fixture user já existente no seed) **fica fora** da allowlist em produção. Em local/dev, a allowlist do `.env.local` inclui o fixture user pra desenvolvimento manual funcionar.
 - Helper `signInAsFixtureUser` em `tests/helpers/auth.ts` **renomeado pra `signInAsFixtureUser`** e com JSDoc atualizado: deixa explícito que o helper agora usa **exatamente o mesmo método** (`signInWithPassword`) do caminho de produção — diferença é só pular a UI pra reduzir flake no E2E. Sem mais bypass conceitual; é só economia de DOM. Mantém o caminho em `tests/helpers/auth.ts` (sem mover de pasta).
 - Documentação operacional em `docs/operations/provisioning.md` (arquivo novo, curto): passo a passo de como criar usuário novo no Supabase dashboard, definir senha forte, atualizar `AUTH_ALLOWED_EMAILS` no Vercel e em `.env.local`.
 
@@ -34,7 +34,7 @@ Sem proxy de tempo ou adoção. Latência de `signInWithPassword` é ~200ms — 
 
 - **Magic link / OAuth / SSO**: rejeitado nesta iteração. Custo > benefício pra 2 usuários conhecidos.
 - **Signup self-service**: não existe. Adicionar usuário = provisionar manual no dashboard + editar `AUTH_ALLOWED_EMAILS`.
-- **Reset de senha via UI** ("esqueci a senha"): não existe. Esqueceu → mensagem pro Tiago → Tiago reseta no dashboard. Aceitável dado que são 2 pessoas.
+- **Reset de senha via UI** ("esqueci a senha"): não existe. Esqueceu → mensagem pro owner → owner reseta no dashboard. Aceitável dado que são 2 pessoas.
 - **Trocar a própria senha autenticado** (`/conta` com form de update password): possível follow-up, **fora desta PRD**. Não bloqueia uso.
 - **2FA / device fingerprint / location check / risk-based auth**: paranoia desnecessária pra 2 usuários conhecidos.
 - **"Lembrar de mim" / refresh token longevo customizado**: aceitar default do `@supabase/ssr` (~1h access token, refresh transparente).
@@ -53,19 +53,19 @@ Helper de teste continua existindo porque E2E não vai digitar email/senha em to
 ## Dependências
 
 - **Variável de ambiente `AUTH_ENABLED`** (server-only) em produção (Vercel) e em `.env.local`. Default em `.env.example`: `true`. Em prod: começa `false`.
-- **Variável de ambiente `AUTH_ALLOWED_EMAILS`** (server-only) em produção e em `.env.local`. Em prod: `tiago@<dominio-real>,laine@<dominio-real>`. Em local: inclui também `tiago@example.com` (fixture user). Adicionar a `.env.example`.
-- **Provisionamento manual no dashboard do Supabase de produção**: Tiago cria 2 usuários (email + senha forte), confirma manualmente (sem fluxo de "confirme seu email"). Tarefa operacional fora do código, mas pré-requisito de uso.
+- **Variável de ambiente `AUTH_ALLOWED_EMAILS`** (server-only) em produção e em `.env.local`. Em prod: `owner@<dominio-real>,member@<dominio-real>`. Em local: inclui também `owner@example.com` (fixture user). Adicionar a `.env.example`.
+- **Provisionamento manual no dashboard do Supabase de produção**: owner cria 2 usuários (email + senha forte), confirma manualmente (sem fluxo de "confirme seu email"). Tarefa operacional fora do código, mas pré-requisito de uso.
 - **`docs/operations/provisioning.md`** novo, descrevendo o passo a passo do provisionamento manual.
 - **Nenhuma dependência nova de pacote**: `@supabase/ssr`, `@supabase/supabase-js` e Zod já estão instalados.
 
 ## Riscos
 
-- **Senha vazada por um dos dois usuários** (anotada em lugar fácil, reusada de outro serviço comprometido): probabilidade média, impacto alto. Mitigação: Tiago gera senha forte aleatória, recomenda salvar em password manager (Apple Keychain / 1Password). Sem 2FA, é tudo que dá pra fazer sem complicar.
-- **Senha esquecida exige intervenção manual do Tiago**: probabilidade média, impacto baixo. Aceitar. Documentado no provisioning.md que "esqueci a senha" = pingar Tiago.
+- **Senha vazada por um dos dois usuários** (anotada em lugar fácil, reusada de outro serviço comprometido): probabilidade média, impacto alto. Mitigação: owner gera senha forte aleatória, recomenda salvar em password manager (Apple Keychain / 1Password). Sem 2FA, é tudo que dá pra fazer sem complicar.
+- **Senha esquecida exige intervenção manual do owner**: probabilidade média, impacto baixo. Aceitar. Documentado no provisioning.md que "esqueci a senha" = pingar owner.
 - **Middleware quebra outras rotas em desenvolvimento** (assets estáticos, API routes): probabilidade média se o matcher for amplo demais. Mitigação: matcher explícito pra excluir `_next/static`, `_next/image`, `favicon.ico`, qualquer `api`. Verificar no teste manual antes de mergear.
-- **Allowlist desincronizada entre env local e produção** (Laine adicionada em prod mas não em local, ou vice-versa): probabilidade baixa, impacto baixo. Mitigação: documentar em `.env.example` e validar no startup do server (logar warning se a env estiver vazia ou malformada).
-- **`AUTH_ENABLED=false` esquecido em prod após smoke pass**: probabilidade média, impacto alto (Laine clica e vê "Em breve" achando que app está quebrado). Mitigação: virar a flag faz parte do checklist de smoke; documentar em provisioning.md.
-- **`signInWithPassword` falhando silenciosamente em produção** (config Supabase prod ausente, projeto suspenso, etc): probabilidade baixa, impacto alto. Mitigação: smoke test obrigatório com Tiago no primeiro deploy antes de avisar Laine.
+- **Allowlist desincronizada entre env local e produção** (co-membro adicionada em prod mas não em local, ou vice-versa): probabilidade baixa, impacto baixo. Mitigação: documentar em `.env.example` e validar no startup do server (logar warning se a env estiver vazia ou malformada).
+- **`AUTH_ENABLED=false` esquecido em prod após smoke pass**: probabilidade média, impacto alto (co-membro clica e vê "Em breve" achando que app está quebrado). Mitigação: virar a flag faz parte do checklist de smoke; documentar em provisioning.md.
+- **`signInWithPassword` falhando silenciosamente em produção** (config Supabase prod ausente, projeto suspenso, etc): probabilidade baixa, impacto alto. Mitigação: smoke test obrigatório com owner no primeiro deploy antes de avisar co-membro.
 - **Helper renomeado quebra E2E sem ninguém notar**: probabilidade baixa (`tsc --noEmit` pega), impacto baixo. Aceitar.
 
 ## Hipóteses a validar

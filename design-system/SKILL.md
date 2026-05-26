@@ -1,6 +1,6 @@
 ---
 name: controle-financeiro-design
-description: Use this skill to generate well-branded interfaces and assets for Controle Financeiro — portal pessoal de controle financeiro de um casal (Tiago + Laine), mobile-first PWA, dark mode + light, multi-moeda EUR/BRL, PT-BR, zero gamificação. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for prototyping.
+description: Use this skill to generate well-branded interfaces and assets for Controle Financeiro — portal pessoal de controle financeiro de um casal (Owner + Member), mobile-first PWA, dark mode + light, multi-moeda EUR/BRL, PT-BR, zero gamificação. Contains essential design guidelines, colors, type, fonts, assets, and UI kit components for prototyping.
 user-invocable: true
 ---
 
@@ -26,7 +26,7 @@ Read the `README.md` file within this skill, and explore the other available fil
 **Voz e tom:**
 - Impessoal, operacional, sem entusiasmo performático.
 - ✅ "Sua sobra prevista é € 612,40. Quitar € 367,44 da Empréstimo Jefferson (19,6%)."
-- ❌ "Bem-vindo de volta, Tiago! Que tal lançar uma despesa hoje? 💪"
+- ❌ "Bem-vindo de volta, Owner! Que tal lançar uma despesa hoje? 💪"
 
 **Se for criar artefato visual** (slide, mockup, prototype, throwaway): copie os assets relevantes desta pasta, importe `colors_and_type.css`, monte HTML estático no padrão das `preview/*` ou React no padrão das `ui_kits/pwa/screens.jsx`.
 

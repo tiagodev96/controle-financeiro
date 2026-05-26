@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { listTransactionsForHousehold } from '@/lib/finance/transactions';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_ACCOUNT_BRL_ID,
@@ -30,7 +30,7 @@ async function seedTxns(rows: TxnSeed[]): Promise<void> {
   const admin = getAdminClient();
   const payload = rows.map((r) => ({
     household_id: SEED_DEMO_HOUSEHOLD_ID,
-    profile_id: SEED_TIAGO_SESSION.userId,
+    profile_id: SEED_SESSION.userId,
     amount_cents: r.amount_cents,
     description: r.description,
     category_id: r.category_id ?? SEED_CATEGORY_MERCADO_ID,

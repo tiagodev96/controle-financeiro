@@ -26,23 +26,23 @@ describe('parseAllowlist', () => {
   });
 
   it('U-A1.6 — capitalização do input é normalizada pra lowercase', () => {
-    expect(parseAllowlist('Tiago@Example.com')).toEqual(['tiago@example.com']);
+    expect(parseAllowlist('Owner@Example.com')).toEqual(['owner@example.com']);
   });
 });
 
 describe('isEmailAllowed', () => {
-  const list = ['tiago@example.com', 'laine@example.com'];
+  const list = ['owner@example.com', 'member@example.com'];
 
   it('U-A2.1 — email presente, mesma capitalização → true', () => {
-    expect(isEmailAllowed('tiago@example.com', list)).toBe(true);
+    expect(isEmailAllowed('owner@example.com', list)).toBe(true);
   });
 
   it('U-A2.2 — email presente, capitalização diferente → true', () => {
-    expect(isEmailAllowed('TIAGO@example.com', list)).toBe(true);
+    expect(isEmailAllowed('OWNER@example.com', list)).toBe(true);
   });
 
   it('U-A2.3 — espaços extras no input ainda matcham', () => {
-    expect(isEmailAllowed('  tiago@example.com  ', list)).toBe(true);
+    expect(isEmailAllowed('  owner@example.com  ', list)).toBe(true);
   });
 
   it('U-A2.4 — email ausente → false', () => {
@@ -50,7 +50,7 @@ describe('isEmailAllowed', () => {
   });
 
   it('U-A2.5 — lista vazia → false sempre', () => {
-    expect(isEmailAllowed('tiago@example.com', [])).toBe(false);
+    expect(isEmailAllowed('owner@example.com', [])).toBe(false);
   });
 
   it('U-A2.6 — string vazia → false', () => {

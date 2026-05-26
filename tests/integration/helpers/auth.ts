@@ -5,10 +5,10 @@ import type { Session } from '@/lib/auth/session';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const DEFAULT_EMAIL = 'tiago@example.com';
+const DEFAULT_EMAIL = 'owner@example.com';
 const DEFAULT_PASSWORD = 'password-local';
 
-export const SEED_TIAGO_USER_ID = '00000000-0000-4000-8000-000000000001';
+export const SEED_USER_ID = '00000000-0000-4000-8000-000000000001';
 export const SEED_DEMO_HOUSEHOLD_ID = '11111111-1111-4111-8111-111111111111';
 export const SEED_ACCOUNT_EUR_ID = '22222222-2222-4222-8222-222222222001';
 export const SEED_ACCOUNT_BRL_ID = '22222222-2222-4222-8222-222222222002';
@@ -38,8 +38,9 @@ export async function getAuthedClient(
   return client;
 }
 
-export const SEED_TIAGO_SESSION: Session = {
-  userId: SEED_TIAGO_USER_ID,
+export const SEED_SESSION: Session = {
+  userId: SEED_USER_ID,
   householdId: SEED_DEMO_HOUSEHOLD_ID,
+  displayName: 'Owner',
   preferredDisplayCurrency: 'EUR',
 };

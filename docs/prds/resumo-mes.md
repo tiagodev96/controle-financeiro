@@ -2,7 +2,7 @@
 
 ## Problema
 
-Tiago e Laine fecham o mês conversando por WhatsApp ("entrou X, gastei Y em mercado, sobrou Z, dívida Jefferson caiu de 3k pra 2,4k"). Hoje o resumo é montado de cabeça: abrem dashboard, /transacoes, /dividas, fazem conta na calculadora, escrevem manualmente. Três efeitos:
+owner e co-membro fecham o mês conversando por WhatsApp ("entrou X, gastei Y em mercado, sobrou Z, dívida Jefferson caiu de 3k pra 2,4k"). Hoje o resumo é montado de cabeça: abrem dashboard, /transacoes, /dividas, fazem conta na calculadora, escrevem manualmente. Três efeitos:
 
 1. **Mensagem demora 10-15 min pra montar** — fricção alta o suficiente pra pular meses.
 2. **Erro de cabeça**: número arredondado, categoria esquecida, dívida não incluída.
@@ -10,14 +10,14 @@ Tiago e Laine fecham o mês conversando por WhatsApp ("entrou X, gastei Y em mer
 
 ## Usuário afetado
 
-- **Tiago no fim de cada mês** (peso alto, frequência mensal): abre /resumo no dia 28-31, confere os números, clica "Compartilhar", manda pra Laine no WhatsApp. Caso de uso principal.
-- **Tiago pra si mesmo** (peso médio, eventual): copia o texto pra um Apple Note ou Obsidian como histórico pessoal. Lateral, não dimensiona a feature.
+- **owner no fim de cada mês** (peso alto, frequência mensal): abre /resumo no dia 28-31, confere os números, clica "Compartilhar", manda pra co-membro no WhatsApp. Caso de uso principal.
+- **owner pra si mesmo** (peso médio, eventual): copia o texto pra um Apple Note ou Obsidian como histórico pessoal. Lateral, não dimensiona a feature.
 
-Não é pra: Laine sozinha (ela abre o app, vê dashboard, não pede resumo). Não é pra um contador (não é demonstrativo financeiro).
+Não é pra: co-membro sozinha (ela abre o app, vê dashboard, não pede resumo). Não é pra um contador (não é demonstrativo financeiro).
 
 ## Métrica de sucesso
 
-**Tiago manda 2 resumos mensais consecutivos pra Laine via /resumo nos 60 dias após deploy** (ou seja: o mês de deploy + o seguinte). Medido por sample manual — pergunta direta a ele. Se ele manda 1 e volta a digitar no WhatsApp, o copy/formato ou a UX falhou. Se ele esquece de mandar, a feature não criou o hábito que substitui a planilha mental.
+**owner manda 2 resumos mensais consecutivos pra co-membro via /resumo nos 60 dias após deploy** (ou seja: o mês de deploy + o seguinte). Medido por sample manual — pergunta direta a ele. Se ele manda 1 e volta a digitar no WhatsApp, o copy/formato ou a UX falhou. Se ele esquece de mandar, a feature não criou o hábito que substitui a planilha mental.
 
 Proxy direto: abrir /resumo no dia 28-31 do primeiro mês pós-deploy e clicar "Compartilhar resumo".
 
@@ -98,23 +98,23 @@ Pagamentos por dívida no mês: query simples agregando transactions com `source
 ## Riscos
 
 - **Web Share API negada pelo usuário** (cancela o picker): probabilidade alta, impacto baixo (operação silenciosa, sem erro mostrado). Mitigação: `try/catch AbortError` e não emite toast em cancelamento.
-- **Web Share API ausente em desktop ou navegador antigo**: probabilidade média (Tiago às vezes abre no PC), impacto baixo (fallback automático pra clipboard com toast). Mitigação: detectar `'share' in navigator` antes de chamar.
+- **Web Share API ausente em desktop ou navegador antigo**: probabilidade média (owner às vezes abre no PC), impacto baixo (fallback automático pra clipboard com toast). Mitigação: detectar `'share' in navigator` antes de chamar.
 - **Texto exportado fica longo demais pra WhatsApp** (limite ~65535 chars, mas legibilidade quebra antes): probabilidade baixa pra household pequeno, aceitar. Se virar problema, truncar Top categorias e limitar Dívidas a 5.
-- **Saldo previsto fim do mês confunde Laine** (não é "quanto vou ter" — é "quanto vou ter SE pagar tudo que está pendente"): probabilidade média, impacto médio (mensagem ruim gera dúvida em vez de clareza). Mitigação: label completa "Saldo previsto fim do mês" — explícito que é projeção.
-- **Currency mismatch confunde**: total "Despesas" só agrega EUR, mas dívidas listam BRL. Probabilidade média (Laine pode achar que dívidas BRL deveriam entrar no total). Mitigação: copy "Entradas / Despesas" implícito EUR (não dizemos), seção "Dívidas" lista currency explicita por item. Validar com Laine real.
+- **Saldo previsto fim do mês confunde co-membro** (não é "quanto vou ter" — é "quanto vou ter SE pagar tudo que está pendente"): probabilidade média, impacto médio (mensagem ruim gera dúvida em vez de clareza). Mitigação: label completa "Saldo previsto fim do mês" — explícito que é projeção.
+- **Currency mismatch confunde**: total "Despesas" só agrega EUR, mas dívidas listam BRL. Probabilidade média (co-membro pode achar que dívidas BRL deveriam entrar no total). Mitigação: copy "Entradas / Despesas" implícito EUR (não dizemos), seção "Dívidas" lista currency explicita por item. Validar com co-membro real.
 - **clipboard.writeText rejeitado por permissão**: probabilidade baixa (HTTPS + user gesture cobrem), impacto médio (toast de erro). Mitigação: `try/catch` + toast "Não foi possível copiar".
 
 ## Hipóteses a validar
 
-- **"Texto puro é suficiente pra WhatsApp"**. Premissa: Laine não pede formato bonito/imagem. Validar nas primeiras 2 mensagens — se ela responder "manda print que fica mais legível", PRD de imagem sobe.
-- **"Saldo previsto + sobra prevista são as duas métricas que importam pra Laine"**. Premissa: já se discute saldo/sobra no chat de hoje. Validar — se ela perguntar "mas e o saldo atual real?", adicionar.
+- **"Texto puro é suficiente pra WhatsApp"**. Premissa: co-membro não pede formato bonito/imagem. Validar nas primeiras 2 mensagens — se ela responder "manda print que fica mais legível", PRD de imagem sobe.
+- **"Saldo previsto + sobra prevista são as duas métricas que importam pra co-membro"**. Premissa: já se discute saldo/sobra no chat de hoje. Validar — se ela perguntar "mas e o saldo atual real?", adicionar.
 - **"Top 3 categorias é suficiente"**. Premissa: top 3 cobre 60-70% do gasto típico. Se ela pedir top 5/7 ou "e tudo que sobra junto em Outros", repensar.
-- **"Mês corrente é o que faz sentido — não mês anterior fechado"**. Tiago manda durante o mês ou no fim? Se mandar dia 28-31, mês corrente faz sentido (já tem quase tudo). Se mandar dia 5 do mês seguinte, ele quer mês anterior. **Validar antes de buildar**.
+- **"Mês corrente é o que faz sentido — não mês anterior fechado"**. owner manda durante o mês ou no fim? Se mandar dia 28-31, mês corrente faz sentido (já tem quase tudo). Se mandar dia 5 do mês seguinte, ele quer mês anterior. **Validar antes de buildar**.
 
 ## Open questions
 
-- **Mês corrente ou mês anterior?** Quando Tiago abre /resumo, ele quer ver maio (corrente) ou abril (fechado)? → Resposta proposta: **corrente**, porque (a) dashboard já mostra corrente, (b) ele provavelmente abre dia 28-31. Confirmar.
-- **Botão "Compartilhar" usa Web Share API?** Ou abre direto link `whatsapp://send?text=...`? → Resposta proposta: **Web Share API**, mais agnóstico (Laine pode estar em Signal, Telegram), fallback clipboard. Confirmar.
+- **Mês corrente ou mês anterior?** Quando owner abre /resumo, ele quer ver maio (corrente) ou abril (fechado)? → Resposta proposta: **corrente**, porque (a) dashboard já mostra corrente, (b) ele provavelmente abre dia 28-31. Confirmar.
+- **Botão "Compartilhar" usa Web Share API?** Ou abre direto link `whatsapp://send?text=...`? → Resposta proposta: **Web Share API**, mais agnóstico (co-membro pode estar em Signal, Telegram), fallback clipboard. Confirmar.
 - **Order das dívidas no texto**: priority asc + remaining desc (igual /dividas) ou só remaining desc? → Resposta proposta: **priority asc + remaining desc**, consistência com /dividas. Confirmar.
 - **Incluir seção "Em atraso" se houver?** Dashboard mostra. Resumo manda esconder ou destacar? → Resposta proposta: **destacar**, adicionar linha "Em atraso: € X,YY (N transações)" entre Despesas e Top categorias, só se overdue > 0. Confirmar.
 - **Saldo previsto fim do mês = mesma fórmula do dashboard?** Dashboard: balance + pending income - pending expense. Pra /resumo: igual? → Resposta proposta: **sim, idêntico**, evita divergência conceitual. Confirmar.

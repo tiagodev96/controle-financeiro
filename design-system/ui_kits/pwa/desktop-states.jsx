@@ -582,7 +582,7 @@ function ModalConfirmDestructive() {
           Mercado · Pingo Doce
         </div>
         <div style={{ fontFamily: T.fontMono, fontSize: 11, color: T.fg3, marginTop: 3 }}>
-          25 mai · Alimentação · Tiago · <Num cents={-14255} size={11} weight={600} color={T.neg} />
+          25 mai · Alimentação · Owner · <Num cents={-14255} size={11} weight={600} color={T.neg} />
         </div>
       </div>
       <p style={{ margin: 0, fontFamily: T.fontSans, fontSize: 13, color: T.fg2, lineHeight: 1.5 }}>

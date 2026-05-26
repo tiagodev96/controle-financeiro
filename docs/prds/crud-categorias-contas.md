@@ -4,7 +4,7 @@
 
 Categorias e contas hoje vêm exclusivamente do `supabase/seed.sql`. Qualquer household real precisa **rodar SQL manual** pra criar categoria nova (ex: Streaming) ou conta nova (ex: cartão Nubank que abriu mês passado). Isso quebra a premissa básica do app — controle pessoal — porque:
 
-1. **Não dá pra usar fora do ambiente do Tiago.** Laine não tem acesso ao Supabase dashboard, então adicionar categoria depende dele.
+1. **Não dá pra usar fora do ambiente do owner.** co-membro não tem acesso ao Supabase dashboard, então adicionar categoria depende dele.
 2. **As rotas `/categorias` e `/contas` aparecem no nav e retornam 404.** Cada clique acidental quebra a confiança no app.
 3. **Vai virar atrito alto na primeira semana de uso real.** "Recebi um novo tipo de freela mas não tem categoria pra isso" → bloqueio.
 
@@ -12,15 +12,15 @@ Sem CRUD, o produto não sai de dev.
 
 ## Usuário afetado
 
-- **Tiago no primeiro deploy de produção** (peso alto, único acesso): configura as categorias e contas iniciais do household antes de avisar a Laine.
-- **Tiago/Laine durante uso semanal** (peso médio): cria categoria nova quando aparece tipo de despesa não previsto (Streaming, Pet, Internet) ou conta nova (cartão de crédito, conta digital aberta).
-- **Tiago arquivando categoria/conta obsoleta** (peso baixo, ocasional): conta velha que zerou, categoria que não usa mais.
+- **owner no primeiro deploy de produção** (peso alto, único acesso): configura as categorias e contas iniciais do household antes de avisar a co-membro.
+- **owner/co-membro durante uso semanal** (peso médio): cria categoria nova quando aparece tipo de despesa não previsto (Streaming, Pet, Internet) ou conta nova (cartão de crédito, conta digital aberta).
+- **owner arquivando categoria/conta obsoleta** (peso baixo, ocasional): conta velha que zerou, categoria que não usa mais.
 
 ## Métrica de sucesso
 
-**Nenhum SQL manual roda em prod pra criar categoria/conta após primeiro mês de uso.** Medido por log de queries no Supabase dashboard — se Tiago precisa abrir SQL Editor depois de mergeado, a feature falhou.
+**Nenhum SQL manual roda em prod pra criar categoria/conta após primeiro mês de uso.** Medido por log de queries no Supabase dashboard — se owner precisa abrir SQL Editor depois de mergeado, a feature falhou.
 
-Proxy: Tiago consegue configurar o household inteiro de produção pela UI em ≤ 5 min na primeira sessão, sem documentação aberta.
+Proxy: owner consegue configurar o household inteiro de produção pela UI em ≤ 5 min na primeira sessão, sem documentação aberta.
 
 ## Escopo
 
@@ -98,7 +98,7 @@ Form de criação é shadcn `<Dialog>` (modal centralizado, com close + overlay)
 
 - **"Renomeação inline é mais conveniente que modal de edit"**. Premissa: usuário renomeia raramente (typo) e modal seria over-kill. Se em uso real o casal ficar perdido procurando "como editar", trocar pra item no menu •••.
 - **"`initial_balance_cents` na conta nova é fluxo aceitável"**: o usuário entende que isso é "quanto a conta tinha no momento que ele cadastrou aqui". Validar em uso. Se gera dúvida, repensar (talvez sempre 0 e exigir lançamento manual da abertura).
-- **"Sem reordenação manual, ordem alfabética/criação é suficiente"**. Validar — se Tiago quer "Mercado" sempre antes de "Restaurante" mesmo criando depois, drag-and-drop sobe na prioridade.
+- **"Sem reordenação manual, ordem alfabética/criação é suficiente"**. Validar — se owner quer "Mercado" sempre antes de "Restaurante" mesmo criando depois, drag-and-drop sobe na prioridade.
 
 ## Open questions
 

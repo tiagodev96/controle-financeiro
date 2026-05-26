@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createTransactionForSession } from '@/server/actions/transactions/create-core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_ACCOUNT_BRL_ID,
@@ -36,7 +36,7 @@ describe('createTransactionForSession (integração)', () => {
   it('I1 — cria transaction pending com dados válidos', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       baseInput
     );
 
@@ -45,7 +45,7 @@ describe('createTransactionForSession (integração)', () => {
 
     expect(result.transaction).toMatchObject({
       household_id: SEED_DEMO_HOUSEHOLD_ID,
-      profile_id: SEED_TIAGO_SESSION.userId,
+      profile_id: SEED_SESSION.userId,
       account_id: SEED_ACCOUNT_EUR_ID,
       category_id: SEED_CATEGORY_MERCADO_ID,
       amount_cents: 1250,
@@ -70,7 +70,7 @@ describe('createTransactionForSession (integração)', () => {
   it('I3 — currency vem da conta selecionada (BRL), não do input', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { ...baseInput, accountId: SEED_ACCOUNT_BRL_ID }
     );
 
@@ -82,7 +82,7 @@ describe('createTransactionForSession (integração)', () => {
   it('I6 — amountCents = 0 retorna erro e não insere nada', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { ...baseInput, amountCents: 0 }
     );
 
@@ -99,7 +99,7 @@ describe('createTransactionForSession (integração)', () => {
   it('I2 — paid:true grava status="paid" e paid_on=date', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { ...baseInput, paid: true }
     );
 
@@ -114,7 +114,7 @@ describe('createTransactionForSession (integração)', () => {
     try {
       const supabase = await getAuthedClient();
       const result = await createTransactionForSession(
-        { supabase, session: SEED_TIAGO_SESSION },
+        { supabase, session: SEED_SESSION },
         { ...baseInput, categoryId: isolated.categoryId }
       );
 
@@ -134,7 +134,7 @@ describe('createTransactionForSession (integração)', () => {
   it('I7 — amountCents negativo retorna erro e não insere nada', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { ...baseInput, amountCents: -500 }
     );
 
@@ -151,7 +151,7 @@ describe('createTransactionForSession (integração)', () => {
   it('I8 — descrição vazia retorna erro e não insere nada', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { ...baseInput, description: '   ' }
     );
 
@@ -168,7 +168,7 @@ describe('createTransactionForSession (integração)', () => {
   it('I9 — categoryId UUID válido mas inexistente retorna erro', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { ...baseInput, categoryId: '99999999-9999-4999-8999-999999999999' }
     );
 
@@ -185,7 +185,7 @@ describe('createTransactionForSession (integração)', () => {
   it('I-IN1 — cria transaction com direction=income e status default pending', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         amountCents: 250000,
         description: 'Salário maio',

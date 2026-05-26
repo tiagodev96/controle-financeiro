@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { generateRecurringForMonthCore } from '@/server/actions/recurring/generate-core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_CATEGORY_MERCADO_ID,
@@ -66,7 +66,7 @@ describe('generateRecurringForMonthCore (integração)', () => {
 
     const supabase = await getAuthedClient();
     const result = await generateRecurringForMonthCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { monthIso: MONTH_ISO },
     );
 
@@ -91,7 +91,7 @@ describe('generateRecurringForMonthCore (integração)', () => {
     await seedRule({ title: 'GEN test idem' });
     const supabase = await getAuthedClient();
     const first = await generateRecurringForMonthCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { monthIso: MONTH_ISO },
     );
     expect(first.ok).toBe(true);
@@ -99,7 +99,7 @@ describe('generateRecurringForMonthCore (integração)', () => {
     expect(first.created).toBe(1);
 
     const second = await generateRecurringForMonthCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { monthIso: MONTH_ISO },
     );
     expect(second.ok).toBe(true);
@@ -118,7 +118,7 @@ describe('generateRecurringForMonthCore (integração)', () => {
 
     const supabase = await getAuthedClient();
     const result = await generateRecurringForMonthCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { monthIso: MONTH_ISO },
     );
 

@@ -408,7 +408,7 @@ function LancarScreen() {
               padding: '1px 5px', background: T.brandBg, borderRadius: 3,
               letterSpacing: '0.04em',
             }}>{acct === 'eur' ? 'EUR' : 'BRL'}</span>
-            <span style={{ fontSize: 14, color: T.fg1, fontWeight: 500 }}>Tiago · revolut</span>
+            <span style={{ fontSize: 14, color: T.fg1, fontWeight: 500 }}>Owner · revolut</span>
           </div>
         </Field>
         <Field label="Data">
@@ -904,29 +904,29 @@ function TransacoesScreen() {
   const days = [
     {
       date: 'Hoje · 25 mai', total: -14255, items: [
-        { desc: 'Mercado · Pingo Doce', cat: 'Alimentação', cents: -14255, status: 'paid', who: 'Tiago', currency: 'EUR' },
+        { desc: 'Mercado · Pingo Doce', cat: 'Alimentação', cents: -14255, status: 'paid', who: 'Owner', currency: 'EUR' },
       ],
     },
     {
       date: '24 mai · sáb', total: -3380, items: [
-        { desc: 'Café · A Brasileira', cat: 'Alimentação', cents: -380,  status: 'paid', who: 'Tiago', currency: 'EUR' },
-        { desc: 'Uber · centro',       cat: 'Transporte',  cents: -1200, status: 'paid', who: 'Laine', currency: 'EUR' },
-        { desc: 'Cinema · Nimas',      cat: 'Lazer',       cents: -1800, status: 'paid', who: 'Laine', currency: 'EUR' },
+        { desc: 'Café · A Brasileira', cat: 'Alimentação', cents: -380,  status: 'paid', who: 'Owner', currency: 'EUR' },
+        { desc: 'Uber · centro',       cat: 'Transporte',  cents: -1200, status: 'paid', who: 'Member', currency: 'EUR' },
+        { desc: 'Cinema · Nimas',      cat: 'Lazer',       cents: -1800, status: 'paid', who: 'Member', currency: 'EUR' },
       ],
     },
     {
       date: '21 mai · qua', total: -9200, items: [
-        { desc: 'Vet · Lupita', cat: 'Pet', cents: -9200, status: 'overdue', who: 'Tiago', currency: 'EUR' },
+        { desc: 'Vet · Lupita', cat: 'Pet', cents: -9200, status: 'overdue', who: 'Owner', currency: 'EUR' },
       ],
     },
     {
       date: '15 mai · qui', total: 248000, items: [
-        { desc: 'Salário · maio', cat: 'Trabalho', cents: 248000, status: 'paid', who: 'Tiago', currency: 'EUR', positive: true },
+        { desc: 'Salário · maio', cat: 'Trabalho', cents: 248000, status: 'paid', who: 'Owner', currency: 'EUR', positive: true },
       ],
     },
     {
       date: '10 mai · sáb', total: -80000, items: [
-        { desc: 'Aluguel', cat: 'Moradia · recorrente', cents: -80000, status: 'paid', who: 'Tiago', currency: 'EUR' },
+        { desc: 'Aluguel', cat: 'Moradia · recorrente', cents: -80000, status: 'paid', who: 'Owner', currency: 'EUR' },
       ],
     },
   ];
@@ -1062,9 +1062,9 @@ function TxnRow({ desc, cat, cents, status, who, currency, positive }) {
 // ============================================================================
 function ContasScreen() {
   const accounts = [
-    { name: 'Revolut · principal', who: 'Tiago', currency: 'EUR', balance: 124000, updated: 'há 12 min' },
-    { name: 'CGD · ordenado',      who: 'Tiago', currency: 'EUR', balance: 60000,  updated: 'há 2 dias' },
-    { name: 'Itaú · BR',           who: 'Tiago', currency: 'BRL', balance: 210380, updated: 'há 1 semana' },
+    { name: 'Revolut · principal', who: 'Owner', currency: 'EUR', balance: 124000, updated: 'há 12 min' },
+    { name: 'CGD · ordenado',      who: 'Owner', currency: 'EUR', balance: 60000,  updated: 'há 2 dias' },
+    { name: 'Itaú · BR',           who: 'Owner', currency: 'BRL', balance: 210380, updated: 'há 1 semana' },
   ];
   return (
     <div style={{ paddingBottom: 100 }}>
@@ -1273,7 +1273,7 @@ function MaisScreen() {
     {
       title: 'Casal',
       items: [
-        { icon: Icon.More, label: 'Household',  meta: 'Tiago · Laine' },
+        { icon: Icon.More, label: 'Household',  meta: 'Owner · Member' },
         { icon: Icon.Refresh, label: 'Câmbio',  meta: 'frankfurter · auto' },
       ],
     },
@@ -1290,7 +1290,7 @@ function MaisScreen() {
   return (
     <div style={{ paddingBottom: 100 }}>
       <AppTopBar
-        eyebrow="Tiago Silva"
+        eyebrow="Owner Silva"
         title="Mais"
         trailing={
           <div style={{

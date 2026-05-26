@@ -7,7 +7,7 @@ import {
 } from '@/server/actions/categories/core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
 } from './helpers/auth';
 import { getAdminClient } from './helpers/db';
@@ -31,7 +31,7 @@ describe('categorias CRUD (integração)', () => {
   it('I-CAT-CREATE — cria categoria válida com kind especificado', async () => {
     const supabase = await getAuthedClient();
     const result = await createCategoryCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, kind: 'income' },
     );
 
@@ -47,13 +47,13 @@ describe('categorias CRUD (integração)', () => {
   it('I-CAT-CREATE-DUP — nome duplicado no mesmo household → ok:false', async () => {
     const supabase = await getAuthedClient();
     const first = await createCategoryCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, kind: 'expense' },
     );
     expect(first.ok).toBe(true);
 
     const dup = await createCategoryCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, kind: 'expense' },
     );
     expect(dup.ok).toBe(false);
@@ -62,13 +62,13 @@ describe('categorias CRUD (integração)', () => {
   it('I-CAT-ARCHIVE — flipa is_archived true/false (idempotente)', async () => {
     const supabase = await getAuthedClient();
     const created = await createCategoryCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, kind: 'expense' },
     );
     if (!created.ok) throw new Error('setup falhou');
 
     const archived = await archiveCategoryCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { categoryId: created.category.id },
     );
     expect(archived.ok).toBe(true);
@@ -82,7 +82,7 @@ describe('categorias CRUD (integração)', () => {
     expect(row1?.is_archived).toBe(true);
 
     const unarchived = await unarchiveCategoryCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { categoryId: created.category.id },
     );
     expect(unarchived.ok).toBe(true);
@@ -98,13 +98,13 @@ describe('categorias CRUD (integração)', () => {
   it('I-CAT-RENAME — muda name, preserva kind', async () => {
     const supabase = await getAuthedClient();
     const created = await createCategoryCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, kind: 'expense' },
     );
     if (!created.ok) throw new Error('setup falhou');
 
     const renamed = await renameCategoryCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { categoryId: created.category.id, name: NAMES[1]! },
     );
     expect(renamed.ok).toBe(true);

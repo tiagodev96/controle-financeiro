@@ -40,7 +40,7 @@ describe('<LoginForm>', () => {
     const user = userEvent.setup();
     render(<LoginForm authEnabled={true} />);
 
-    await user.type(screen.getByLabelText(/email/i), 'tiago@example.com');
+    await user.type(screen.getByLabelText(/email/i), 'owner@example.com');
     await user.type(screen.getByLabelText(/senha/i), 'minha-senha');
     await user.click(screen.getByRole('button', { name: /entrar/i }));
 
@@ -64,7 +64,7 @@ describe('<LoginForm>', () => {
     const user = userEvent.setup();
     render(<LoginForm authEnabled={true} />);
 
-    await user.type(screen.getByLabelText(/email/i), 'tiago@example.com');
+    await user.type(screen.getByLabelText(/email/i), 'owner@example.com');
     await user.type(screen.getByLabelText(/senha/i), 'senha-errada');
     await user.click(screen.getByRole('button', { name: /entrar/i }));
 
@@ -78,7 +78,7 @@ describe('<LoginForm>', () => {
     const user = userEvent.setup();
     render(<LoginForm authEnabled={true} />);
 
-    await user.type(screen.getByLabelText(/email/i), 'tiago@example.com');
+    await user.type(screen.getByLabelText(/email/i), 'owner@example.com');
     await user.type(screen.getByLabelText(/senha/i), 'minha-senha');
     await user.click(screen.getByRole('button', { name: /entrar/i }));
 
@@ -93,13 +93,13 @@ describe('<LoginForm>', () => {
     const user = userEvent.setup();
     render(<LoginForm authEnabled={true} />);
 
-    await user.type(screen.getByLabelText(/email/i), 'tiago@example.com');
+    await user.type(screen.getByLabelText(/email/i), 'owner@example.com');
     await user.type(screen.getByLabelText(/senha/i), 'minha-senha');
     await user.click(screen.getByRole('button', { name: /entrar/i }));
 
     await screen.findByRole('alert');
 
-    expect(screen.getByLabelText(/email/i)).toHaveValue('tiago@example.com');
+    expect(screen.getByLabelText(/email/i)).toHaveValue('owner@example.com');
     expect(screen.getByLabelText(/senha/i)).toHaveValue('');
   });
 });

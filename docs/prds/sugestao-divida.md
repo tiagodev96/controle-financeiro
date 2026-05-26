@@ -2,7 +2,7 @@
 
 ## Problema
 
-Tiago tem dívidas em aberto e sobra prevista positiva no mês, mas hoje precisa abrir /dividas, lembrar quais existem, calcular mental "se tenho € 200 sobrando, posso pagar ~60% disso na dívida prioritária". Três efeitos:
+owner tem dívidas em aberto e sobra prevista positiva no mês, mas hoje precisa abrir /dividas, lembrar quais existem, calcular mental "se tenho € 200 sobrando, posso pagar ~60% disso na dívida prioritária". Três efeitos:
 
 1. **Sobra prevista vira gasto não-intencional**: sem nudge, o dinheiro evapora em consumo.
 2. **Quitação fica sempre adiada**: prioridade alta nunca diminui porque não há sinal pra agir.
@@ -10,8 +10,8 @@ Tiago tem dívidas em aberto e sobra prevista positiva no mês, mas hoje precisa
 
 ## Usuário afetado
 
-- **Tiago no dashboard** (peso alto, diário): vê sobra positiva → vê sugestão → 1 clique abre dialog pré-preenchido com valor + dívida sugeridos.
-- **Tiago/Laine sem sobra ou sem dívida**: não vê nada. Sem ruído.
+- **owner no dashboard** (peso alto, diário): vê sobra positiva → vê sugestão → 1 clique abre dialog pré-preenchido com valor + dívida sugeridos.
+- **owner/co-membro sem sobra ou sem dívida**: não vê nada. Sem ruído.
 
 Não é pra: análise complexa (juros, risco), sugestão multi-dívida ("R$ Y na Jefferson + R$ Z no Cartão").
 
@@ -78,15 +78,15 @@ Função pura `computeDebtSuggestion()` testável sem Supabase. Dashboard server
 
 ## Riscos
 
-- **Heurística sugerir valor que esgota a sobra**: probabilidade média (Tiago aceita, fica sem buffer). Mitigação: teto 60%, deixa 40% pra outras coisas. Aceitar.
+- **Heurística sugerir valor que esgota a sobra**: probabilidade média (owner aceita, fica sem buffer). Mitigação: teto 60%, deixa 40% pra outras coisas. Aceitar.
 - **Confusão se aparece e some dia-a-dia** (sobra flutua): probabilidade média, impacto baixo. Aceitar — sumir é informação, não bug.
 - **Conversão imprecisa em BRL→EUR**: probabilidade alta em valores grandes, impacto baixo (centavos). Aceitar.
-- **Tiago aceita e depois cancela a transaction**: o trigger de debt remaining recalcula sozinho. Aceitar.
+- **owner aceita e depois cancela a transaction**: o trigger de debt remaining recalcula sozinho. Aceitar.
 
 ## Hipóteses a validar
 
-- **"€ 50 é ticket mínimo razoável"**: valor arbitrário. Se Tiago nunca clica porque "só € 60 não vale a pena cadastrar", subir pra € 100. Se acha pouco, baixar. Validar com uso.
-- **"60% do teto é proporção ok"**: se Tiago sempre clica mas depois edita pra mais/menos, recalibrar.
+- **"€ 50 é ticket mínimo razoável"**: valor arbitrário. Se owner nunca clica porque "só € 60 não vale a pena cadastrar", subir pra € 100. Se acha pouco, baixar. Validar com uso.
+- **"60% do teto é proporção ok"**: se owner sempre clica mas depois edita pra mais/menos, recalibrar.
 - **"Card discreto vs CTA chamativo"**: começamos discreto. Se ele ignora, testar versão mais destacada.
 
 ## Open questions

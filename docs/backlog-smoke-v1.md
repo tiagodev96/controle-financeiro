@@ -44,7 +44,7 @@ Itens encontrados durante o primeiro smoke real em produção, após o deploy p�
   - **Médio risco**: editar `total_amount_cents`. Recalcula só as parcelas **pending** (paid mantém valor original). Soma final pode divergir do total novo se já tem paid — mostrar warning.
   - **Alto risco**: editar `total_installments`, `first_due_date`, `frequency_months`. Reordena cronograma. Provavelmente continuar fora — recomendar cancelar+recriar.
 
-  v1.1 entrega o nível baixo risco (title + notes + categoria + conta). Médio risco vira PRD separada se Tiago pedir.
+  v1.1 entrega o nível baixo risco (title + notes + categoria + conta). Médio risco vira PRD separada se o owner pedir.
 
 ## Análogos (induzidos dos bugs acima)
 
@@ -72,7 +72,7 @@ Padrões prováveis no código com a mesma raiz dos bugs reportados. Não foram 
 
 - **Filtro de mês em `/transacoes` é restrito a 6 meses passados + corrente**. Sem opção de meses futuros nem retroativos além de 6. Caso real: usuário criou recorrente com primeira parcela em jun/2026, transaction nasce com `occurred_on=2026-06-XX`, mas o dropdown só vai até mai/2026 — não tem como ver. Substituir o dropdown fechado por **input de mês/ano aberto** (`<input type="month">` nativo OU date picker mes/ano custom). Faixa razoável: `oldest_transaction.occurred_on` até `today + 24 meses`. Considerar o mesmo input em `/resumo` quando o selector de mês de lá entrar (já listado no backlog).
 
-PRD original (`docs/prds/resumo-mes.md`) deixou explicitamente fora: export como imagem, selector de mês, comparativo. Lista de pedidos do smoke (**escopo confirmado pelo Tiago em 26/mai/2026**, vira `docs/prds/resumo-mes-v2.md`):
+PRD original (`docs/prds/resumo-mes.md`) deixou explicitamente fora: export como imagem, selector de mês, comparativo. Lista de pedidos do smoke (**escopo confirmado pelo owner em 26/mai/2026**, vira `docs/prds/resumo-mes-v2.md`):
 
 - **Compartilhar resumo como imagem (PNG)**, não texto puro. Gerar uma "mini dashboard" com os números-chave (saldo previsto, sobra, entradas/despesas, top categorias, dívidas abertas) num layout próprio pra WhatsApp. Caminho técnico recomendado: `@vercel/og` (Edge-rendered, oficial Next.js) gerando OG image dinâmica via route handler. Mantém o botão "Copiar texto" como fallback.
 - **Selector de mês** (no mínimo mês corrente + mês anterior; ideal: passado e futuro). Mês passado mostra valores fechados (paid). Mês futuro projeta: soma das recurring rules ativas + parcelas previstas + dívidas em aberto. Sobra prevista vira "sobra projetada" pra meses futuros.

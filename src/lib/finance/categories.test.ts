@@ -65,6 +65,6 @@ describe('listTopCategoriesForHousehold (unit, ramos de erro)', () => {
       }
     );
     const result = await listTopCategoriesForHousehold(fake as never, 'household-x', 6);
-    expect(result).toEqual([{ id: 'c-1', name: 'SemOrdem' }]);
+    expect(result).toEqual([{ id: 'c-1', name: 'SemOrdem', icon: null }]);
   });
 });

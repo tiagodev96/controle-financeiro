@@ -2,7 +2,7 @@
 
 ## Problema
 
-Tiago compra coisas parceladas com regularidade (notebook em 12×, curso em 6×, móvel em 10×) e hoje precisa lançar cada parcela manualmente toda vez que vence. Três efeitos:
+owner compra coisas parceladas com regularidade (notebook em 12×, curso em 6×, móvel em 10×) e hoje precisa lançar cada parcela manualmente toda vez que vence. Três efeitos:
 
 1. **Esquecimento**: ele lança 1-2 parcelas, depois desiste. Saldo previsto fica errado.
 2. **Sobra prevista otimista**: parcelas futuras pendentes não entram na projeção até serem manualmente lançadas.
@@ -10,15 +10,15 @@ Tiago compra coisas parceladas com regularidade (notebook em 12×, curso em 6×,
 
 ## Usuário afetado
 
-- **Tiago cadastrando parcelado novo** (peso médio, frequência mensal): "comprei sofá em 10× de R$ 480, primeira parcela 15 de junho".
-- **Tiago/Laine pagando parcela** (peso alto, semanal): igual transação pendente — marca como paga em /transacoes.
-- **Tiago visualizando progresso** (peso baixo, eventual): "quantas parcelas faltam do notebook?".
+- **owner cadastrando parcelado novo** (peso médio, frequência mensal): "comprei sofá em 10× de R$ 480, primeira parcela 15 de junho".
+- **owner/co-membro pagando parcela** (peso alto, semanal): igual transação pendente — marca como paga em /transacoes.
+- **owner visualizando progresso** (peso baixo, eventual): "quantas parcelas faltam do notebook?".
 
 Não é pra: dívidas flexíveis sem cronograma (já coberto por /dividas), assinaturas mensais sem fim (recurring rules), gastos one-off (/lancar).
 
 ## Métrica de sucesso
 
-**Toda compra parcelada de Tiago dos últimos 60 dias está cadastrada em /parcelados dentro de 1 semana após deploy** + **parcelas geradas aparecem em /transacoes sem precisar relançar manualmente**. Medido por sample de 2-3 parcelados reais.
+**Toda compra parcelada de owner dos últimos 60 dias está cadastrada em /parcelados dentro de 1 semana após deploy** + **parcelas geradas aparecem em /transacoes sem precisar relançar manualmente**. Medido por sample de 2-3 parcelados reais.
 
 Proxy direto: 2 planos criados na primeira semana, todas as parcelas geradas e marcadas como pendentes.
 
@@ -68,14 +68,14 @@ Helper `listInstallmentPlansForHousehold` em `src/lib/finance/installments.ts` r
 ## Riscos
 
 - **Bulk insert das N parcelas falhar parcialmente**: probabilidade baixa (Supabase atomic insert), impacto médio (plano órfão). Mitigação: se INSERT em batch retorna error, rollback manual deletando o plano. Aceitar leak raro.
-- **first_due_date no passado**: probabilidade média (Tiago lembra de cadastrar 2 meses depois). Aceitar — gera parcelas com occurred_on passado, viram "em atraso" automaticamente. UI sem warning v1.
+- **first_due_date no passado**: probabilidade média (owner lembra de cadastrar 2 meses depois). Aceitar — gera parcelas com occurred_on passado, viram "em atraso" automaticamente. UI sem warning v1.
 - **N parcelas inflar /transacoes**: probabilidade alta (10-12 parcelas/plano), impacto baixo (filtros já existem). Aceitar.
 - **Mês com 30/31 dias e first_due_date=31**: `setMonth` em JS pode dar resultado inesperado. Mitigação: usar UTC date math + clamp ao último dia se overflow.
 - **Cancelar plano deixa transactions órfãs**: FK on delete set null preserva. UI mostra que "parcelas geradas viram lançamentos avulsos". Aceitar.
 
 ## Hipóteses a validar
 
-- **"Tiago vai cadastrar parcelados regularmente"**: validar — se em 4 semanas ele não cadastrou nenhum, repensar valor da feature.
+- **"owner vai cadastrar parcelados regularmente"**: validar — se em 4 semanas ele não cadastrou nenhum, repensar valor da feature.
 - **"Card simples com 'parcela X/N' é suficiente"**: pode ser que queira ver "próxima vence em 3 dias". Validar.
 
 ## Open questions

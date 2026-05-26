@@ -12,7 +12,7 @@ Este repositório é público. Pra garantir que nada sensível vaza, e pra orien
 
 ## Convenções nos arquivos versionados
 
-* **`supabase/seed.sql` usa placeholders** (`tiago@example.com`, household "Household Demo"). Nunca coloque emails reais aqui.
+* **`supabase/seed.sql` usa placeholders** (`owner@example.com`, household "Household Demo"). Nunca coloque emails reais aqui.
 * **`.env.example` usa placeholders** (`you@example.com`, `partner@example.com`). Mesmo padrão.
 * **`NEXT_PUBLIC_ALLOWED_EMAILS` é exposto no bundle do client** por design. É uma allowlist defensiva, não um segredo. A barreira real contra acesso não autorizado é o Auth Hook do Supabase + RLS, não esse env var.
 

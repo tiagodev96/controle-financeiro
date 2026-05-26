@@ -5,15 +5,15 @@
 Despesas e entradas que **se repetem todo mês** (aluguel, NOS, salário, freela mensal) hoje precisam ser lançadas manualmente uma a uma, todo mês. Dois efeitos compostos:
 
 1. **A sobra prevista do dashboard é otimista** porque ignora aluguel/contas/etc que o usuário sabe que vão sair, mas não lançou ainda no mês corrente.
-2. **Fricção alta no início do mês** — Tiago/Laine teriam que lembrar de 5-8 itens repetidos e re-digitar tudo, o que joga contra a premissa de uso em ≤10s.
+2. **Fricção alta no início do mês** — owner/co-membro teriam que lembrar de 5-8 itens repetidos e re-digitar tudo, o que joga contra a premissa de uso em ≤10s.
 
 A rota `/recorrentes` aparece no nav (sidebar + Mais) e retorna 404 — quebra confiança.
 
 ## Usuário afetado
 
-- **Tiago no dia 1-2 de cada mês** (peso alto, frequência mensal): abre /recorrentes, clica "Gerar este mês", e os pendentes aparecem em /transacoes pra ele ir pagando.
-- **Tiago/Laine criando regra nova** (peso médio, ocasional): "a partir desse mês temos um novo seguro, R$ 89 todo dia 10" → cria regra.
-- **Tiago pausando regra** (peso baixo): viagem de férias, mês em que não vai ter NOS porque mudou de fornecedor, etc.
+- **owner no dia 1-2 de cada mês** (peso alto, frequência mensal): abre /recorrentes, clica "Gerar este mês", e os pendentes aparecem em /transacoes pra ele ir pagando.
+- **owner/co-membro criando regra nova** (peso médio, ocasional): "a partir desse mês temos um novo seguro, R$ 89 todo dia 10" → cria regra.
+- **owner pausando regra** (peso baixo): viagem de férias, mês em que não vai ter NOS porque mudou de fornecedor, etc.
 
 Não é pra: lançamentos one-off (esses continuam em /lancar), transações com valor variável (luz que muda todo mês — não cabe em regra fixa).
 
@@ -21,7 +21,7 @@ Não é pra: lançamentos one-off (esses continuam em /lancar), transações com
 
 **Após primeira semana de uso real, ≥ 80% das despesas recorrentes do mês corrente foram lançadas via regra** (e não via /lancar manual), medido por `count(transactions where source_recurring_rule_id is not null) / count(transactions criadas a partir de regra conhecida)`. Se ficar abaixo, a fricção de gerar/criar regra é maior que digitar manual — repensar UX da geração.
 
-Proxy direto na primeira semana: Tiago cria pelo menos 3 regras (aluguel, NOS, salário) e clica "Gerar este mês" sem suporte.
+Proxy direto na primeira semana: owner cria pelo menos 3 regras (aluguel, NOS, salário) e clica "Gerar este mês" sem suporte.
 
 ## Escopo
 
@@ -85,15 +85,15 @@ Geração: `generateRecurringCore({supabase, session}, {monthIso})` em `src/serv
 
 ## Riscos
 
-- **Geração duplicar transactions** se a query de "já existe" falhar: probabilidade baixa (check via `source_recurring_rule_id` + range de mês é específico), impacto médio (Tiago vê duas linhas iguais e deleta uma). Mitigação: integração test específica pra idempotência (clicar duas vezes seguidas → segundo retorna `created: 0, skipped: N`).
+- **Geração duplicar transactions** se a query de "já existe" falhar: probabilidade baixa (check via `source_recurring_rule_id` + range de mês é específico), impacto médio (owner vê duas linhas iguais e deleta uma). Mitigação: integração test específica pra idempotência (clicar duas vezes seguidas → segundo retorna `created: 0, skipped: N`).
 - **Regra com day_of_month=31 e mês com 30 dias**: clampa pra último dia. Visualmente confuso? Mitigação: UI bloqueia em 28 (PRD diz isso). Schema permite 31 — se vier migration externa, clamp safety.
-- **Editar regra e clicar gerar sem perceber que mês já foi gerado com valor antigo**: probabilidade alta (Tiago muda valor do aluguel e clica gerar, mas mês corrente já tem transaction com valor antigo). Aceitar — geração é idempotente, não sobrescreve. Mitigação: copy do botão deixa claro "gera só o que falta" + toast distingue "criadas vs já existentes".
+- **Editar regra e clicar gerar sem perceber que mês já foi gerado com valor antigo**: probabilidade alta (owner muda valor do aluguel e clica gerar, mas mês corrente já tem transaction com valor antigo). Aceitar — geração é idempotente, não sobrescreve. Mitigação: copy do botão deixa claro "gera só o que falta" + toast distingue "criadas vs já existentes".
 - **Categoria/conta da regra arquivada**: probabilidade média ao longo do tempo, impacto baixo (geração ainda funciona pq schema permite categoria arquivada na transaction). Sem mitigação no v1 — apenas mostra a regra com warning visual se categoria/conta arquivadas.
-- **Sem trigger automático**: probabilidade alta de Tiago esquecer de clicar "Gerar este mês" no início. Mitigação: toast/badge no dashboard se mês corrente tem regras não-geradas. **Considerar nessa PRD ou futura?** → Sinal pequeno no /recorrentes: contagem de regras ativas + indicador "X não geradas neste mês".
+- **Sem trigger automático**: probabilidade alta de owner esquecer de clicar "Gerar este mês" no início. Mitigação: toast/badge no dashboard se mês corrente tem regras não-geradas. **Considerar nessa PRD ou futura?** → Sinal pequeno no /recorrentes: contagem de regras ativas + indicador "X não geradas neste mês".
 
 ## Hipóteses a validar
 
-- **"Geração manual mensal é UX aceitável"**. Premissa: Tiago abre /recorrentes no dia 1-2 do mês e clica. Validar — se em 2 meses Tiago esquecer e gerar dia 15, considerar cron.
+- **"Geração manual mensal é UX aceitável"**. Premissa: owner abre /recorrentes no dia 1-2 do mês e clica. Validar — se em 2 meses owner esquecer e gerar dia 15, considerar cron.
 - **"day_of_month único por regra é suficiente"**. Premissa: ninguém tem despesa "todo dia 5 e dia 20". Se aparecer, criar 2 regras. Validar com uso real.
 - **"Sem indicador visual `REC` na transaction inicial é OK"** — usuário não precisa saber a origem da transaction pra pagar. Validar — se gerar confusão, adicionar.
 

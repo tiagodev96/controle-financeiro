@@ -3,7 +3,7 @@ import { createDebtCore } from '@/server/actions/debts/core';
 import { registerDebtPaymentCore } from '@/server/actions/debts/register-payment-core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
 } from './helpers/auth';
@@ -30,7 +30,7 @@ describe('debts payments (integração + trigger DB)', () => {
   it('I-DB-PAYMENT — registrar pagamento parcial: cria transaction com source_debt_id e trigger atualiza remaining', async () => {
     const supabase = await getAuthedClient();
     const created = await createDebtCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'DB pay test parcial',
         originalAmountCents: 100_000,
@@ -42,7 +42,7 @@ describe('debts payments (integração + trigger DB)', () => {
     if (!created.ok) throw new Error('setup');
 
     const paid = await registerDebtPaymentCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         debtId: created.debt.id,
         amountCents: 30_000,
@@ -80,7 +80,7 @@ describe('debts payments (integração + trigger DB)', () => {
   it('I-DB-CLOSE-TRIGGER — pagamento que zera remaining → status=closed automático', async () => {
     const supabase = await getAuthedClient();
     const created = await createDebtCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'DB pay test quita',
         originalAmountCents: 50_000,
@@ -92,7 +92,7 @@ describe('debts payments (integração + trigger DB)', () => {
     if (!created.ok) throw new Error('setup');
 
     const paid = await registerDebtPaymentCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         debtId: created.debt.id,
         amountCents: 50_000,

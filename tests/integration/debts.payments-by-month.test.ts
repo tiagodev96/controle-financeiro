@@ -4,7 +4,7 @@ import { registerDebtPaymentCore } from '@/server/actions/debts/register-payment
 import { sumDebtPaymentsThisMonth } from '@/lib/finance/debts';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
 } from './helpers/auth';
@@ -35,7 +35,7 @@ describe('sumDebtPaymentsThisMonth (integração)', () => {
   it('I-RES1 — retorna {} quando nenhuma dívida teve pagamento no mês corrente', async () => {
     const supabase = await getAuthedClient();
     const debt = await createDebtCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'DB monthsum test sem pgto',
         originalAmountCents: 10_000,
@@ -57,7 +57,7 @@ describe('sumDebtPaymentsThisMonth (integração)', () => {
   it('I-RES2 — soma só pagamentos paid + paid_on no mês corrente, agrupado por debt_id', async () => {
     const supabase = await getAuthedClient();
     const a = await createDebtCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'DB monthsum test A',
         originalAmountCents: 100_000,
@@ -67,7 +67,7 @@ describe('sumDebtPaymentsThisMonth (integração)', () => {
       },
     );
     const b = await createDebtCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'DB monthsum test B',
         originalAmountCents: 50_000,
@@ -80,17 +80,17 @@ describe('sumDebtPaymentsThisMonth (integração)', () => {
 
     // 2 pagamentos pra A neste mês (somam 30k)
     await registerDebtPaymentCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { debtId: a.debt.id, amountCents: 20_000, accountId: SEED_ACCOUNT_EUR_ID, date: TODAY, description: 'A1' },
     );
     await registerDebtPaymentCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { debtId: a.debt.id, amountCents: 10_000, accountId: SEED_ACCOUNT_EUR_ID, date: TODAY, description: 'A2' },
     );
 
     // 1 pagamento pra B neste mês (15k)
     await registerDebtPaymentCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { debtId: b.debt.id, amountCents: 15_000, accountId: SEED_ACCOUNT_EUR_ID, date: TODAY, description: 'B1' },
     );
 
@@ -98,7 +98,7 @@ describe('sumDebtPaymentsThisMonth (integração)', () => {
     const admin = getAdminClient();
     await admin.from('transactions').insert({
       household_id: SEED_DEMO_HOUSEHOLD_ID,
-      profile_id: SEED_TIAGO_SESSION.userId,
+      profile_id: SEED_SESSION.userId,
       account_id: SEED_ACCOUNT_EUR_ID,
       category_id: null,
       direction: 'expense',

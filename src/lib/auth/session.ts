@@ -12,6 +12,7 @@ export type DisplayCurrency = 'EUR' | 'BRL';
 export type Session = {
   userId: string;
   householdId: string;
+  displayName: string;
   preferredDisplayCurrency: DisplayCurrency;
 };
 
@@ -29,7 +30,7 @@ export async function getSession(): Promise<Session> {
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('household_id, preferred_display_currency')
+    .select('household_id, display_name, preferred_display_currency')
     .eq('id', user.id)
     .single();
 
@@ -44,6 +45,7 @@ export async function getSession(): Promise<Session> {
   return {
     userId: user.id,
     householdId: profile.household_id,
+    displayName: profile.display_name,
     preferredDisplayCurrency,
   };
 }

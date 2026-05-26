@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { updateTransactionCore } from '@/server/actions/transactions/update-core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_ACCOUNT_BRL_ID,
@@ -24,7 +24,7 @@ async function seedTxn(overrides: Partial<{ amount_cents: number; status: 'pendi
     .from('transactions')
     .insert({
       household_id: SEED_DEMO_HOUSEHOLD_ID,
-      profile_id: SEED_TIAGO_SESSION.userId,
+      profile_id: SEED_SESSION.userId,
       account_id: SEED_ACCOUNT_EUR_ID,
       category_id: SEED_CATEGORY_MERCADO_ID,
       direction: 'expense',
@@ -50,7 +50,7 @@ describe('updateTransactionCore (integração)', () => {
     const txnId = await seedTxn();
     const supabase = await getAuthedClient();
     const result = await updateTransactionCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { id: txnId, patch: { amountCents: 1500 } },
     );
     expect(result.ok).toBe(true);
@@ -73,7 +73,7 @@ describe('updateTransactionCore (integração)', () => {
     const txnId = await seedTxn();
     const supabase = await getAuthedClient();
     const result = await updateTransactionCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { id: txnId, patch: { accountId: SEED_ACCOUNT_BRL_ID } },
     );
     expect(result.ok).toBe(true);
@@ -92,7 +92,7 @@ describe('updateTransactionCore (integração)', () => {
     const txnId = await seedTxn({ status: 'pending' });
     const supabase = await getAuthedClient();
     const result = await updateTransactionCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { id: txnId, patch: { paid: true } },
     );
     expect(result.ok).toBe(true);
@@ -113,7 +113,7 @@ describe('updateTransactionCore (integração)', () => {
     try {
       const supabase = await getAuthedClient();
       const result = await updateTransactionCore(
-        { supabase, session: SEED_TIAGO_SESSION },
+        { supabase, session: SEED_SESSION },
         { id: txnId, patch: { categoryId: isolated.categoryId } },
       );
       expect(result.ok).toBe(false);
@@ -126,7 +126,7 @@ describe('updateTransactionCore (integração)', () => {
     const txnId = await seedTxn();
     const supabase = await getAuthedClient();
     const result = await updateTransactionCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         id: txnId,
         patch: { categoryId: SEED_CATEGORY_RESTAURANTE_ID, description: 'novo desc' },

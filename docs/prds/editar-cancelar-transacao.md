@@ -8,21 +8,21 @@ Depois que uma transação é lançada, ela está congelada — não há como co
 - Categoria errada (Mercado em vez de Restaurante)
 - Conta errada (Itaú em vez de Revolut)
 - "Já pago" marcado errado, ou data errada
-- Duplicata (cliquei "Lançar" duas vezes, ou Tiago e Laine lançaram a mesma despesa)
+- Duplicata (cliquei "Lançar" duas vezes, ou owner e co-membro lançaram a mesma despesa)
 
 Sem editar/cancelar, a única saída é o SQL editor do Supabase — mesmo problema que travou o CRUD de categorias. Quebra a premissa de uso fora de dev. Com a feature de marcar como pago tendo aterrissado sem undo, esse buraco virou crítico: marca pago errado e está preso.
 
 ## Usuário afetado
 
-- **Tiago e Laine corrigindo logo após lançar** (peso alto, frequência semanal): typo de valor, categoria errada. Comportamento: lança, vê na lista, percebe erro, edita.
-- **Tiago limpando duplicatas** (peso médio, ocasional): aparece linha duplicada em /transacoes, cancela uma.
-- **Tiago/Laine desfazendo "marcar como pago" acidental** (peso médio, ocasional): clicou em check sem querer, edita → desmarca pago, ou cancela e relança.
+- **owner e co-membro corrigindo logo após lançar** (peso alto, frequência semanal): typo de valor, categoria errada. Comportamento: lança, vê na lista, percebe erro, edita.
+- **owner limpando duplicatas** (peso médio, ocasional): aparece linha duplicada em /transacoes, cancela uma.
+- **owner/co-membro desfazendo "marcar como pago" acidental** (peso médio, ocasional): clicou em check sem querer, edita → desmarca pago, ou cancela e relança.
 
 Não é pra: edição em massa, re-categorização global (PRDs futuras se aparecer dor).
 
 ## Métrica de sucesso
 
-**Zero queries de `UPDATE transactions` ou `DELETE FROM transactions` no SQL Editor do Supabase em produção após primeiro mês de uso.** Mesmo proxy que o CRUD usa — se Tiago precisar abrir SQL, a feature falhou.
+**Zero queries de `UPDATE transactions` ou `DELETE FROM transactions` no SQL Editor do Supabase em produção após primeiro mês de uso.** Mesmo proxy que o CRUD usa — se owner precisar abrir SQL, a feature falhou.
 
 Proxy positivo: na primeira semana, pelo menos 1 edição e 1 cancelamento feitos pela UI sem dúvida operacional.
 
@@ -99,7 +99,7 @@ Categorias e accounts pra popular o EditDialog vêm da page server-side (uma que
 
 ## Hipóteses a validar
 
-- **"Hard delete sem undo é aceitável"**: premissa baseada no fato de que mark-paid e archive também não têm undo, e ninguém reclamou. Se em 2 semanas Tiago/Laine reportarem "apaguei errado", considerar undo via toast (sonner suporta).
+- **"Hard delete sem undo é aceitável"**: premissa baseada no fato de que mark-paid e archive também não têm undo, e ninguém reclamou. Se em 2 semanas owner/co-membro reportarem "apaguei errado", considerar undo via toast (sonner suporta).
 - **"Editar via Dialog dá densidade suficiente em mobile"**: dialog em viewport 390px com 6 campos (valor, descrição, chips, conta, data, paid) pode ficar apertado. Validar visualmente. Se ficar congestionado, considerar Sheet bottom em mobile (Dialog vira só desktop).
 
 ## Open questions

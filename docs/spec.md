@@ -6,7 +6,7 @@
 
 ## 1. Visão e escopo
 
-Portal web pessoal para um casal acompanhar as finanças do mês: lançar despesas e entradas pelo celular, conferir o saldo atual e a previsão de fechamento, controlar dívidas em aberto, recorrentes e parcelas. Sem fins comerciais. Hospedado privadamente, acesso restrito a 2 contas (Tiago e Laine).
+Portal web pessoal para um casal acompanhar as finanças do mês: lançar despesas e entradas pelo celular, conferir o saldo atual e a previsão de fechamento, controlar dívidas em aberto, recorrentes e parcelas. Sem fins comerciais. Hospedado privadamente, acesso restrito aos 2 membros do household.
 
 **O MVP entrega:**
 
@@ -26,8 +26,8 @@ Portal web pessoal para um casal acompanhar as finanças do mês: lançar despes
 
 ## 2. Usuários
 
-- **Tiago**: principal, recebe em EUR, mora no Brasil, lança a maioria das despesas.
-- **Laine** (esposa): co-acessa. Pode lançar pelo celular dela. Vê tudo igual.
+- **Owner**: principal, recebe em EUR, mora no Brasil, lança a maioria das despesas.
+- **Co-membro** (parceira): co-acessa. Pode lançar pelo celular dela. Vê tudo igual.
 
 Ambos pertencem ao mesmo `household` e enxergam exatamente os mesmos dados. Cada transação registra quem lançou (`profile_id`), permitindo filtrar por autor mais à frente.
 
@@ -238,7 +238,7 @@ Cron Vercel `0 12 * * *` (todo dia ao meio-dia UTC) pré-popula cotação do dia
 ## 8. Auth e segurança
 
 - Supabase Auth com magic link (email).
-- Allowlist hardcoded em `lib/auth/allowlist.ts` — emails de Tiago e Laine vindos de env var `NEXT_PUBLIC_ALLOWED_EMAILS`.
+- Allowlist hardcoded em `lib/auth/allowlist.ts` — emails dos membros do household vindos de env var `NEXT_PUBLIC_ALLOWED_EMAILS`.
 - Hook no signin que rejeita email fora da allowlist (ou usa Supabase Auth Hook).
 - RLS no banco isola por household — defesa em profundidade caso o front falhe.
 - Service role key (usada só em Server Actions de câmbio) vai em env var, nunca exposta ao browser.
@@ -308,7 +308,7 @@ Abra o terminal nesta pasta (`C:\dev\work\2026\controle-financeiro`) e rode `cla
 > 11. Rode `npx playwright install --with-deps chromium`.
 >
 > **Fase 3 — Supabase local**
-> 12. `npx supabase init` na raiz. Crie `supabase/migrations/0001_initial.sql` a partir do conteúdo de `docs/schema.sql`. Crie `supabase/seed.sql` com seed de teste: 1 household, 1 profile (Tiago), 2 contas vazias (Conta Tiago EUR, Conta Tiago BRL).
+> 12. `npx supabase init` na raiz. Crie `supabase/migrations/0001_initial.sql` a partir do conteúdo de `docs/schema.sql`. Crie `supabase/seed.sql` com seed de teste: 1 household, 1 profile (owner), 2 contas vazias (Conta EUR, Conta BRL).
 > 13. `npx supabase start` pra rodar local. Confirme funcionando com `npx supabase status`.
 > 14. Gere tipos: `npx supabase gen types typescript --local > src/types/database.ts`.
 >

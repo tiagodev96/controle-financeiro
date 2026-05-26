@@ -7,7 +7,7 @@ import {
 } from '@/server/actions/accounts/core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
 } from './helpers/auth';
 import { getAdminClient } from './helpers/db';
@@ -31,7 +31,7 @@ describe('contas CRUD (integração)', () => {
   it('I-ACC-CREATE — cria conta com initialBalanceCents', async () => {
     const supabase = await getAuthedClient();
     const result = await createAccountCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, currency: 'BRL', initialBalanceCents: 150_000 },
     );
 
@@ -48,13 +48,13 @@ describe('contas CRUD (integração)', () => {
   it('I-ACC-CREATE-DUP — nome duplicado no mesmo household → ok:false', async () => {
     const supabase = await getAuthedClient();
     const first = await createAccountCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, currency: 'EUR', initialBalanceCents: 0 },
     );
     expect(first.ok).toBe(true);
 
     const dup = await createAccountCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, currency: 'EUR', initialBalanceCents: 0 },
     );
     expect(dup.ok).toBe(false);
@@ -63,13 +63,13 @@ describe('contas CRUD (integração)', () => {
   it('I-ACC-RENAME — muda name, preserva currency e balance', async () => {
     const supabase = await getAuthedClient();
     const created = await createAccountCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, currency: 'EUR', initialBalanceCents: 50_000 },
     );
     if (!created.ok) throw new Error('setup');
 
     const renamed = await renameAccountCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { accountId: created.account.id, name: NAMES[1]! },
     );
     expect(renamed.ok).toBe(true);
@@ -88,13 +88,13 @@ describe('contas CRUD (integração)', () => {
   it('I-ACC-ARCHIVE — flipa is_archived', async () => {
     const supabase = await getAuthedClient();
     const created = await createAccountCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, currency: 'EUR', initialBalanceCents: 0 },
     );
     if (!created.ok) throw new Error('setup');
 
     const result = await archiveAccountCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { accountId: created.account.id },
     );
     expect(result.ok).toBe(true);
@@ -111,13 +111,13 @@ describe('contas CRUD (integração)', () => {
   it('I-ACC-BAL — setAccountBalanceCore atualiza balance_cents preservando demais campos', async () => {
     const supabase = await getAuthedClient();
     const created = await createAccountCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, currency: 'EUR', initialBalanceCents: 50_000 },
     );
     if (!created.ok) throw new Error('setup');
 
     const result = await setAccountBalanceCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { accountId: created.account.id, balanceCents: 123_456 },
     );
     expect(result.ok).toBe(true);
@@ -136,13 +136,13 @@ describe('contas CRUD (integração)', () => {
   it('I-ACC-BAL-NEG — balance negativo rejeita', async () => {
     const supabase = await getAuthedClient();
     const created = await createAccountCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { name: NAMES[0]!, currency: 'EUR', initialBalanceCents: 10_000 },
     );
     if (!created.ok) throw new Error('setup');
 
     const result = await setAccountBalanceCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { accountId: created.account.id, balanceCents: -100 },
     );
     expect(result.ok).toBe(false);

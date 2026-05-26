@@ -133,7 +133,7 @@ src/
 
 ## Disciplina de TDD (regra-mãe do projeto)
 
-**Toda feature começa com teste failing antes de qualquer linha de implementação.** Sem exceção. O objetivo aqui não é só qualidade — é Tiago aprender o método pra usar profissionalmente depois.
+**Toda feature começa com teste failing antes de qualquer linha de implementação.** Sem exceção. O objetivo aqui não é só qualidade — é o owner aprender o método pra usar profissionalmente depois.
 
 Adotamos **outside-in TDD** (estilo "testing trophy", não pirâmide):
 
@@ -207,4 +207,4 @@ Regra: **invocar a skill explicitamente** no prompt (ex.: "use a skill prd pra p
 4. `docs/prds/` — PRDs por feature já entregue ou em andamento (`lancar-despesa`, `password-auth`).
 5. `design-system/SKILL.md` + `design-system/README.md` — fonte única do visual (Livro-razão). UI kits de referência em `design-system/ui_kits/pwa/`.
 6. `design-system/colors_and_type.css` — tokens canônicos (espelhados em `src/app/globals.css`).
-7. `reference/reference-sheet.xlsx` — planilha antiga do Tiago, **apenas referência** de padrões de uso. Não importar.
+7. `reference/reference-sheet.xlsx` — planilha antiga do owner (gitignored), **apenas referência** local de padrões de uso. Não importar.

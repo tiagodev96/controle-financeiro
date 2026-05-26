@@ -1,12 +1,12 @@
 # Provisionamento manual de usuários
 
-Auth é **email + senha + allowlist** (decisão registrada em [`docs/prds/password-auth.md`](../prds/password-auth.md)). Não há signup self-service nem reset de senha por UI. Adicionar um usuário é tarefa operacional do Tiago no dashboard do Supabase + atualização de env var no Vercel.
+Auth é **email + senha + allowlist** (decisão registrada em [`docs/prds/password-auth.md`](../prds/password-auth.md)). Não há signup self-service nem reset de senha por UI. Adicionar um usuário é tarefa operacional do owner no dashboard do Supabase + atualização de env var no Vercel.
 
 ---
 
 ## Quando usar
 
-- **Primeiro deploy em produção** — criar `tiago@<domínio>` e `laine@<domínio>`.
+- **Primeiro deploy em produção** — criar `owner@<domínio>` e `member@<domínio>`.
 - **Esqueci a senha** — resetar manualmente.
 - **Adicionar 3ª pessoa eventualmente** — criar usuário + entrar na allowlist.
 
@@ -23,7 +23,7 @@ Use um password manager (1Password, Apple Keychain). Senha aleatória de 20+ car
 1. `dashboard.supabase.com` → projeto de produção.
 2. **Authentication → Users → Add user → Create new user**.
 3. Preencher:
-   - **Email** — o email real da pessoa (ex: `laine@example.com`)
+   - **Email** — o email real da pessoa (ex: `member@example.com`)
    - **Password** — a senha forte gerada no passo 1
    - **Auto Confirm User** — `true` (não usamos email confirmation)
 4. Confirmar.
@@ -35,19 +35,19 @@ O trigger automatico de criação de profile **não existe** — o schema atual 
 ```sql
 -- Substituir os valores entre { } pelos reais
 insert into households (id, name, base_currency)
-values ('{novo-uuid}', 'Household Tiago + Laine', 'EUR')
+values ('{novo-uuid}', 'Household owner + co-membro', 'EUR')
 on conflict (id) do nothing;
 
 insert into profiles (id, household_id, display_name)
 values (
   '{auth-user-id-do-passo-2}',
   '{novo-uuid}',
-  'Laine'
+  'co-membro'
 )
 on conflict (id) do nothing;
 ```
 
-> Se a pessoa entra num household existente (ex: Laine entrando no household do Tiago): pular o `insert into households` e usar o `household_id` existente.
+> Se a pessoa entra num household existente (ex: co-membro entrando no household do owner): pular o `insert into households` e usar o `household_id` existente.
 
 ### 4. Atualizar `AUTH_ALLOWED_EMAILS` no Vercel
 
@@ -55,7 +55,7 @@ on conflict (id) do nothing;
 2. Editar `AUTH_ALLOWED_EMAILS`.
 3. Adicionar o novo email separado por vírgula:
    ```
-   tiago@example.com,laine@example.com
+   owner@example.com,member@example.com
    ```
 4. Salvar. **Redeploy obrigatório** — env vars novas só pegam em build novo.
 
@@ -88,9 +88,9 @@ Procedimento de primeira ativação:
 1. Confirmar que `AUTH_ALLOWED_EMAILS` está populado em prod.
 2. Confirmar que os 2 usuários estão criados no Supabase + profiles existem.
 3. Set `AUTH_ENABLED=true` no Vercel → trigger redeploy.
-4. Smoke test pessoal do Tiago primeiro. Se OK, avisar Laine.
+4. Smoke test pessoal do owner primeiro. Se OK, avisar co-membro.
 
-> Não deixe `AUTH_ENABLED=false` em prod por acidente após a ativação — Laine vai ver "Em breve" achando que o app está quebrado.
+> Não deixe `AUTH_ENABLED=false` em prod por acidente após a ativação — co-membro vai ver "Em breve" achando que o app está quebrado.
 
 ---
 
@@ -100,13 +100,13 @@ Procedimento de primeira ativação:
 
 ```
 AUTH_ENABLED=true
-AUTH_ALLOWED_EMAILS=tiago@example.com,empty@example.com,...
+AUTH_ALLOWED_EMAILS=owner@example.com,empty@example.com,...
 ```
 
-`tiago@example.com` é o fixture principal do seed (senha `password-local`). `empty@example.com` é fixture pra E3 (household sem categorias). E2E + integração usam o helper `signInAsFixtureUser` em `tests/helpers/auth.ts` — não passam pela allowlist (signInWithPassword é direto contra o GoTrue local).
+`owner@example.com` é o fixture principal do seed (senha `password-local`). `empty@example.com` é fixture pra E3 (household sem categorias). E2E + integração usam o helper `signInAsFixtureUser` em `tests/helpers/auth.ts` — não passam pela allowlist (signInWithPassword é direto contra o GoTrue local).
 
 ---
 
 ## Quem mexer
 
-Só o Tiago. Não delegar — não há automação que mascare erros (sem signup, sem flow auto-confirm). Se Laine precisar adicionar alguém: ping Tiago.
+Só o owner. Não delegar — não há automação que mascare erros (sem signup, sem flow auto-confirm). Se co-membro precisar adicionar alguém: ping owner.

@@ -41,10 +41,12 @@ const items: Item[] = [
 
 type Props = {
   theme: Theme;
+  displayName: string;
 };
 
-export function DesktopSidebar({ theme }: Props) {
+export function DesktopSidebar({ theme, displayName }: Props) {
   const pathname = usePathname();
+  const initial = displayName.trim().charAt(0).toUpperCase() || '·';
 
   return (
     <aside
@@ -88,11 +90,10 @@ export function DesktopSidebar({ theme }: Props) {
 
       <div className="flex items-center gap-2.5 rounded-md border border-border-soft bg-bg-inset px-3 py-2.5">
         <span className="flex size-7 items-center justify-center rounded-full bg-brand-quiet-bg text-xs font-bold text-brand-quiet-fg">
-          T
+          {initial}
         </span>
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="text-xs font-semibold text-fg1">Tiago</span>
-          <span className="mono text-[10px] text-fg4">+ Laine</span>
+          <span className="truncate text-xs font-semibold text-fg1">{displayName}</span>
         </div>
       </div>
     </aside>

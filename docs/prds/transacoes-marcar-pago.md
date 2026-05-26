@@ -11,7 +11,7 @@ A rota `/transacoes` está nos dois navs (bottom mobile + sidebar desktop), mas 
 
 ## Usuário afetado
 
-Tiago e Laine ao **fechar o ciclo do mês** — geralmente no fim do mês, sentados, revisando o que pagou e o que ficou. Peso menor: durante o mês quando lembram "ah, paguei o boleto X hoje". Ações típicas:
+owner e co-membro ao **fechar o ciclo do mês** — geralmente no fim do mês, sentados, revisando o que pagou e o que ficou. Peso menor: durante o mês quando lembram "ah, paguei o boleto X hoje". Ações típicas:
 - "Paguei o boleto da luz hoje" → abre /transacoes → acha (filtro: pendente) → marca como pago
 - "Quanto tem pendente este mês?" → /transacoes com filtro status=pendente, vê total
 - "Quanto gastei na conta Itaú?" → /transacoes com filtro conta=Itaú
@@ -22,7 +22,7 @@ Não é pra: análise histórica de anos passados, exportação de extrato, conc
 
 **Cada despesa pendente lançada vira pago em ≤ 7 dias da data de vencimento**, medido por: `paid_on - occurred_on` (mediana, em transações com `status='paid'`). Se a mediana ultrapassa 7 dias por 2 semanas seguidas, sinal que o fluxo de marcar como pago está com atrito demais — investigar.
 
-Proxy direto (primeira semana, antes de ter dados): Tiago e Laine usam a feature pelo menos 3x cada na primeira semana sem pedir ajuda. Mediano caso afirmativo, alto se ambos.
+Proxy direto (primeira semana, antes de ter dados): owner e co-membro usam a feature pelo menos 3x cada na primeira semana sem pedir ajuda. Mediano caso afirmativo, alto se ambos.
 
 ## Escopo
 
@@ -77,14 +77,14 @@ Para o stat header (contagem + soma do filtro corrente): calculado server-side j
 ## Riscos
 
 - **Marcar pago sem querer**: probabilidade média (botão visível em cada linha), impacto baixo (a transação fica registrada, só muda status). Mitigação: sem undo no v1; aceitar como custo da fricção zero. Se aparecer em uso real, considerar confirmação inline antes de commitar.
-- **Filtro vira deep-link compartilhado por engano** (Tiago manda link pra Laine): probabilidade baixa, impacto nulo (a sessão do destinatário gateia auth + RLS gateia visibilidade). Aceitar.
+- **Filtro vira deep-link compartilhado por engano** (owner manda link pra co-membro): probabilidade baixa, impacto nulo (a sessão do destinatário gateia auth + RLS gateia visibilidade). Aceitar.
 - **Limit 100 esconde transações antigas**: probabilidade alta no longo prazo (qualquer household passa de 100 em 4-5 meses). Mitigação aceita: paginar quando virar problema. Adicionar caption "mostrando 100 mais recentes" quando bater o limit pra dar feedback honesto.
 - **Server Action timing**: marcar pago é fast (single update). Sem rate-limit explícito; se o usuário spammar 50 marks em sequência, RLS + database lock cuidam. Aceitar.
 - **`paid_on=hoje` no servidor**: assume timezone UTC do server. Se o usuário está em horário diferente, `paid_on` pode ficar 1 dia à frente ou atrás. Probabilidade média, impacto baixo. Mitigação: usar a date local do servidor (server roda no Vercel — UTC), aceitar pequeno deslocamento. Quando virar problema visível, passa `paid_on` opcional do client com Intl timezone local do browser.
 
 ## Hipóteses a validar
 
-- **"Confirmação inline (sem modal) é OK pra marcar pago"**. Premissa: ação é low-stakes, modal seria fricção. Validar: nas 2 primeiras semanas, observar se Tiago/Laine reclamam de marca-erradas. Se 2+ erros em 14 dias, adicionar confirmação.
+- **"Confirmação inline (sem modal) é OK pra marcar pago"**. Premissa: ação é low-stakes, modal seria fricção. Validar: nas 2 primeiras semanas, observar se owner/co-membro reclamam de marca-erradas. Se 2+ erros em 14 dias, adicionar confirmação.
 - **"Filtros via searchParams (sem persistir preferência) bastam"**. Cada navegação volta pro default (mês corrente, status todos). Se o casal sempre filtra por status=pendente, vale persistir a última escolha em cookie. Validar com uso real.
 - **"Sem botão de mark-paid no dashboard é aceitável"** — usuário sempre navega pra /transacoes pra marcar. Se em uso real ficar claro que querem marcar sem sair do dashboard, copiar o botão pra lá.
 

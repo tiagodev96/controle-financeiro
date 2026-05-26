@@ -6,7 +6,7 @@ import {
 } from '@/server/actions/installments/core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_ACCOUNT_BRL_ID,
@@ -34,7 +34,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-CRUD1 — cria plano + N transactions com installment_number sequencial; soma == total', async () => {
     const supabase = await getAuthedClient();
     const result = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test notebook',
         totalAmountCents: 40000,
@@ -66,7 +66,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-CRUD2 — arredondamento: total=10001 em 3 parcelas distribui 3334/3334/3333', async () => {
     const supabase = await getAuthedClient();
     const result = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test roundoff',
         totalAmountCents: 10001,
@@ -97,7 +97,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-FREQ — frequency_months=2 gera parcelas bimensais', async () => {
     const supabase = await getAuthedClient();
     const result = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test bimensal',
         totalAmountCents: 9000,
@@ -125,7 +125,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-CANCEL — deletar plano preserva transactions com source_installment_plan_id=null', async () => {
     const supabase = await getAuthedClient();
     const created = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test cancel',
         totalAmountCents: 12000,
@@ -141,7 +141,7 @@ describe('installment_plans (integração)', () => {
     if (!created.ok) throw new Error('setup');
 
     const deleted = await deleteInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { planId: created.plan.id },
     );
     expect(deleted.ok).toBe(true);
@@ -158,7 +158,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-CURRENCY — plan.currency != account.currency rejeita', async () => {
     const supabase = await getAuthedClient();
     const result = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test mismatch',
         totalAmountCents: 9000,
@@ -177,7 +177,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-EDIT-TITLE — editar só title e notes preserva transactions', async () => {
     const supabase = await getAuthedClient();
     const created = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test edit base',
         totalAmountCents: 9000,
@@ -193,7 +193,7 @@ describe('installment_plans (integração)', () => {
     if (!created.ok) throw new Error('setup');
 
     const result = await updateInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         planId: created.plan.id,
         title: 'PARC test edit renamed',
@@ -217,7 +217,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-EDIT-PROPAGATE — editar category/account propaga pra todas as parcelas (paid + pending)', async () => {
     const supabase = await getAuthedClient();
     const created = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test propagate',
         totalAmountCents: 9000,
@@ -241,7 +241,7 @@ describe('installment_plans (integração)', () => {
       .eq('installment_number', 1);
 
     const result = await updateInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         planId: created.plan.id,
         categoryId: SEED_CATEGORY_RESTAURANTE_ID,
@@ -259,7 +259,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-EDIT-TOTAL — editar total recalcula só pendentes, preserva paid', async () => {
     const supabase = await getAuthedClient();
     const created = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test total',
         totalAmountCents: 90_000,
@@ -282,7 +282,7 @@ describe('installment_plans (integração)', () => {
       .eq('installment_number', 1);
 
     const result = await updateInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { planId: created.plan.id, totalAmountCents: 120_000 },
     );
     expect(result.ok).toBe(true);
@@ -305,7 +305,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-EDIT-N-LESS-THAN-PAID — N novo menor que count(paid) rejeita', async () => {
     const supabase = await getAuthedClient();
     const created = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test n less',
         totalAmountCents: 90_000,
@@ -328,7 +328,7 @@ describe('installment_plans (integração)', () => {
       .in('installment_number', [1, 2]);
 
     const result = await updateInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { planId: created.plan.id, totalInstallments: 2 },
     );
     expect(result.ok).toBe(false);
@@ -337,7 +337,7 @@ describe('installment_plans (integração)', () => {
   it('I-PARC-EDIT-CURRENCY-MISMATCH — trocar pra conta de outra currency rejeita', async () => {
     const supabase = await getAuthedClient();
     const created = await createInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'PARC test mismatch edit',
         totalAmountCents: 9000,
@@ -353,7 +353,7 @@ describe('installment_plans (integração)', () => {
     if (!created.ok) throw new Error('setup');
 
     const result = await updateInstallmentPlanCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         planId: created.plan.id,
         accountId: SEED_ACCOUNT_BRL_ID,

@@ -53,7 +53,7 @@ O cookie `cf_last_account_id` (httpOnly false, pra ser legível no client) é se
 
 ## Riscos
 
-- **Auth não implementada bloqueia o E2E**: probabilidade alta, impacto alto. Mitigação: helper `signInAsFixtureUser` em `tests/helpers/auth.ts` que chama `supabase.auth.signInWithPassword({ email: 'tiago@example.com', password: 'password-local' })` antes de cada teste E2E que precisa de sessão. Quando o magic link for implementado de verdade, o helper fica como fallback de teste.
+- **Auth não implementada bloqueia o E2E**: probabilidade alta, impacto alto. Mitigação: helper `signInAsFixtureUser` em `tests/helpers/auth.ts` que chama `supabase.auth.signInWithPassword({ email: 'owner@example.com', password: 'password-local' })` antes de cada teste E2E que precisa de sessão. Quando o magic link for implementado de verdade, o helper fica como fallback de teste.
 - **Schema Zod duplicado entre client e server**: probabilidade média, impacto baixo (manutenção). Mitigação já está no plano: schema único em `src/lib/transactions/schema.ts`, importado dos dois lados.
 - **Household sem categorias**: probabilidade alta no início, impacto médio (form com submit desabilitado). Mitigação: seed traz 6 categorias default + UI exibe CTA explícita pra criar mais.
 - **Race condition em duplo submit (usuário tapa 2x rapidamente)**: probabilidade média, impacto baixo (duplicata). Mitigação: desabilitar botão durante `useFormStatus().pending`.
@@ -67,7 +67,7 @@ O cookie `cf_last_account_id` (httpOnly false, pra ser legível no client) é se
 
 ## Open questions
 
-- **Marcar "já pago" deve sugerir deduzir do saldo da conta?** O spec §5.2 fala disso na ação "marcar como pago" em listas. Aqui no form de criação, primeira versão NÃO oferece a sugestão (fica como follow up). Confirmar com Tiago antes de buildar. → **Resposta proposta neste PRD: não oferecer agora.**
+- **Marcar "já pago" deve sugerir deduzir do saldo da conta?** O spec §5.2 fala disso na ação "marcar como pago" em listas. Aqui no form de criação, primeira versão NÃO oferece a sugestão (fica como follow up). Confirmar com owner antes de buildar. → **Resposta proposta neste PRD: não oferecer agora.**
 - **Categoria sugerida é por household ou por usuário individual?** Se é household, todos compartilham o ranking. Se é individual, cada profile vê seu próprio top 6. Recomendação: **por household** (alinha com a regra de "fluxo conjunto" já decidida). Confirmar.
 - **Moeda do lançamento**: vem estritamente da conta? Recomendação: **sim**. Conta é EUR → despesa é EUR. Sem override. Confirmar.
 - **Falta de categoria deve bloquear submit ou criar "Outros" automaticamente?** Recomendação: **bloquear com CTA explícita** ("Crie ao menos uma categoria primeiro" + botão). Categoria "Outros" automática esconde o problema. Confirmar.

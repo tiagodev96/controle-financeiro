@@ -17,7 +17,7 @@ insert into auth.users (
 ) values (
   '00000000-0000-4000-8000-000000000001',
   '00000000-0000-0000-0000-000000000000',
-  'authenticated', 'authenticated', 'tiago@example.com',
+  'authenticated', 'authenticated', 'owner@example.com',
   crypt('password-local', gen_salt('bf')),
   now(), now(), now(),
   '{"provider":"email","providers":["email"]}'::jsonb,
@@ -36,7 +36,7 @@ insert into auth.identities (
   '00000000-0000-4000-8000-000000000001',
   jsonb_build_object(
     'sub', '00000000-0000-4000-8000-000000000001',
-    'email', 'tiago@example.com',
+    'email', 'owner@example.com',
     'email_verified', true,
     'phone_verified', false
   ),
@@ -89,7 +89,7 @@ on conflict (id) do nothing;
 -- =========================================================================
 -- Fixture E2E pro estado vazio (E3): household sem categorias, com conta.
 -- User "empty@example.com" / password-local. NÃO compartilha household com
--- Tiago — RLS isola tudo. Existe SÓ pra exercitar o empty state de /lancar
+-- o owner — RLS isola tudo. Existe SÓ pra exercitar o empty state de /lancar
 -- sem precisar truncar categories do household principal durante o teste.
 -- =========================================================================
 insert into auth.users (

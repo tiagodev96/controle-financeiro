@@ -2,14 +2,14 @@
 
 ## Problema
 
-Hoje a geração de transactions a partir de `recurring_rules` é manual: Tiago tem que abrir `/recorrentes` e clicar "Gerar este mês" no dia 1. Se esquece, o dashboard do mês mostra sobra prevista otimista (sem aluguel/NOS/etc), e ele só percebe ao reabrir o app dias depois. Mesmo padrão pra câmbio: a primeira request do dia paga latência de ~300ms pra popular `fx_rates_cache`, e se o cache nunca é populado por outras rotas, o saldo total convertido fica preso na cotação stale.
+Hoje a geração de transactions a partir de `recurring_rules` é manual: owner tem que abrir `/recorrentes` e clicar "Gerar este mês" no dia 1. Se esquece, o dashboard do mês mostra sobra prevista otimista (sem aluguel/NOS/etc), e ele só percebe ao reabrir o app dias depois. Mesmo padrão pra câmbio: a primeira request do dia paga latência de ~300ms pra popular `fx_rates_cache`, e se o cache nunca é populado por outras rotas, o saldo total convertido fica preso na cotação stale.
 
 Dois pontos isolados que cabem na mesma frente porque a infra de cron é compartilhada.
 
 ## Usuário afetado
 
-- **Tiago no início do mês** (peso alto, mensal): dia 1-2, abre o app, espera ver aluguel/contas como pending. Hoje só vê se clicou manualmente.
-- **Tiago no dashboard** (peso alto, diário, lateral): primeira visita do dia, espera ver cotação atualizada sem precisar esperar o fetch online.
+- **owner no início do mês** (peso alto, mensal): dia 1-2, abre o app, espera ver aluguel/contas como pending. Hoje só vê se clicou manualmente.
+- **owner no dashboard** (peso alto, diário, lateral): primeira visita do dia, espera ver cotação atualizada sem precisar esperar o fetch online.
 
 Não é pra: trigger oneshot por evento de transaction, refresh em tempo real, push notifications.
 
@@ -17,7 +17,7 @@ Não é pra: trigger oneshot por evento de transaction, refresh em tempo real, p
 
 **Após primeiro deploy do cron, dia 1 do mês seguinte tem ≥ 80% das regras ativas geradas automaticamente até as 6h locais (Lisboa)** + **fx_rates_cache tem entrada nova em ≥ 95% dos dias úteis**. Medido por inspeção de `transactions` e `fx_rates_cache`.
 
-Proxy direto: Tiago abre o app no dia 2 do mês seguinte e vê aluguel/contas já lançados, sem ter clicado em "Gerar este mês". E vê cotação com `rate_date == hoje` na 1ª visita do dia.
+Proxy direto: owner abre o app no dia 2 do mês seguinte e vê aluguel/contas já lançados, sem ter clicado em "Gerar este mês". E vê cotação com `rate_date == hoje` na 1ª visita do dia.
 
 ## Escopo
 
@@ -73,19 +73,19 @@ Helper `requireCronAuth(request)` em `src/server/cron/auth.ts` para evitar repet
 - **Cron Vercel free tier limit**: probabilidade média (free permite 2 daily crons IIRC, ou mudou recente). Mitigação: 2 jobs, 1 daily + 1 monthly. Se quebrar limit, fundir em 1 dispatcher.
 - **Geração em horário com DST border**: probabilidade baixa, impacto baixo. Vercel cron schedule é UTC, sem ambiguidade.
 - **Secret vazado por log**: probabilidade baixa, impacto alto. Mitigação: nunca logar `request.headers`, validar e descartar.
-- **Multi-household ainda só tem 1 household no app**: probabilidade alta (Tiago+Laine = 1 household), impacto zero — código preparado pra N. Aceitar overhead de iteração.
+- **Multi-household ainda só tem 1 household no app**: probabilidade alta (owner+co-membro = 1 household), impacto zero — código preparado pra N. Aceitar overhead de iteração.
 - **Erro de fetch no frankfurter durante cron**: probabilidade média, impacto baixo (cron loga e segue; dashboard puxa sob demanda como fallback). Aceitar.
 - **Trigger SQL `recalc_debt_remaining` em massa**: não aplicável (recurring/fx não criam payments de dívida).
 
 ## Hipóteses a validar
 
 - **"Vercel Cron grátis cobre o caso"**: free permite 2 crons no plano hobby (verificar antes de deploy). Se não, virar 1 dispatcher.
-- **"3h UTC é horário ok"**: Tiago abre o app de manhã (8-9h Lisboa). 3h UTC dá 5-6h Lisboa, room sobrando. Validar.
+- **"3h UTC é horário ok"**: owner abre o app de manhã (8-9h Lisboa). 3h UTC dá 5-6h Lisboa, room sobrando. Validar.
 
 ## Open questions
 
 - **Onde o profile sintético pro cron sai?**
-  → Proposta: **`profiles.order('created_at asc').limit(1)`** por household. Tiago é o primeiro profile na seed, consistente. Confirmar.
+  → Proposta: **`profiles.order('created_at asc').limit(1)`** por household. owner é o primeiro profile na seed, consistente. Confirmar.
 - **`/api/cron/fx` falha silenciosa ou propaga 500?**
   → Proposta: **500 com `{ ok: false, error }`**, Vercel logs capturam. Cron roda de novo amanhã. Confirmar.
 - **Endpoint cron exposto publicamente sem secret**: bom default ou validação obrigatória?

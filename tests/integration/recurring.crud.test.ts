@@ -6,7 +6,7 @@ import {
 } from '@/server/actions/recurring/core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_CATEGORY_MERCADO_ID,
@@ -28,7 +28,7 @@ describe('recurring CRUD core (integração)', () => {
   it('I-RR-CRUD — cria regra válida e retorna a row', async () => {
     const supabase = await getAuthedClient();
     const result = await createRecurringCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'RR test aluguel',
         amountCents: 80000,
@@ -55,7 +55,7 @@ describe('recurring CRUD core (integração)', () => {
   it('I-RR-PAUSE — pause flipa is_paused; resume volta', async () => {
     const supabase = await getAuthedClient();
     const created = await createRecurringCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         title: 'RR test pause',
         amountCents: 5000,
@@ -69,7 +69,7 @@ describe('recurring CRUD core (integração)', () => {
     if (!created.ok) throw new Error('setup');
 
     const paused = await pauseRecurringCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { ruleId: created.rule.id },
     );
     expect(paused.ok).toBe(true);
@@ -83,7 +83,7 @@ describe('recurring CRUD core (integração)', () => {
     expect(after.data?.is_paused).toBe(true);
 
     const resumed = await resumeRecurringCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { ruleId: created.rule.id },
     );
     expect(resumed.ok).toBe(true);

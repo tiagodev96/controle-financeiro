@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { listTopCategoriesForHousehold } from '@/lib/finance/categories';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_CATEGORY_MERCADO_ID,
@@ -24,7 +24,7 @@ describe('listTopCategoriesForHousehold (integração)', () => {
     const admin = getAdminClient();
     const baseTx = {
       household_id: SEED_DEMO_HOUSEHOLD_ID,
-      profile_id: SEED_TIAGO_SESSION.userId,
+      profile_id: SEED_SESSION.userId,
       account_id: SEED_ACCOUNT_EUR_ID,
       direction: 'expense' as const,
       amount_cents: 100,

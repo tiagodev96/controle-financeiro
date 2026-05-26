@@ -3,8 +3,8 @@ import { createTransactionForSession } from '@/server/actions/transactions/creat
 import { markPaidCore } from '@/server/actions/transactions/mark-paid-core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
-  SEED_TIAGO_USER_ID,
+  SEED_SESSION,
+  SEED_USER_ID,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_CATEGORY_MERCADO_ID,
@@ -38,7 +38,7 @@ async function seedPending(amountCents = 1250): Promise<string> {
     .from('transactions')
     .insert({
       household_id: SEED_DEMO_HOUSEHOLD_ID,
-      profile_id: SEED_TIAGO_USER_ID,
+      profile_id: SEED_USER_ID,
       account_id: SEED_ACCOUNT_EUR_ID,
       category_id: SEED_CATEGORY_MERCADO_ID,
       direction: 'expense',
@@ -66,7 +66,7 @@ describe('balance update on paid transactions (integração)', () => {
   it('I-BAL1 — criar despesa paga com updateBalance=true desconta do saldo', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         amountCents: 2500,
         description: 'BAL test 1',
@@ -85,7 +85,7 @@ describe('balance update on paid transactions (integração)', () => {
   it('I-BAL2 — criar despesa paga com updateBalance=false preserva saldo', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         amountCents: 2500,
         description: 'BAL test 2',
@@ -104,7 +104,7 @@ describe('balance update on paid transactions (integração)', () => {
   it('I-BAL3 — pending ignora updateBalance e preserva saldo', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         amountCents: 2500,
         description: 'BAL test 3',
@@ -123,7 +123,7 @@ describe('balance update on paid transactions (integração)', () => {
   it('I-BAL4 — criar entrada já recebida com updateBalance=true soma no saldo', async () => {
     const supabase = await getAuthedClient();
     const result = await createTransactionForSession(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       {
         amountCents: 5000,
         description: 'BAL test 4',
@@ -143,7 +143,7 @@ describe('balance update on paid transactions (integração)', () => {
     const txnId = await seedPending(3000);
     const supabase = await getAuthedClient();
     const result = await markPaidCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { transactionId: txnId, updateBalance: true },
     );
     expect(result.ok).toBe(true);
@@ -154,7 +154,7 @@ describe('balance update on paid transactions (integração)', () => {
     const txnId = await seedPending(3000);
     const supabase = await getAuthedClient();
     const result = await markPaidCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { transactionId: txnId, updateBalance: false },
     );
     expect(result.ok).toBe(true);

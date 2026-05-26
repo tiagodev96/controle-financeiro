@@ -4,16 +4,18 @@ import { DesktopSidebar } from '@/components/finance/desktop-sidebar';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { ToasterLazy } from '@/components/ui/toaster-lazy';
 import { THEME_COOKIE, resolveTheme } from '@/lib/theme/cookie';
+import { getSession } from '@/lib/auth/session';
 
 // O proxy (src/proxy.ts) já gateia rotas autenticadas — redireciona anônimos
 // pra /login. Aqui o layout só monta o shell visual.
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
+  const session = await getSession();
 
   return (
     <div className="flex min-h-dvh bg-bg-base">
-      <DesktopSidebar theme={theme} />
+      <DesktopSidebar theme={theme} displayName={session.displayName} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 border-b border-border-soft bg-bg-base/90 backdrop-blur lg:hidden">

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { deleteTransactionCore } from '@/server/actions/transactions/delete-core';
 import {
   getAuthedClient,
-  SEED_TIAGO_SESSION,
+  SEED_SESSION,
   SEED_DEMO_HOUSEHOLD_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_CATEGORY_MERCADO_ID,
@@ -22,7 +22,7 @@ async function seedTxn(householdId: string, categoryId: string): Promise<string>
     .from('transactions')
     .insert({
       household_id: householdId,
-      profile_id: SEED_TIAGO_SESSION.userId,
+      profile_id: SEED_SESSION.userId,
       account_id: SEED_ACCOUNT_EUR_ID,
       category_id: categoryId,
       direction: 'expense',
@@ -47,7 +47,7 @@ describe('deleteTransactionCore (integração)', () => {
     const txnId = await seedTxn(SEED_DEMO_HOUSEHOLD_ID, SEED_CATEGORY_MERCADO_ID);
     const supabase = await getAuthedClient();
     const result = await deleteTransactionCore(
-      { supabase, session: SEED_TIAGO_SESSION },
+      { supabase, session: SEED_SESSION },
       { id: txnId },
     );
     expect(result.ok).toBe(true);
@@ -67,7 +67,7 @@ describe('deleteTransactionCore (integração)', () => {
       const txnId = await seedTxn(isolated.householdId, isolated.categoryId);
       const supabase = await getAuthedClient();
       const result = await deleteTransactionCore(
-        { supabase, session: SEED_TIAGO_SESSION },
+        { supabase, session: SEED_SESSION },
         { id: txnId },
       );
       expect(result.ok).toBe(false);

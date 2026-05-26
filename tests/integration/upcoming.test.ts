@@ -3,7 +3,7 @@ import { listUpcomingPending } from '@/lib/finance/upcoming';
 import {
   getAuthedClient,
   SEED_DEMO_HOUSEHOLD_ID,
-  SEED_TIAGO_USER_ID,
+  SEED_USER_ID,
   SEED_ACCOUNT_EUR_ID,
   SEED_CATEGORY_MERCADO_ID,
 } from './helpers/auth';
@@ -19,7 +19,7 @@ async function insertPending(description: string, daysAhead: number): Promise<vo
   const admin = getAdminClient();
   await admin.from('transactions').insert({
     household_id: SEED_DEMO_HOUSEHOLD_ID,
-    profile_id: SEED_TIAGO_USER_ID,
+    profile_id: SEED_USER_ID,
     account_id: SEED_ACCOUNT_EUR_ID,
     category_id: SEED_CATEGORY_MERCADO_ID,
     direction: 'expense',
@@ -60,7 +60,7 @@ describe('listUpcomingPending (integração)', () => {
     const admin = getAdminClient();
     await admin.from('transactions').insert({
       household_id: SEED_DEMO_HOUSEHOLD_ID,
-      profile_id: SEED_TIAGO_USER_ID,
+      profile_id: SEED_USER_ID,
       account_id: SEED_ACCOUNT_EUR_ID,
       category_id: SEED_CATEGORY_MERCADO_ID,
       direction: 'expense',

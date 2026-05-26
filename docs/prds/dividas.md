@@ -2,7 +2,7 @@
 
 ## Problema
 
-Tiago hoje tem dívidas reais (empréstimo do Jefferson, parcelas do notebook, fatura do cartão) sem onde rastrear no app — fica de boca/planilha/lembrança. Três efeitos:
+owner hoje tem dívidas reais (empréstimo do Jefferson, parcelas do notebook, fatura do cartão) sem onde rastrear no app — fica de boca/planilha/lembrança. Três efeitos:
 
 1. **Sobra prevista distorcida**: pagamentos parciais que ele faz toda semana viram transactions soltas, sem agregação. Não dá pra ver "quanto ainda falta do empréstimo".
 2. **Sem priorização**: três dívidas com prioridades diferentes (juros altos vs amigo), e o app não ajuda a decidir qual quitar primeiro.
@@ -10,16 +10,16 @@ Tiago hoje tem dívidas reais (empréstimo do Jefferson, parcelas do notebook, f
 
 ## Usuário afetado
 
-- **Tiago cadastrando dívida nova** (peso baixo, frequência mensal): "fiz acordo com Jefferson, devo R$ 3.000, prioridade alta".
-- **Tiago/Laine registrando pagamento parcial** (peso médio, semanal): "paguei R$ 300 do Jefferson hoje via PIX".
-- **Tiago marcando como quitada** (peso baixo, eventual): após o último pagamento, ou quando perdoou.
-- **Tiago/Laine visualizando o progresso** (peso médio, mensal): "quanto falta de cada uma?"
+- **owner cadastrando dívida nova** (peso baixo, frequência mensal): "fiz acordo com Jefferson, devo R$ 3.000, prioridade alta".
+- **owner/co-membro registrando pagamento parcial** (peso médio, semanal): "paguei R$ 300 do Jefferson hoje via PIX".
+- **owner marcando como quitada** (peso baixo, eventual): após o último pagamento, ou quando perdoou.
+- **owner/co-membro visualizando o progresso** (peso médio, mensal): "quanto falta de cada uma?"
 
 Não é pra: compras parceladas com datas fixas (installment_plans tem PRD separada), simulação de juros, dívidas de terceiros (você emprestar pra alguém).
 
 ## Métrica de sucesso
 
-**Toda dívida atual do Tiago está cadastrada no app dentro de 1 semana após deploy** + **pagamentos via app refletem em `debts.remaining_amount_cents` em tempo real (via trigger)**, medido por sample manual de 3 dívidas reais. Se o casal continuar usando planilha pra rastrear "quanto falta", a feature falhou em substituir o método atual.
+**Toda dívida atual do owner está cadastrada no app dentro de 1 semana após deploy** + **pagamentos via app refletem em `debts.remaining_amount_cents` em tempo real (via trigger)**, medido por sample manual de 3 dívidas reais. Se o casal continuar usando planilha pra rastrear "quanto falta", a feature falhou em substituir o método atual.
 
 Proxy direto: 3 dívidas reais cadastradas + 5 pagamentos registrados na primeira semana.
 
@@ -100,7 +100,7 @@ Trigger do DB já cuida da consistência — código TS não precisa recalcular 
 
 ## Hipóteses a validar
 
-- **"Sem suggestion no dashboard, /dividas é descobrível o suficiente"**: hoje só está no nav. Validar — se Tiago não abre /dividas em 2 semanas, o card Sugestão no dashboard sobe na prioridade.
+- **"Sem suggestion no dashboard, /dividas é descobrível o suficiente"**: hoje só está no nav. Validar — se owner não abre /dividas em 2 semanas, o card Sugestão no dashboard sobe na prioridade.
 - **"Registrar pagamento via Dialog do card é UX ok"**: alternativa seria /lancar com select de "vincular a dívida". Dialog inline reduz fricção. Validar com uso real.
 - **"Priority alta/média/baixa (3 níveis) é suficiente"**: pode pedir 5 níveis se aparecer dor.
 

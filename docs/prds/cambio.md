@@ -2,22 +2,22 @@
 
 ## Problema
 
-Tiago e Laine têm saldo em duas moedas (EUR via Wise/Revolut, BRL via Itaú/Nubank) e o dashboard hoje mostra os totais lado a lado sem somar. Toda vez que querem responder "quanto temos no total?", precisam fazer divisão de cabeça (BRL ÷ 6) e arredondar. Duas consequências:
+owner e co-membro têm saldo em duas moedas (EUR via Wise/Revolut, BRL via Itaú/Nubank) e o dashboard hoje mostra os totais lado a lado sem somar. Toda vez que querem responder "quanto temos no total?", precisam fazer divisão de cabeça (BRL ÷ 6) e arredondar. Duas consequências:
 
 1. **Resposta errada por arredondamento mental** — discutem em cima de número impreciso.
-2. **O resumo mensal exportado pra Laine no WhatsApp lista contas separadas**, sem consolidado — perde a métrica mais óbvia da saúde financeira do casal.
+2. **O resumo mensal exportado pra co-membro no WhatsApp lista contas separadas**, sem consolidado — perde a métrica mais óbvia da saúde financeira do casal.
 
 ## Usuário afetado
 
-- **Tiago no dashboard** (peso alto, diário): quer "quanto temos no total" em uma olhada. É a primeira coisa que ele lê.
-- **Tiago no /resumo** (peso médio, mensal): quer mandar pra Laine "estamos com € X total".
+- **owner no dashboard** (peso alto, diário): quer "quanto temos no total" em uma olhada. É a primeira coisa que ele lê.
+- **owner no /resumo** (peso médio, mensal): quer mandar pra co-membro "estamos com € X total".
 - **Sistema/cron** (peso baixo, diário): pré-popula o cache pra evitar fetch sob demanda na primeira visita do dia.
 
 Não é pra: análise histórica de cotação, conversão de transactions individuais (cada transaction continua na sua currency), suporte a uma terceira moeda.
 
 ## Métrica de sucesso
 
-**Tiago para de fazer divisão de cabeça depois de 1 semana de uso.** Medido por pergunta direta ("você ainda divide R$ por 6 antes de abrir o dashboard?"). Se ele responde "ainda faço", o card está mal posicionado ou a cotação não inspira confiança.
+**owner para de fazer divisão de cabeça depois de 1 semana de uso.** Medido por pergunta direta ("você ainda divide R$ por 6 antes de abrir o dashboard?"). Se ele responde "ainda faço", o card está mal posicionado ou a cotação não inspira confiança.
 
 Proxy técnico: a primeira request do dia ao dashboard insere uma linha em `fx_rates_cache` em ≥95% dos dias úteis durante 30 dias após deploy. Se cair muito, o cron de pré-população não tá funcionando ou frankfurter está instável.
 
@@ -49,7 +49,7 @@ Proxy técnico: a primeira request do dia ao dashboard insere uma linha em `fx_r
   - Wise EUR: € 1.600,15
   ```
 - Cotação NÃO entra no texto (polui WhatsApp). Só no card visual.
-- Se `FxUnavailableError` OU se Tiago só tem contas de uma moeda: omite a linha (resto do resumo segue).
+- Se `FxUnavailableError` OU se owner só tem contas de uma moeda: omite a linha (resto do resumo segue).
 
 **Testes**:
 - Unit: `convertCents` (arredondamento HALF_EVEN, edge cases).
@@ -63,10 +63,10 @@ Proxy técnico: a primeira request do dia ao dashboard insere uma linha em `fx_r
 - **Override manual da cotação via UI** — se a API falha por 8+ dias, ajusta direto via SQL/painel. UI custaria mais que o caso.
 - **Histórico de cotações na UI** (gráfico EUR/BRL ao longo do tempo) — `fx_rates_cache` é detalhe técnico, não conteúdo do produto.
 - **Conversão de transactions individuais** ("R$ 50 viraria € 8,17 em EUR") — só o saldo total e card de Contas usam câmbio. Transactions permanecem na sua currency.
-- **Mudar a moeda primária do household via UI** — fica `EUR` hardcoded no v1. Se Laine ou Tiago decidem mudar, refactor pequeno + PRD nova.
+- **Mudar a moeda primária do household via UI** — fica `EUR` hardcoded no v1. Se co-membro ou owner decidem mudar, refactor pequeno + PRD nova.
 - **Cron mensal de recorrentes** — outra frente (PRD 4).
 - **Rota `/api/cron/fx` propriamente** — esta PRD entrega só a Server Action que o cron chama. O wiring do Vercel Cron entra na PRD 4 (que cobre todos os crons).
-- **Cache TTL menor que 1 dia** (intraday, hourly) — não faz sentido pro caso de uso. Tiago não opera por cotação intraday.
+- **Cache TTL menor que 1 dia** (intraday, hourly) — não faz sentido pro caso de uso. owner não opera por cotação intraday.
 - **Snapshots de saldo histórico** — `accounts.balance_cents` é current state. Histórico só via transactions.
 
 ## Abordagem proposta
@@ -96,9 +96,9 @@ Tabela `fx_rates_cache` já existe. Sem migration. Read via RLS pública; write 
 
 ## Hipóteses a validar
 
-- **"Total em EUR é o agregado que importa"**: Tiago vive em Portugal, recebe em EUR, então EUR é a "moeda do dia-a-dia". Mas se Laine ou ele dizem "mostra em BRL também", PRD futura adiciona toggle. Validar — se em 2 semanas vier pedido, refazer hero como par EUR+BRL.
-- **"Cotação no chip (dd/mm) inspira confiança suficiente"**: alternativa seria mostrar "atualizada há X horas". Mais ruidoso. Validar — se Tiago perguntar "essa cotação é de quando?", mudar.
-- **"Linha 'Total convertido' no texto do /resumo é útil pra Laine"**: pode ser que ela leia "Total: € X (R$ Y)" e fique confusa por sobrepor moedas. Validar com ela direto.
+- **"Total em EUR é o agregado que importa"**: owner vive em Portugal, recebe em EUR, então EUR é a "moeda do dia-a-dia". Mas se co-membro ou ele dizem "mostra em BRL também", PRD futura adiciona toggle. Validar — se em 2 semanas vier pedido, refazer hero como par EUR+BRL.
+- **"Cotação no chip (dd/mm) inspira confiança suficiente"**: alternativa seria mostrar "atualizada há X horas". Mais ruidoso. Validar — se owner perguntar "essa cotação é de quando?", mudar.
+- **"Linha 'Total convertido' no texto do /resumo é útil pra co-membro"**: pode ser que ela leia "Total: € X (R$ Y)" e fique confusa por sobrepor moedas. Validar com ela direto.
 - **"Frankfurter cobre o caso"**: BCE oficial, atualizado dia útil ~16h UTC. Se aparecer caso de "preciso da cotação de Itaú/turismo" (spread comercial), refazer com API paga (mas fora do MVP).
 
 ## Open questions

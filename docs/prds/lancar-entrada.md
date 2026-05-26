@@ -11,7 +11,7 @@ A rota `/lancar` está pronta pra fluxo de despesa. Adicionar entrada nela é o 
 
 ## Usuário afetado
 
-Mesma persona do lançar despesa (Tiago + Laine), mas com **frequência menor por usuário**: entradas acontecem 1-4x por mês cada (salário fixo, freela esporádico) vs despesas 10-30x. Cenários típicos:
+Mesma persona do lançar despesa (owner + co-membro), mas com **frequência menor por usuário**: entradas acontecem 1-4x por mês cada (salário fixo, freela esporádico) vs despesas 10-30x. Cenários típicos:
 - "Recebi salário hoje" (mensal recorrente — vira PRD futura de recorrente, mas v1 lança manual)
 - "Caiu freela" (esporádico)
 - Não é pra: transferência entre contas (vira PRD própria), conversão de moeda, recebimento parcelado.
@@ -76,7 +76,7 @@ Seed novo de income (Salário, Freela, Outros) com IDs fixos e `kind='income'`. 
 ## Hipóteses a validar
 
 - **"Frequência de income é baixa o suficiente que o usuário lembra de lançar"** — sem recurring automation, depende do usuário. Validar em 4 semanas: se salário (mensal certo) está caindo nos lançamentos. Se 2 meses seguidos sem lançar salário: priorizar PRD de recorrente.
-- **"Toggle Despesa/Entrada é descobrível"** — não é a primeira coisa que o usuário vê (chip de Mercado/Restaurante domina visualmente). Validar com Laine sem tutorial.
+- **"Toggle Despesa/Entrada é descobrível"** — não é a primeira coisa que o usuário vê (chip de Mercado/Restaurante domina visualmente). Validar com co-membro sem tutorial.
 
 ## Open questions
 
