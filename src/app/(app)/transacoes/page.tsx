@@ -15,21 +15,12 @@ import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { convertCents, FxUnavailableError, getRateMap, type RateMap } from '@/lib/fx';
 
-const MONTHS_PT_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-
-function monthLabel(monthIso: string): string {
-  const [y, m] = monthIso.split('-').map(Number);
-  return `${MONTHS_PT_SHORT[(m ?? 1) - 1]}/${y}`;
+function currentMonthIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 }
 
-function lastNMonths(n: number): { value: string; label: string }[] {
-  const now = new Date();
-  return Array.from({ length: n }, (_, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    return { value, label: monthLabel(value) };
-  });
-}
+const VALID_MONTH = /^\d{4}-\d{2}$/;
 
 function parseStatus(raw: string | undefined): Status | undefined {
   if (raw === 'pending' || raw === 'paid') return raw;
@@ -69,12 +60,12 @@ export default async function TransacoesPage({ searchParams }: Props) {
   const supabase = await getServerSupabase();
 
   const params = await searchParams;
-  const monthOptions = lastNMonths(6);
-  const defaultMonth = monthOptions[0]?.value ?? '';
+  const defaultMonth = currentMonthIso();
   const status = parseStatus(typeof params.status === 'string' ? params.status : undefined);
   const accountId = typeof params.conta === 'string' && params.conta !== 'all' ? params.conta : undefined;
   const mesRaw = typeof params.mes === 'string' ? params.mes : defaultMonth;
-  const monthIso = mesRaw === 'all' ? undefined : mesRaw;
+  const monthIso =
+    mesRaw === 'all' ? undefined : VALID_MONTH.test(mesRaw) ? mesRaw : defaultMonth;
 
   const [{ transactions: txns, total }, filterAccountsRes, allCategories, allAccounts] =
     await Promise.all([
@@ -144,7 +135,7 @@ export default async function TransacoesPage({ searchParams }: Props) {
     <section className="space-y-5">
       <AppTopBar eyebrow={eyebrow} title="Transações" />
 
-      <TransactionFilters accounts={filterAccounts} monthOptions={monthOptions} />
+      <TransactionFilters accounts={filterAccounts} defaultMonth={defaultMonth} />
 
       {txns.length > 0 && totalsList.length > 0 && (
         <div className="space-y-2 rounded-md border border-border-soft bg-bg-surface px-4 py-3 text-sm">
