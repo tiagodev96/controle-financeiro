@@ -19,7 +19,7 @@ const items: Item[] = [
   { href: '/recorrentes', label: 'Recorrentes', description: 'Regras mensais', Icon: Repeat },
   { href: '/categorias', label: 'Categorias', description: 'Cadastro', Icon: Tags },
   { href: '/contas', label: 'Contas', description: 'Cadastro', Icon: Wallet },
-  { href: '/resumo', label: 'Resumo', description: 'Exportar semana', Icon: Share2 },
+  { href: '/resumo', label: 'Resumo', description: 'Exportar o mês', Icon: Share2 },
 ];
 
 export default function MaisPage() {
