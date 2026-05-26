@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { getServerSupabase } from '@/lib/supabase/server';
+import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession } from '@/lib/auth/session';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { TransactionFilters } from '@/components/finance/transaction-filters';
-import { Num } from '@/components/finance/num';
+import { Num, type Currency } from '@/components/finance/num';
+import { CurrencyToggle } from '@/components/finance/currency-toggle';
 import {
   TransactionsList,
   type Transaction,
@@ -11,6 +13,7 @@ import {
 import { listTransactionsForHousehold, type Status } from '@/lib/finance/transactions';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
+import { convertCents, FxUnavailableError, getRateMap, type RateMap } from '@/lib/fx';
 
 const MONTHS_PT_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -102,6 +105,36 @@ export default async function TransacoesPage({ searchParams }: Props) {
   const totalsList = (['EUR', 'BRL'] as const)
     .map((cur) => ({ currency: cur, ...totalsByCurrency[cur] }))
     .filter((row) => row.expense > 0 || row.income > 0);
+  const hasBothCurrencies = totalsList.length === 2;
+  const displayCurrency: Currency = session.preferredDisplayCurrency;
+
+  let rateMap: RateMap | null = null;
+  if (hasBothCurrencies) {
+    try {
+      rateMap = await getRateMap({
+        supabase,
+        serviceSupabase: getServiceRoleSupabase(),
+        when: new Date(),
+      });
+    } catch (err) {
+      if (!(err instanceof FxUnavailableError)) throw err;
+    }
+  }
+
+  function toDisplay(cents: number, from: Currency): number {
+    if (from === displayCurrency) return cents;
+    if (!rateMap) return 0;
+    const rate = displayCurrency === 'EUR' ? rateMap.BRL_EUR : rateMap.EUR_BRL;
+    return convertCents(cents, rate);
+  }
+
+  const convertedTotals = hasBothCurrencies && rateMap
+    ? {
+        expense: totalsList.reduce((sum, r) => sum + toDisplay(r.expense, r.currency), 0),
+        income: totalsList.reduce((sum, r) => sum + toDisplay(r.income, r.currency), 0),
+      }
+    : null;
+
   const grouped = groupByDay(txns as Transaction[]);
   const eyebrow = `${total} ${total === 1 ? 'lançamento' : 'lançamentos'}`;
 
@@ -112,41 +145,75 @@ export default async function TransacoesPage({ searchParams }: Props) {
       <TransactionFilters accounts={filterAccounts} monthOptions={monthOptions} />
 
       {txns.length > 0 && totalsList.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-border-soft bg-bg-surface px-4 py-3 text-sm">
-          {totalsList.map((row) => (
-            <div key={row.currency} className="flex flex-wrap items-baseline gap-3">
-              <span className="mono text-[10px] uppercase tracking-wider text-fg4">
-                {row.currency}
-              </span>
-              {row.expense > 0 && (
-                <span className="flex items-baseline gap-1.5">
-                  <span className="caption">despesa</span>
-                  <Num
-                    cents={-row.expense}
-                    currency={row.currency}
-                    sign
-                    className="text-[14px] font-semibold text-money-negative"
-                  />
+        <div className="space-y-2 rounded-md border border-border-soft bg-bg-surface px-4 py-3 text-sm">
+          {convertedTotals && (
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 pb-2 border-b border-border-soft">
+              <div className="flex flex-wrap items-baseline gap-3">
+                <span className="mono text-[10px] uppercase tracking-wider text-fg4">
+                  total · {displayCurrency.toLowerCase()}
                 </span>
-              )}
-              {row.income > 0 && (
-                <span className="flex items-baseline gap-1.5">
-                  <span className="caption">entrada</span>
-                  <Num
-                    cents={row.income}
-                    currency={row.currency}
-                    sign
-                    className="text-[14px] font-semibold text-money-positive"
-                  />
-                </span>
-              )}
+                {convertedTotals.expense > 0 && (
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="caption">despesa</span>
+                    <Num
+                      cents={-convertedTotals.expense}
+                      currency={displayCurrency}
+                      sign
+                      className="text-[14px] font-semibold text-money-negative"
+                    />
+                  </span>
+                )}
+                {convertedTotals.income > 0 && (
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="caption">entrada</span>
+                    <Num
+                      cents={convertedTotals.income}
+                      currency={displayCurrency}
+                      sign
+                      className="text-[14px] font-semibold text-money-positive"
+                    />
+                  </span>
+                )}
+              </div>
+              <CurrencyToggle current={displayCurrency} />
             </div>
-          ))}
-          {total > txns.length && (
-            <span className="mono ml-auto text-[10px] text-fg4">
-              mostrando {txns.length} de {total}
-            </span>
           )}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {totalsList.map((row) => (
+              <div key={row.currency} className="flex flex-wrap items-baseline gap-3">
+                <span className="mono text-[10px] uppercase tracking-wider text-fg4">
+                  {row.currency}
+                </span>
+                {row.expense > 0 && (
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="caption">despesa</span>
+                    <Num
+                      cents={-row.expense}
+                      currency={row.currency}
+                      sign
+                      className="text-[14px] font-semibold text-money-negative"
+                    />
+                  </span>
+                )}
+                {row.income > 0 && (
+                  <span className="flex items-baseline gap-1.5">
+                    <span className="caption">entrada</span>
+                    <Num
+                      cents={row.income}
+                      currency={row.currency}
+                      sign
+                      className="text-[14px] font-semibold text-money-positive"
+                    />
+                  </span>
+                )}
+              </div>
+            ))}
+            {total > txns.length && (
+              <span className="mono ml-auto text-[10px] text-fg4">
+                mostrando {txns.length} de {total}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
