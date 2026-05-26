@@ -4,7 +4,7 @@ import { getServerSupabase } from '@/lib/supabase/server';
 import { getSession } from '@/lib/auth/session';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { HeroNumber, Num, type Currency } from '@/components/finance/num';
-import { ShareCopyActions } from '@/components/finance/share-copy-actions';
+import { SharePngActions } from '@/components/finance/share-png-actions';
 import { MonthPicker } from '@/components/finance/dashboard-month-picker';
 import { ResumoCurrencyToggle } from '@/components/finance/resumo-currency-toggle';
 import { calculateMonthStats, topCategoriesThisMonth } from '@/lib/finance/dashboard-stats';
@@ -416,7 +416,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
             </section>
           )}
 
-          <ShareCopyActions text={summaryText} />
+          <SharePngActions text={summaryText} monthIso={monthIso} moeda={primary} />
         </>
       )}
     </section>
