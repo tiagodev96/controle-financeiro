@@ -152,6 +152,9 @@ export default async function DashboardPage() {
       )
     : balanceByCurrency[displayCurrency];
 
+  const monthStartIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  const monthEndIso = isoLocal(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+
   const [stats, topCats, txnsRes, debts, upcoming] = await Promise.all([
     calculateMonthStats(supabase, session.householdId, statsCurrency, balanceByCurrency[statsCurrency], now),
     topCategoriesThisMonth(supabase, session.householdId, statsCurrency, 5, now),
@@ -161,6 +164,8 @@ export default async function DashboardPage() {
         'id, description, amount_cents, currency, direction, status, occurred_on, source_recurring_rule_id, source_installment_plan_id, installment_number, categories(name), installment_plans(total_installments)',
       )
       .eq('household_id', session.householdId)
+      .gte('occurred_on', monthStartIso)
+      .lte('occurred_on', monthEndIso)
       .order('occurred_on', { ascending: false })
       .limit(10),
     listDebtsForHousehold(supabase, session.householdId),
@@ -169,7 +174,7 @@ export default async function DashboardPage() {
 
   const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
   const grouped = groupByDay(txns);
-  const hasData = txns.length > 0 || accounts.some((a) => a.balance_cents !== 0);
+  const hasData = accounts.length > 0;
 
   const suggestion = computeDebtSuggestion({
     sobraEurCents: stats.sobraPrevistaCents,
