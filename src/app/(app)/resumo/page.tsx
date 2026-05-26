@@ -5,6 +5,8 @@ import { getSession } from '@/lib/auth/session';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { HeroNumber, Num, type Currency } from '@/components/finance/num';
 import { ShareCopyActions } from '@/components/finance/share-copy-actions';
+import { MonthPicker } from '@/components/finance/dashboard-month-picker';
+import { ResumoCurrencyToggle } from '@/components/finance/resumo-currency-toggle';
 import { calculateMonthStats, topCategoriesThisMonth } from '@/lib/finance/dashboard-stats';
 import { listDebtsForHousehold, sumDebtPaymentsThisMonth } from '@/lib/finance/debts';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
@@ -17,29 +19,75 @@ const MONTHS_PT = [
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
 ];
 
-function monthRange(now: Date): { start: string; end: string } {
-  const y = now.getFullYear();
-  const m = now.getMonth();
+function monthRange(date: Date): { start: string; end: string } {
+  const y = date.getFullYear();
+  const m = date.getMonth();
   return {
     start: new Date(y, m, 1).toISOString().slice(0, 10),
     end: new Date(y, m + 1, 1).toISOString().slice(0, 10),
   };
 }
 
-export default async function ResumoPage() {
+function monthEyebrow(d: Date): string {
+  return `${MONTHS_PT[d.getMonth()]} · ${d.getFullYear()}`;
+}
+
+type SearchParams = Promise<{ mes?: string; moeda?: string }>;
+
+function parseMonthParam(
+  raw: string | undefined,
+  now: Date,
+): { targetDate: Date; monthIso: string; isPast: boolean } {
+  const currentIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const match = raw && /^(\d{4})-(\d{2})$/.exec(raw);
+  if (!match) {
+    return { targetDate: now, monthIso: currentIso, isPast: false };
+  }
+  const y = Number(match[1]);
+  const m = Number(match[2]);
+  if (!Number.isFinite(y) || m < 1 || m > 12) {
+    return { targetDate: now, monthIso: currentIso, isPast: false };
+  }
+  const monthIso = `${y}-${String(m).padStart(2, '0')}`;
+  if (monthIso === currentIso) {
+    return { targetDate: now, monthIso: currentIso, isPast: false };
+  }
+  // Último dia do mês alvo — preserva semântica de "fim do mês" pra stats.
+  const targetDate = new Date(y, m, 0);
+  return { targetDate, monthIso, isPast: monthIso < currentIso };
+}
+
+function parseMoedaParam(raw: string | undefined, fallback: Currency): Currency {
+  if (raw === 'EUR' || raw === 'eur') return 'EUR';
+  if (raw === 'BRL' || raw === 'brl') return 'BRL';
+  return fallback;
+}
+
+function buildResumoUrl({ mes, moeda, currentMes }: { mes: string; moeda: Currency; currentMes: string }): string {
+  const params: string[] = [];
+  if (mes !== currentMes) params.push(`mes=${mes}`);
+  // moeda só vai pra URL se for diferente do default EUR (mantém URL limpa).
+  if (moeda !== 'EUR') params.push(`moeda=${moeda.toLowerCase()}`);
+  return params.length === 0 ? '/resumo' : `/resumo?${params.join('&')}`;
+}
+
+export default async function ResumoPage({ searchParams }: { searchParams: SearchParams }) {
   const session = await getSession();
   const supabase = await getServerSupabase();
   const now = new Date();
-  const primary: Currency = 'EUR';
+  const params = await searchParams;
+  const { targetDate, monthIso, isPast } = parseMonthParam(params.mes, now);
+  const currentMonthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const primary: Currency = parseMoedaParam(params.moeda, 'EUR');
 
-  const { start, end } = monthRange(now);
+  const { start, end } = monthRange(targetDate);
 
   const [accountsAll, { open: openDebts }, debtPaymentsByDebtId, topCats, paidIncomeRes] =
     await Promise.all([
       listAllAccountsForHousehold(supabase, session.householdId),
       listDebtsForHousehold(supabase, session.householdId),
-      sumDebtPaymentsThisMonth(supabase, session.householdId, now),
-      topCategoriesThisMonth(supabase, session.householdId, primary, 3, now),
+      sumDebtPaymentsThisMonth(supabase, session.householdId, targetDate),
+      topCategoriesThisMonth(supabase, session.householdId, primary, 3, targetDate),
       supabase
         .from('transactions')
         .select('amount_cents')
@@ -78,7 +126,7 @@ export default async function ResumoPage() {
     session.householdId,
     primary,
     balanceCents,
-    now,
+    targetDate,
   );
 
   const entradasMesCents = (paidIncomeRes.data ?? []).reduce(
@@ -117,7 +165,7 @@ export default async function ResumoPage() {
   const sobraPrevistaCents = saldoPrevistoFimDoMesCents - balanceCents;
 
   const summaryText = buildMonthSummaryText({
-    now,
+    now: targetDate,
     primaryCurrency: primary,
     saldoPrevistoFimDoMesCents,
     sobraPrevistaCents,
@@ -142,35 +190,56 @@ export default async function ResumoPage() {
     fxRateMap,
   });
 
+  const monthFlowNetCents = entradasMesCents - stats.paid.totalCents;
+  const heroLabel = isPast
+    ? `Sobra de ${monthEyebrow(targetDate)}`
+    : 'Saldo previsto fim do mês';
+  const heroValue = isPast ? monthFlowNetCents : saldoPrevistoFimDoMesCents;
+
   return (
     <section className="space-y-6 cf-fade-up">
       <AppTopBar
-        eyebrow={`${MONTHS_PT[now.getMonth()]} · ${now.getFullYear()}`}
+        eyebrow={isPast ? `visualizando ${monthEyebrow(targetDate)}` : monthEyebrow(now)}
         title="Resumo do mês"
+        trailing={
+          <div className="flex items-center gap-2">
+            <ResumoCurrencyToggle
+              current={primary}
+              buildUrl={(m) => buildResumoUrl({ mes: monthIso, moeda: m, currentMes: currentMonthIso })}
+            />
+            <MonthPicker
+              value={monthIso}
+              currentMonth={currentMonthIso}
+              buildUrl={(m) => buildResumoUrl({ mes: m, moeda: primary, currentMes: currentMonthIso })}
+            />
+          </div>
+        }
       />
 
       {!hasData ? (
-        <EmptyHero />
+        <EmptyHero isPast={isPast} />
       ) : (
         <>
           <section className="space-y-4 rounded-md border border-border-soft bg-bg-surface p-5">
             <div className="space-y-1">
-              <p className="text-[13px] text-fg3">Saldo previsto fim do mês</p>
-              <HeroNumber cents={saldoPrevistoFimDoMesCents} currency={primary} />
+              <p className="text-[13px] text-fg3">{heroLabel}</p>
+              <HeroNumber cents={heroValue} currency={primary} />
             </div>
-            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-fg3">
-              <span>Sobra prevista:</span>
-              <Num
-                cents={sobraPrevistaCents}
-                currency={primary}
-                sign={sobraPrevistaCents >= 0}
-                className={
-                  sobraPrevistaCents >= 0
-                    ? 'text-[15px] font-semibold text-money-positive'
-                    : 'text-[15px] font-semibold text-money-negative'
-                }
-              />
-            </div>
+            {!isPast && (
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px] text-fg3">
+                <span>Sobra prevista:</span>
+                <Num
+                  cents={sobraPrevistaCents}
+                  currency={primary}
+                  sign={sobraPrevistaCents >= 0}
+                  className={
+                    sobraPrevistaCents >= 0
+                      ? 'text-[15px] font-semibold text-money-positive'
+                      : 'text-[15px] font-semibold text-money-negative'
+                  }
+                />
+              </div>
+            )}
           </section>
 
           <section className="space-y-2">
@@ -299,7 +368,14 @@ function Tile({
   );
 }
 
-function EmptyHero() {
+function EmptyHero({ isPast }: { isPast: boolean }) {
+  if (isPast) {
+    return (
+      <div className="rounded-md border border-border-soft bg-bg-surface p-8 text-center text-sm text-fg3">
+        Sem dados deste mês.
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col items-center gap-4 rounded-md border border-border-soft bg-bg-surface p-8 text-center">
       <div className="space-y-2">
