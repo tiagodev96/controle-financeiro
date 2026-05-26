@@ -307,6 +307,23 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
                 · parcelas a vencer{' '}
                 <Num cents={stats.pending.totalCents} currency={primary} className="text-fg2" />
               </p>
+            ) : isPast ? (
+              <p className="px-1 text-[12px] text-fg4">
+                Já pago{' '}
+                <Num cents={stats.paid.totalCents} currency={primary} className="text-fg2" />
+                {stats.pending.totalCents > 0 && (
+                  <>
+                    {' '}·{' '}esquecido{' '}
+                    <Num
+                      cents={stats.pending.totalCents}
+                      currency={primary}
+                      className="text-money-negative"
+                    />{' '}
+                    ({stats.pending.count} {stats.pending.count === 1 ? 'item' : 'itens'} sem
+                    marcar pago)
+                  </>
+                )}
+              </p>
             ) : (
               <p className="px-1 text-[12px] text-fg4">
                 Já pago{' '}
