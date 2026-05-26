@@ -114,12 +114,16 @@ Tradeoff principal: **incluir mês futuro ou não**. Phase 1 (este PRD): mês co
 - **"Mês futuro vale a complexidade"** — projeção é cara (regras de quais recurring entram, como tratar parcelas com data exata, como mostrar dívidas como "potencial"). Validar antes de buildar: pergunta direta a Tiago se ele usaria "ver junho antes de junho chegar" ou se isso é noise.
 - **"Toggle EUR/BRL na URL é discoverable"** — colocar como botão visível no header (mesmo padrão do CurrencyToggle no dashboard) deve ser óbvio. Se Tiago não notar, repensar UI (talvez dois botões "compartilhar em EUR" / "compartilhar em BRL" em vez de toggle).
 
+## Decisões fechadas (26/mai/2026)
+
+- **Mês futuro entra na v2** (não fica pra v2.1). MonthPicker abre passado + corrente + futuro até `today + 12 meses`. Mês futuro projeta usando `recurring_rules` ativas + `installment_plans` com parcela vencendo + dívidas em aberto. "Sobra prevista" vira "Sobra projetada" com label explícita.
+- **Fontes bundladas** em `public/fonts/og/` (Geist regular+bold + JetBrains Mono regular+bold ≈ 200KB de woff2). Edge tem que ser confiável; fetch de Google Fonts tem latência + risco de timeout + histórico ruim com `@vercel/og`.
+- **PNG 1080×1350 (4:5 vertical)**. Caso de uso é mensagem inline no chat — preview proporcional sem cortar. 9:16 (story) ficaria comprido demais no chat.
+- **Empty state**: route handler retorna **204 No Content**; UI detecta e desabilita o botão "Compartilhar imagem" com tooltip "Sem dados pra compartilhar".
+- **Pending de mês passado** vai com label separada "Pendente esquecido: € X (Y itens)" — sinaliza pra Tiago marcar como pago antes de mandar a Laine.
+- **Toggle EUR/BRL afeta o PNG**. Os params do route handler são `mes` + `moeda`; o PNG reflete a tela.
+- **Web Share API com files em mobile; download direto em desktop** ou navegador sem `share` de files. Sem preview intermediário custom.
+
 ## Open questions
 
-- **PNG via Web Share API ou download?** Em iOS+Android share-de-files funciona. Em desktop (Tiago às vezes abre no PC), só download. Pergunta: na ausência da Share API, baixa direto (download) ou abre preview da imagem com botão "salvar" custom? → Proposta: **download direto**, sem preview — mais rápido, sem fricção. Decidir antes do build.
-- **Mês futuro entra na v2 ou fica pra v2.1?** Decisão de escopo. → Proposta: **fica pra v2.1**, foco primeiro em mês passado + corrente (cobre 90% do uso). Validar com Tiago.
-- **Toggle EUR/BRL afeta o PNG gerado?** Se sim, o `mes` + `moeda` viram dois params do route handler. → Proposta: **sim, afeta**. O PNG reflete o que está na tela. Sem isso, toggle só serve pra visualizar e não pra share — esvazia o ponto.
-- **Empty state no PNG**: como renderiza um mês sem dados? Mostra layout vazio com "Sem dados pra {mês}"? → Proposta: **route handler retorna 204 No Content** + UI detecta e desabilita botão "Compartilhar imagem" com tooltip "Sem dados pra compartilhar".
-- **Fonte: bundlar ou fetch?** Bundlar (commit dos .woff2) é mais robusto mas adiciona ~200KB ao deploy. Fetch (Google Fonts) é mais leve mas adiciona dependência de rede no edge. → Proposta: **bundlar**, edge tem que ser confiável. Decidir.
-- **Dimensões finais do PNG**: 1080×1350 (4:5) ou 1080×1920 (9:16 story)? → Proposta: **1080×1350**, melhor preview no WhatsApp inline (que mostra a imagem aberta no feed antes de clicar). Validar com Laine após primeiro deploy.
-- **Pending de mês passado: mostrar como "esquecido" separadamente?** → Proposta: **sim**, label "Pendente esquecido: € X (Y itens)" quando `mes < mês corrente`. Sinaliza pra Tiago marcar como pago antes de mandar a Laine.
+Nenhuma pendente — todas as questões iniciais foram resolvidas em 26/mai/2026. Se aparecer durante o build, anexar aqui.
