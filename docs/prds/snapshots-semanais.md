@@ -31,10 +31,15 @@ Proxy direto: contar quantos `/api/resumo/og?mes=<passado>` retornaram com label
 ### Dentro
 
 **Migration `supabase/migrations/0004_balance_snapshots.sql`**:
-- Tabela `account_balance_snapshots` com colunas: `id uuid pk`, `household_id uuid fk`, `account_id uuid fk`, `snapshot_date date`, `balance_cents bigint`, `captured_at timestamptz default now()`.
+- Tabela `account_balance_snapshots` com colunas: `id uuid pk`, `household_id uuid fk`, `account_id uuid fk`, `snapshot_date date`, `balance_cents bigint`, `source text not null default 'auto' check (source in ('auto','manual'))`, `captured_at timestamptz default now()`, `updated_at timestamptz default now()`.
 - Constraint `unique (account_id, snapshot_date)` — idempotência: roda 2× no mesmo dia, não duplica.
 - Index `(account_id, snapshot_date desc)` — lookup do mais recente ≤ data.
 - RLS: select/insert/update/delete só pra rows do household corrente, mesma policy padrão das outras tabelas.
+
+**Edit manual do snapshot**:
+- O `source='manual'` é a "marca" de que o owner ajustou aquele snapshot ("fechou com X"). Cron nunca sobrescreve um snapshot já existente (`INSERT ... ON CONFLICT DO NOTHING`), então `manual` é preservado.
+- Owner pode também CRIAR snapshot novo pra qualquer data passada (ex: "lembro que em 30/jan tinha € 1.500" mesmo sem cron rodando lá). Cria com `source='manual'`.
+- Server actions: `setSnapshotAction({ accountId, snapshotDate, balanceCents })` — upsert que força `source='manual'`. `deleteSnapshotAction({ snapshotId })` — útil pra desfazer um ajuste errado (próximo cron recaptura como `auto`).
 
 **Cron handler `src/app/api/cron/snapshots/route.ts`**:
 - Node runtime, autenticado via `Authorization: Bearer <CRON_SECRET>` (mesmo padrão do `/api/cron/recurring`).
@@ -57,6 +62,13 @@ Proxy direto: contar quantos `/api/resumo/og?mes=<passado>` retornaram com label
 
 **Integração no dashboard (`src/app/(app)/page.tsx`)**:
 - Mesma lógica do /resumo no hero principal quando `isPast`.
+
+**UI de histórico em `/contas`**:
+- Cada `<AccountListItem>` ganha um botão "Histórico" no menu `...`.
+- Abre dialog com lista de snapshots ordenados por data desc (mais recentes primeiro), badge `auto`/`manual` por linha.
+- Edit inline (pencil) → dialog `<EditSnapshotDialog>` com input de valor (reusa `MoneyInput` com `allowSign`).
+- Botão "+ Adicionar snapshot" → dialog com date picker + valor (cria snapshot manual pra data arbitrária no passado).
+- Delete (manual) — reseta pro `auto` que existir (ou pra fallback live).
 
 ### Fora (explicitamente)
 

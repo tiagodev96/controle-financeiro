@@ -7,6 +7,11 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -34,6 +39,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_balance_snapshots: {
+        Row: {
+          account_id: string
+          balance_cents: number
+          captured_at: string
+          household_id: string
+          id: string
+          snapshot_date: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          balance_cents: number
+          captured_at?: string
+          household_id: string
+          id?: string
+          snapshot_date: string
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          balance_cents?: number
+          captured_at?: string
+          household_id?: string
+          id?: string
+          snapshot_date?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_balance_snapshots_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_balance_snapshots_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           balance_cents: number
@@ -711,4 +764,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
