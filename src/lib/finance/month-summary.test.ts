@@ -52,9 +52,9 @@ describe('buildMonthSummaryText', () => {
         '- Jefferson: R$ 2.400,00 restante (pago este mês: R$ 600,00)',
         '- Cartão: R$ 320,00 restante',
         '',
-        'Contas:',
-        '- Itaú: R$ 1.820,00',
-        '- Wise EUR: € 1.600,15',
+        // Sem fxRateMap, conta BRL não entra na soma e flag de fx incompleta acende.
+        'Saldo total das contas: € 1.600,15',
+        '(fx indisponível — contas em outra moeda não foram somadas)',
       ].join('\n'),
     );
   });
@@ -74,7 +74,7 @@ describe('buildMonthSummaryText', () => {
     });
     expect(text).not.toContain('Dívidas abertas');
     expect(text).toContain('Top categorias:');
-    expect(text).toContain('Contas:');
+    expect(text).toContain('Saldo total das contas:');
   });
 
   it('U-RES4 — linha "Em atraso" só aparece se overdueCount > 0', () => {
@@ -101,46 +101,45 @@ describe('buildMonthSummaryText', () => {
     expect(text).not.toContain('Cartão: R$ 320,00 restante (pago este mês');
   });
 
-  it('U-RES6 — contas listam cada uma na sua currency, mantendo ordem do input', () => {
+  it('U-RES6 — soma contas em ambas moedas convertendo via rateMap', () => {
     const text = buildMonthSummaryText({
       ...base(),
+      primaryCurrency: 'EUR',
+      fxRateMap: { EUR_BRL: 6.0, BRL_EUR: 1 / 6.0 },
       accounts: [
-        { name: 'Itaú', currency: 'BRL', balanceCents: 100000 },
-        { name: 'Nubank', currency: 'BRL', balanceCents: 50050 },
-        { name: 'Wise EUR', currency: 'EUR', balanceCents: 250000 },
+        { name: 'Itaú', currency: 'BRL', balanceCents: 600000 }, // R$ 6.000,00 → € 1.000,00
+        { name: 'Wise EUR', currency: 'EUR', balanceCents: 200000 }, // € 2.000,00
       ],
     });
-    const idxItau = text.indexOf('- Itaú: R$ 1.000,00');
-    const idxNu = text.indexOf('- Nubank: R$ 500,50');
-    const idxWise = text.indexOf('- Wise EUR: € 2.500,00');
-    expect(idxItau).toBeGreaterThan(0);
-    expect(idxNu).toBeGreaterThan(idxItau);
-    expect(idxWise).toBeGreaterThan(idxNu);
+    // EUR total = 2000 + (6000 / 6) = 3000.00 → € 3.000,00
+    expect(text).toContain('Saldo total das contas: € 3.000,00');
+    expect(text).not.toContain('fx indisponível');
   });
 
-  it('U-RES7 — inclui "Total convertido" como primeira linha de Contas quando há contas em ambas moedas + rateMap', () => {
+  it('U-RES7 — primary BRL converte contas EUR pra reais', () => {
     const text = buildMonthSummaryText({
       ...base(),
+      primaryCurrency: 'BRL',
       fxRateMap: { EUR_BRL: 6.0, BRL_EUR: 1 / 6.0 },
       accounts: [
         { name: 'Itaú', currency: 'BRL', balanceCents: 600000 },
         { name: 'Wise EUR', currency: 'EUR', balanceCents: 200000 },
       ],
     });
-    // EUR total = 2000 + (6000 / 6) = 3000.00 → € 3.000,00
     // BRL total = 6000 + (2000 * 6) = 18000.00 → R$ 18.000,00
-    expect(text).toContain('Contas:\n- Total convertido: € 3.000,00 (R$ 18.000,00)\n- Itaú:');
+    expect(text).toContain('Saldo total das contas: R$ 18.000,00');
   });
 
-  it('U-RES8 — omite "Total convertido" quando só uma moeda OU rateMap=null', () => {
-    const monoCurrency = buildMonthSummaryText({
+  it('U-RES8 — sem rateMap e contas em moeda diferente da primary marca fx incompleto', () => {
+    const text = buildMonthSummaryText({
       ...base(),
-      fxRateMap: { EUR_BRL: 6.0, BRL_EUR: 1 / 6.0 },
-      accounts: [{ name: 'Wise EUR', currency: 'EUR', balanceCents: 200000 }],
+      fxRateMap: null,
+      accounts: [
+        { name: 'Itaú', currency: 'BRL', balanceCents: 600000 },
+        { name: 'Wise EUR', currency: 'EUR', balanceCents: 200000 },
+      ],
     });
-    expect(monoCurrency).not.toContain('Total convertido');
-
-    const noRate = buildMonthSummaryText({ ...base(), fxRateMap: null });
-    expect(noRate).not.toContain('Total convertido');
+    expect(text).toContain('Saldo total das contas: € 2.000,00');
+    expect(text).toContain('(fx indisponível — contas em outra moeda não foram somadas)');
   });
 });

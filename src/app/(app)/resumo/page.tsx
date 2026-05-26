@@ -156,20 +156,23 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
     accounts.some((a) => a.currency === 'EUR') &&
     accounts.some((a) => a.currency === 'BRL');
 
-  const totalConvertedDisplay = (() => {
-    if (!fxRateMap || !hasBothCurrencies) return null;
-    let eurCents = 0;
-    let brlCents = 0;
+  // Soma de todas as contas, convertendo cada uma pra `primary` (moeda
+  // selecionada no toggle). Se não tem fxRateMap e há contas em currency
+  // diferente da primary, essas viram 0 e marcamos `fxIncomplete`.
+  const accountsTotalInPrimary = (() => {
+    let total = 0;
+    let fxIncomplete = false;
     for (const a of accounts) {
-      if (a.currency === 'EUR') {
-        eurCents += a.balance_cents;
-        brlCents += convertCents(a.balance_cents, fxRateMap.EUR_BRL);
+      if (a.currency === primary) {
+        total += a.balance_cents;
+      } else if (fxRateMap) {
+        const rate = primary === 'EUR' ? fxRateMap.BRL_EUR : fxRateMap.EUR_BRL;
+        total += convertCents(a.balance_cents, rate);
       } else {
-        brlCents += a.balance_cents;
-        eurCents += convertCents(a.balance_cents, fxRateMap.BRL_EUR);
+        fxIncomplete = true;
       }
     }
-    return { eurCents, brlCents };
+    return { cents: total, fxIncomplete };
   })();
 
   const saldoPrevistoFimDoMesCents = stats.sobraPrevistaCents;
@@ -407,32 +410,23 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
 
           {accounts.length > 0 && (
             <section className="space-y-2">
-              <p className="eyebrow px-1">Contas</p>
-              <ul className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3 py-1">
-                {totalConvertedDisplay && (
-                  <li className="flex items-center justify-between py-2.5 text-[14px]">
-                    <span className="text-fg2">Total convertido</span>
-                    <span className="flex items-baseline gap-2">
-                      <Num
-                        cents={totalConvertedDisplay.eurCents}
-                        currency="EUR"
-                        className="font-semibold text-fg1"
-                      />
-                      <Num
-                        cents={totalConvertedDisplay.brlCents}
-                        currency="BRL"
-                        className="text-[12px] text-fg3"
-                      />
-                    </span>
-                  </li>
-                )}
-                {accounts.map((a) => (
-                  <li key={a.id} className="flex items-center justify-between py-2.5 text-[14px]">
-                    <span className="text-fg2">{a.name}</span>
-                    <Num cents={a.balance_cents} currency={a.currency} className="font-semibold text-fg1" />
-                  </li>
-                ))}
-              </ul>
+              <p className="eyebrow px-1">Saldo total das contas</p>
+              <div className="flex items-baseline justify-between rounded-md border border-border-soft bg-bg-surface px-4 py-3.5">
+                <span className="text-[13px] text-fg3">
+                  somando todas as contas
+                  {hasBothCurrencies && ` em ${primary}`}
+                </span>
+                <Num
+                  cents={accountsTotalInPrimary.cents}
+                  currency={primary}
+                  className="text-[18px] font-semibold text-fg1"
+                />
+              </div>
+              {accountsTotalInPrimary.fxIncomplete && (
+                <p className="px-1 text-[11px] text-money-negative">
+                  fx indisponível — contas em outra moeda não foram somadas
+                </p>
+              )}
             </section>
           )}
 

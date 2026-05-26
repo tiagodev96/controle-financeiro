@@ -49,24 +49,24 @@ function convertHalfEven(amountCents: number, rate: number): number {
   return floor % 2 === 0 ? floor : floor + 1;
 }
 
-function totalConvertedLine(accounts: AccountLite[], fxRateMap?: FxRateMap | null): string | null {
-  if (!fxRateMap) return null;
-  const hasEUR = accounts.some((a) => a.currency === 'EUR');
-  const hasBRL = accounts.some((a) => a.currency === 'BRL');
-  if (!hasEUR || !hasBRL) return null;
-
-  let eurTotal = 0;
-  let brlTotal = 0;
+function totalInPrimary(
+  accounts: AccountLite[],
+  primary: 'EUR' | 'BRL',
+  fxRateMap?: FxRateMap | null,
+): { cents: number; fxIncomplete: boolean } {
+  let total = 0;
+  let fxIncomplete = false;
   for (const a of accounts) {
-    if (a.currency === 'EUR') {
-      eurTotal += a.balanceCents;
-      brlTotal += convertHalfEven(a.balanceCents, fxRateMap.EUR_BRL);
+    if (a.currency === primary) {
+      total += a.balanceCents;
+    } else if (fxRateMap) {
+      const rate = primary === 'EUR' ? fxRateMap.BRL_EUR : fxRateMap.EUR_BRL;
+      total += convertHalfEven(a.balanceCents, rate);
     } else {
-      brlTotal += a.balanceCents;
-      eurTotal += convertHalfEven(a.balanceCents, fxRateMap.BRL_EUR);
+      fxIncomplete = true;
     }
   }
-  return `- Total convertido: ${money(eurTotal, 'EUR')} (${money(brlTotal, 'BRL')})`;
+  return { cents: total, fxIncomplete };
 }
 
 export function buildMonthSummaryText(input: MonthSummaryInput): string {
@@ -112,14 +112,12 @@ export function buildMonthSummaryText(input: MonthSummaryInput): string {
   }
 
   if (input.accounts.length > 0) {
-    const totalLine = totalConvertedLine(input.accounts, input.fxRateMap);
-    const accountLines = input.accounts.map(
-      (a) => `- ${a.name}: ${money(a.balanceCents, a.currency)}`,
-    );
-    blocks.push([
-      'Contas:',
-      ...(totalLine ? [totalLine, ...accountLines] : accountLines),
-    ]);
+    const { cents, fxIncomplete } = totalInPrimary(input.accounts, c, input.fxRateMap);
+    const block = [`Saldo total das contas: ${money(cents, c)}`];
+    if (fxIncomplete) {
+      block.push('(fx indisponível — contas em outra moeda não foram somadas)');
+    }
+    blocks.push(block);
   }
 
   return blocks.map((block) => block.join('\n')).join('\n\n');
