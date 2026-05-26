@@ -222,7 +222,14 @@ export default async function DashboardPage() {
                 ) : null}
               </div>
             </div>
-            <SobraPrevistaCard stats={stats} currency={statsCurrency} endOfMonthLabel={endOfMonthLabel(now)} />
+            <SobraPrevistaCard
+              stats={stats}
+              statsCurrency={statsCurrency}
+              displayCurrency={displayCurrency}
+              endOfMonthLabel={endOfMonthLabel(now)}
+              fxRateMap={rateMap ? { EUR_BRL: rateMap.EUR_BRL, BRL_EUR: rateMap.BRL_EUR } : null}
+              showToggle={hasBothCurrencies && rateMap !== null}
+            />
           </section>
 
           <StatTrio stats={stats} currency={statsCurrency} />

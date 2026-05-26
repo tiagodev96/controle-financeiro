@@ -78,9 +78,9 @@ test.describe('Câmbio', () => {
     await signInAsFixtureUser(context);
 
     await page.goto('/');
-    await expect(page.getByRole('button', { name: /trocar moeda principal/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /trocar moeda principal/i }).first()).toBeVisible();
 
-    await page.getByRole('button', { name: /trocar moeda principal/i }).click();
+    await page.getByRole('button', { name: /trocar moeda principal/i }).first().click();
 
     // Total convertido BRL = R$ 6.000 + (€ 2.000 * 6) = R$ 18.000
     await expect(page.getByText('18.000', { exact: false }).first()).toBeVisible();
