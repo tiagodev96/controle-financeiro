@@ -35,14 +35,18 @@ function Cell({ kind, stats, currency }: { kind: Bucket; stats: MonthStats; curr
   const bucket = stats[kind];
   const meta = META[kind];
   return (
-    <div className="flex flex-col gap-1 rounded-md border border-border-soft bg-bg-surface px-3 py-2.5">
+    <div className="flex min-w-0 flex-col gap-1 overflow-hidden rounded-md border border-border-soft bg-bg-surface px-3 py-2.5">
       <div className="flex items-center gap-1.5">
-        <span className={cn('size-1.5 rounded-full', meta.dot)} aria-hidden />
-        <span className={cn('text-[10px] font-semibold uppercase tracking-wider', COLORS[kind])}>
+        <span className={cn('size-1.5 shrink-0 rounded-full', meta.dot)} aria-hidden />
+        <span className={cn('truncate text-[10px] font-semibold uppercase tracking-wider', COLORS[kind])}>
           {meta.label}
         </span>
       </div>
-      <Num cents={bucket.totalCents} currency={currency} className={cn('text-[20px] font-bold tracking-tight', meta.numClass)} />
+      <Num
+        cents={bucket.totalCents}
+        currency={currency}
+        className={cn('text-[16px] sm:text-[20px] font-bold tracking-tight', meta.numClass)}
+      />
       <span className="mono text-[10px] text-fg4">{meta.sub(bucket.count)}</span>
     </div>
   );

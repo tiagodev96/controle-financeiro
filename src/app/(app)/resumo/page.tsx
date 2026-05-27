@@ -448,9 +448,13 @@ function Tile({
 }) {
   const color = tone === 'positive' ? 'text-money-positive' : 'text-money-negative';
   return (
-    <div className="rounded-md border border-border-soft bg-bg-surface p-3.5">
-      <p className="mono text-[10px] uppercase tracking-wider text-fg4">{label}</p>
-      <Num cents={cents} currency={currency} className={`mt-1.5 block text-[20px] font-semibold ${color}`} />
+    <div className="min-w-0 overflow-hidden rounded-md border border-border-soft bg-bg-surface p-3.5">
+      <p className="mono truncate text-[10px] uppercase tracking-wider text-fg4">{label}</p>
+      <Num
+        cents={cents}
+        currency={currency}
+        className={`mt-1.5 block text-[17px] sm:text-[20px] font-semibold ${color}`}
+      />
     </div>
   );
 }

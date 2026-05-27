@@ -50,8 +50,12 @@ type HeroProps = {
 
 /**
  * HeroNumber — número-herói com split tipográfico: símbolo cinza, inteiro
- * grande (56px), fração média (28px) cinza. É a assinatura visual do
- * dashboard.
+ * grande, fração média cinza. É a assinatura visual do dashboard.
+ *
+ * Tipografia responsiva: 44/22/20 em viewport estreito (<640px) para
+ * proteger valores de 7+ dígitos do overflow, e 56/28/24 (tamanhos
+ * canônicos do design system) em sm+. `flex-wrap` como salvaguarda final
+ * pra casos extremos.
  */
 export function HeroNumber({ cents, currency = 'EUR', className }: HeroProps) {
   const abs = Math.abs(cents) / 100;
@@ -63,22 +67,19 @@ export function HeroNumber({ cents, currency = 'EUR', className }: HeroProps) {
   const accentColor = isNegative ? 'text-money-negative' : 'text-fg3';
   const intColor = isNegative ? 'text-money-negative' : 'text-fg1';
 
+  const intClass =
+    'num text-[44px] sm:text-[56px] font-bold leading-none tracking-[-0.035em]';
+  const fracClass =
+    'num text-[22px] sm:text-[28px] font-medium leading-none tracking-tight';
+  const symbolClass =
+    'text-[20px] sm:text-2xl font-medium leading-none tracking-tight';
+
   return (
-    <div className={cn('flex items-baseline gap-1.5', className)}>
-      {isNegative && (
-        <span className={cn('num text-[56px] font-bold leading-none tracking-[-0.035em]', intColor)}>
-          −
-        </span>
-      )}
-      <span className={cn('text-2xl font-medium leading-none tracking-tight', accentColor)}>
-        {symbol}
-      </span>
-      <span className={cn('num text-[56px] font-bold leading-none tracking-[-0.035em]', intColor)}>
-        {intPart}
-      </span>
-      <span className={cn('num text-[28px] font-medium leading-none tracking-tight', accentColor)}>
-        ,{fracPart}
-      </span>
+    <div className={cn('flex flex-wrap items-baseline gap-x-1.5', className)}>
+      {isNegative && <span className={cn(intClass, intColor)}>−</span>}
+      <span className={cn(symbolClass, accentColor)}>{symbol}</span>
+      <span className={cn(intClass, intColor)}>{intPart}</span>
+      <span className={cn(fracClass, accentColor)}>,{fracPart}</span>
     </div>
   );
 }
