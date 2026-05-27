@@ -36,7 +36,7 @@ export function ResumoCurrencyToggle({ current, preservedQuery = {} }: Props) {
       aria-label={`Trocar moeda do resumo (atual: ${current})`}
       title="Trocar moeda do resumo"
       className={cn(
-        'inline-flex h-7 items-center gap-1 rounded-md border border-border-soft bg-bg-inset px-2 text-[11px] font-semibold uppercase tracking-wider text-fg2 transition-colors hover:border-border-strong hover:text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-md border border-border-soft bg-bg-inset px-2 text-[11px] font-semibold uppercase tracking-wider text-fg2 transition-colors hover:border-border-strong hover:text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
       )}
     >
       <span aria-hidden className="text-fg4">ver em</span>

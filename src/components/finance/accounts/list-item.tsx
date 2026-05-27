@@ -121,9 +121,13 @@ export function AccountListItem({ id, name, currency, balanceCents, archived }: 
         )}
       </div>
 
-      <Num cents={balanceCents} currency={currency} className="text-[15px] font-semibold text-fg2" />
+      <Num
+        cents={balanceCents}
+        currency={currency}
+        className="shrink-0 text-[15px] font-semibold text-fg2"
+      />
 
-      <div className="relative">
+      <div className="relative shrink-0">
         <button
           type="button"
           aria-label={`Ações para ${name}`}

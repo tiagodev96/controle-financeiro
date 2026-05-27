@@ -43,7 +43,7 @@ export function MonthPicker({
 
   return (
     <div className="flex items-center gap-1.5">
-      <div className="w-44">
+      <div className="w-40 sm:w-44">
         <MonthInput
           value={value}
           onChange={(next) =>

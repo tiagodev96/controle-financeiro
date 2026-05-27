@@ -31,7 +31,7 @@ export function GenerateMonthButton({ monthIso }: { monthIso: string }) {
       type="button"
       onClick={handleClick}
       disabled={pending}
-      className="inline-flex h-9 items-center gap-1.5 rounded-md border border-border bg-bg-inset px-3 text-sm font-medium text-fg2 transition-colors hover:border-border-strong hover:text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-border bg-bg-inset px-3 text-sm font-medium text-fg2 transition-colors hover:border-border-strong hover:text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
     >
       <Zap className="size-4" strokeWidth={1.6} aria-hidden />
       {pending ? 'Gerando…' : 'Gerar este mês'}
