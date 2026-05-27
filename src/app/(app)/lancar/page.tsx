@@ -2,13 +2,11 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { getServerSupabase } from '@/lib/supabase/server';
 import { getSession } from '@/lib/auth/session';
-import { listTopCategoriesForHousehold } from '@/lib/finance/categories';
+import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
 import { LancarForm } from '@/components/finance/lancar-form';
 import { EmptyState } from '@/components/finance/empty-state';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { DirectionToggle } from '@/components/finance/direction-toggle';
-
-const TOP_CATEGORIES_LIMIT = 6;
 
 type Direction = 'expense' | 'income';
 
@@ -27,16 +25,18 @@ export default async function LancarPage({ searchParams }: Props) {
   const params = await searchParams;
   const direction = parseDirection(params.direction);
 
-  const [categories, accountsRes] = await Promise.all([
-    listTopCategoriesForHousehold(supabase, session.householdId, TOP_CATEGORIES_LIMIT, {
-      kind: direction,
-    }),
+  const [allCategories, accountsRes] = await Promise.all([
+    listAllCategoriesForHousehold(supabase, session.householdId),
     supabase
       .from('accounts')
       .select('id, name, currency')
       .eq('is_archived', false)
       .order('sort_order', { ascending: true }),
   ]);
+
+  const categories = allCategories
+    .filter((c) => !c.is_archived && c.kind === direction)
+    .map((c) => ({ id: c.id, name: c.name, icon: c.icon }));
 
   const accounts = (accountsRes.data ?? []).map((a) => ({
     id: a.id,
