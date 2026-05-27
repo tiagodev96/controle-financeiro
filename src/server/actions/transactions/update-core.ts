@@ -22,6 +22,10 @@ const patchSchema = z.object({
   categoryId: z.string().uuid().optional(),
   accountId: z.string().uuid().optional(),
   paid: z.boolean().optional(),
+  // Só aplicado quando a transação está fazendo a transição pending → paid.
+  // Em qualquer outra mudança de status (paid → pending, ou nenhum patch.paid),
+  // o saldo da conta fica intocado por este action.
+  updateBalance: z.boolean().optional(),
   date: isoDate.optional(),
 });
 
@@ -53,7 +57,7 @@ export async function updateTransactionCore(
   // erro amigável em vez de "row not found").
   const { data: existing } = await supabase
     .from('transactions')
-    .select('id, household_id, occurred_on')
+    .select('id, household_id, occurred_on, status, account_id, direction, amount_cents')
     .eq('id', id)
     .maybeSingle();
   if (!existing) return { ok: false, error: NOT_FOUND };
@@ -109,6 +113,26 @@ export async function updateTransactionCore(
 
   const { error } = await supabase.from('transactions').update(update).eq('id', id);
   if (error) return { ok: false, error: GENERIC };
+
+  const transitionedToPaid = patch.paid === true && existing.status === 'pending';
+  if (transitionedToPaid && patch.updateBalance === true) {
+    const finalAccountId = patch.accountId ?? existing.account_id;
+    const finalAmount = patch.amountCents ?? existing.amount_cents;
+    if (finalAccountId) {
+      const { data: acc } = await supabase
+        .from('accounts')
+        .select('balance_cents')
+        .eq('id', finalAccountId)
+        .maybeSingle();
+      if (acc) {
+        const delta = existing.direction === 'income' ? finalAmount : -finalAmount;
+        await supabase
+          .from('accounts')
+          .update({ balance_cents: acc.balance_cents + delta })
+          .eq('id', finalAccountId);
+      }
+    }
+  }
 
   return { ok: true };
 }

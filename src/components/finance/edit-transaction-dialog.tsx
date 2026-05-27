@@ -70,6 +70,7 @@ export function EditTransactionDialog({
   const [categoryId, setCategoryId] = useState<string | null>(transaction?.category_id ?? null);
   const [accountId, setAccountId] = useState(transaction?.account_id ?? '');
   const [paid, setPaid] = useState(transaction?.status === 'paid');
+  const [updateBalance, setUpdateBalance] = useState(true);
   const [date, setDate] = useState(transaction?.occurred_on ?? '');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -81,6 +82,7 @@ export function EditTransactionDialog({
     setCategoryId(transaction.category_id);
     setAccountId(transaction.account_id);
     setPaid(transaction.status === 'paid');
+    setUpdateBalance(true);
     setDate(transaction.occurred_on);
     setError(null);
   }
@@ -95,6 +97,8 @@ export function EditTransactionDialog({
     (a) => !a.is_archived || a.id === accountId,
   );
   const selectedAccount = accounts.find((a) => a.id === accountId);
+  const wasPending = transaction.status === 'pending';
+  const transitioningToPaid = wasPending && paid;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -110,6 +114,7 @@ export function EditTransactionDialog({
         categoryId: categoryId ?? undefined,
         accountId,
         paid,
+        updateBalance: transitioningToPaid ? updateBalance : undefined,
         date,
       },
     });
@@ -230,6 +235,35 @@ export function EditTransactionDialog({
               />
             </span>
           </button>
+
+          {transitioningToPaid && (
+            <button
+              type="button"
+              onClick={() => setUpdateBalance(!updateBalance)}
+              aria-pressed={updateBalance}
+              className="flex w-full items-center justify-between gap-3 rounded-md border border-border-soft bg-bg-inset px-3.5 py-2.5 text-left transition-colors hover:bg-bg-raised focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-fg1">Atualizar saldo da conta</span>
+                <span className="mono text-[10px] text-fg4">
+                  aplica o valor no saldo de {selectedAccount?.name ?? 'conta'}
+                </span>
+              </span>
+              <span
+                className={cn(
+                  'relative inline-flex h-5.5 w-10 items-center rounded-full border transition-colors',
+                  updateBalance ? 'border-brand bg-brand' : 'border-border bg-bg-inset',
+                )}
+              >
+                <span
+                  className={cn(
+                    'absolute top-0.5 size-4 rounded-full transition-all',
+                    updateBalance ? 'left-4.5 bg-fg-on-brand' : 'left-0.5 bg-fg3',
+                  )}
+                />
+              </span>
+            </button>
+          )}
 
           {error && (
             <p role="alert" className="text-sm text-money-negative">

@@ -122,6 +122,86 @@ describe('updateTransactionCore (integração)', () => {
     }
   });
 
+  it('I-UP5 — patch paid:true + updateBalance:true (era pending) desconta do saldo', async () => {
+    const admin = getAdminClient();
+    const { data: before } = await admin
+      .from('accounts')
+      .select('balance_cents')
+      .eq('id', SEED_ACCOUNT_EUR_ID)
+      .single();
+    const initial = before!.balance_cents;
+
+    const txnId = await seedTxn({ amount_cents: 4200, status: 'pending' });
+    const supabase = await getAuthedClient();
+    const result = await updateTransactionCore(
+      { supabase, session: SEED_SESSION },
+      { id: txnId, patch: { paid: true, updateBalance: true } },
+    );
+    expect(result.ok).toBe(true);
+
+    const { data: after } = await admin
+      .from('accounts')
+      .select('balance_cents')
+      .eq('id', SEED_ACCOUNT_EUR_ID)
+      .single();
+    expect(after!.balance_cents).toBe(initial - 4200);
+
+    await admin
+      .from('accounts')
+      .update({ balance_cents: initial })
+      .eq('id', SEED_ACCOUNT_EUR_ID);
+  });
+
+  it('I-UP6 — patch paid:true sem updateBalance preserva o saldo', async () => {
+    const admin = getAdminClient();
+    const { data: before } = await admin
+      .from('accounts')
+      .select('balance_cents')
+      .eq('id', SEED_ACCOUNT_EUR_ID)
+      .single();
+    const initial = before!.balance_cents;
+
+    const txnId = await seedTxn({ amount_cents: 4200, status: 'pending' });
+    const supabase = await getAuthedClient();
+    const result = await updateTransactionCore(
+      { supabase, session: SEED_SESSION },
+      { id: txnId, patch: { paid: true } },
+    );
+    expect(result.ok).toBe(true);
+
+    const { data: after } = await admin
+      .from('accounts')
+      .select('balance_cents')
+      .eq('id', SEED_ACCOUNT_EUR_ID)
+      .single();
+    expect(after!.balance_cents).toBe(initial);
+  });
+
+  it('I-UP7 — updateBalance:true em transação já paga não duplica o saldo', async () => {
+    const admin = getAdminClient();
+    const { data: before } = await admin
+      .from('accounts')
+      .select('balance_cents')
+      .eq('id', SEED_ACCOUNT_EUR_ID)
+      .single();
+    const initial = before!.balance_cents;
+
+    const txnId = await seedTxn({ amount_cents: 4200, status: 'paid' });
+    const supabase = await getAuthedClient();
+    const result = await updateTransactionCore(
+      { supabase, session: SEED_SESSION },
+      { id: txnId, patch: { paid: true, updateBalance: true } },
+    );
+    expect(result.ok).toBe(true);
+
+    const { data: after } = await admin
+      .from('accounts')
+      .select('balance_cents')
+      .eq('id', SEED_ACCOUNT_EUR_ID)
+      .single();
+    expect(after!.balance_cents).toBe(initial);
+  });
+
   it('I-UP1b — patch categoryId/description simultâneo aplica ambos', async () => {
     const txnId = await seedTxn();
     const supabase = await getAuthedClient();
