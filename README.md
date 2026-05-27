@@ -31,9 +31,9 @@ Detalhes funcionais completos em [`docs/spec.md`](docs/spec.md).
 |---|---|
 | Framework | Next.js 16 (App Router, Server Components, Server Actions, Turbopack) |
 | Banco | Postgres via Supabase (RLS por household) |
-| Auth | Supabase Auth (magic link e allowlist de emails) |
+| Auth | Supabase Auth (email + senha, allowlist server-only) |
 | Estilo | Tailwind v4 com design tokens em CSS variables |
-| UI | shadcn/ui (Radix por baixo), ícones Lucide |
+| UI | shadcn/ui (Base UI por baixo), ícones Lucide |
 | Validação | Zod |
 | Testes | Vitest, React Testing Library, Playwright |
 | Hospedagem | Vercel |
@@ -53,17 +53,17 @@ Detalhes funcionais completos em [`docs/spec.md`](docs/spec.md).
 # 1. Instalar deps
 npm install
 
-# 2. Copiar variáveis de ambiente
-cp .env.example .env.local
-# edite .env.local com as chaves do seu Supabase local
-# (geradas no passo 3 por `npx supabase status`)
-
-# 3. Subir Supabase local (Postgres, Auth e Storage em containers Docker)
+# 2. Subir Supabase local (Postgres, Auth e Storage em containers Docker)
 npx supabase start
-# copie os valores de `npx supabase status` para o .env.local:
+# anote API URL, anon key e service_role key impressos no final
+
+# 3. Copiar e preencher variáveis de ambiente
+cp .env.example .env.local
+# edite .env.local com os valores do passo anterior:
 #   API URL          -> NEXT_PUBLIC_SUPABASE_URL
 #   anon key         -> NEXT_PUBLIC_SUPABASE_ANON_KEY
 #   service_role key -> SUPABASE_SERVICE_ROLE_KEY
+# (se perdeu a saída, rode `npx supabase status` de novo)
 
 # 4. Aplicar migration e seed
 npx supabase db reset
@@ -77,6 +77,14 @@ npm run dev
 ```
 
 Playwright precisa baixar o Chromium uma vez: `npx playwright install chromium`.
+
+### Primeiro login
+
+Não há signup self-service. Em local, `supabase db reset` aplica o seed que já cria um usuário fixture (`owner@example.com`) — use a senha definida no seed pra entrar. Em produção (ou se quiser provisionar usuário novo no local), o owner cria a conta manualmente no dashboard do Supabase e adiciona o email em `AUTH_ALLOWED_EMAILS`. Passo a passo em [`docs/operations/provisioning.md`](docs/operations/provisioning.md).
+
+### Instalar como PWA
+
+Depois de logar pelo celular (Safari iOS ou Chrome Android), use **"Adicionar à tela inicial"** no menu do navegador. O app abre em modo standalone, sem chrome do browser, com ícone e splash próprios. Manifesto em [`src/app/manifest.ts`](src/app/manifest.ts), service worker em [`public/sw.js`](public/sw.js).
 
 ## Scripts
 
