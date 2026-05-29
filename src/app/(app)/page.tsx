@@ -1,6 +1,10 @@
 import { Suspense } from 'react';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { DashboardMonthPicker } from '@/components/finance/dashboard-month-picker';
+import {
+  BalanceVisibilityProvider,
+  BalanceVisibilityToggle,
+} from '@/components/finance/balance-visibility';
 import { HeroBlock } from './_dashboard/hero-block';
 import { InsightsBlock } from './_dashboard/insights-block';
 import { BottomBlock } from './_dashboard/bottom-block';
@@ -58,32 +62,37 @@ export default async function DashboardPage({
   const targetDateIso = targetDate.toISOString();
 
   return (
-    <section className="space-y-6 cf-fade-up">
-      <AppTopBar
-        eyebrow={isPast ? `visualizando ${monthEyebrow(targetDate)}` : monthEyebrow(now)}
-        title="Dashboard"
-        trailing={
-          <DashboardMonthPicker value={monthIso} currentMonth={currentMonthIso} />
-        }
-      />
-
-      <Suspense fallback={<HeroBlockSkeleton />}>
-        <HeroBlock
-          nowIso={nowIso}
-          targetDateIso={targetDateIso}
-          isPast={isPast}
+    <BalanceVisibilityProvider>
+      <section className="space-y-6 cf-fade-up">
+        <AppTopBar
+          eyebrow={isPast ? `visualizando ${monthEyebrow(targetDate)}` : monthEyebrow(now)}
+          title="Dashboard"
+          trailing={
+            <>
+              <BalanceVisibilityToggle />
+              <DashboardMonthPicker value={monthIso} currentMonth={currentMonthIso} />
+            </>
+          }
         />
-      </Suspense>
 
-      {!isPast && (
-        <Suspense fallback={<InsightsBlockSkeleton />}>
-          <InsightsBlock nowIso={nowIso} targetDateIso={targetDateIso} />
+        <Suspense fallback={<HeroBlockSkeleton />}>
+          <HeroBlock
+            nowIso={nowIso}
+            targetDateIso={targetDateIso}
+            isPast={isPast}
+          />
         </Suspense>
-      )}
 
-      <Suspense fallback={<BottomBlockSkeleton />}>
-        <BottomBlock targetDateIso={targetDateIso} />
-      </Suspense>
-    </section>
+        {!isPast && (
+          <Suspense fallback={<InsightsBlockSkeleton />}>
+            <InsightsBlock nowIso={nowIso} targetDateIso={targetDateIso} />
+          </Suspense>
+        )}
+
+        <Suspense fallback={<BottomBlockSkeleton />}>
+          <BottomBlock targetDateIso={targetDateIso} />
+        </Suspense>
+      </section>
+    </BalanceVisibilityProvider>
   );
 }

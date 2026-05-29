@@ -1,7 +1,11 @@
+'use client';
+
 import { cn } from '@/lib/utils';
 import { formatCentsToBRL } from '@/lib/money/format';
+import { useBalanceVisibility } from './balance-visibility';
 
 const SYMBOL = { BRL: 'R$', EUR: '€' } as const;
+const MASK = '••••';
 export type Currency = 'BRL' | 'EUR';
 
 type NumProps = {
@@ -22,8 +26,23 @@ type NumProps = {
  *   <Num cents={1250} sign />     → "+€ 12,50"
  */
 export function Num({ cents, currency = 'EUR', sign = false, className }: NumProps) {
-  const abs = Math.abs(cents);
+  const { hidden } = useBalanceVisibility();
   const symbol = SYMBOL[currency];
+
+  if (hidden) {
+    return (
+      <span
+        aria-label="Valor oculto"
+        className={cn('num whitespace-nowrap select-none', className, 'text-fg3')}
+      >
+        {symbol}
+        &nbsp;
+        {MASK}
+      </span>
+    );
+  }
+
+  const abs = Math.abs(cents);
   const isNegative = cents < 0;
   const prefix = isNegative ? '−' : sign && cents > 0 ? '+' : '';
   return (
@@ -58,14 +77,8 @@ type HeroProps = {
  * pra casos extremos.
  */
 export function HeroNumber({ cents, currency = 'EUR', className }: HeroProps) {
-  const abs = Math.abs(cents) / 100;
-  const [intPart, fracPart] = abs
-    .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    .split(',');
+  const { hidden } = useBalanceVisibility();
   const symbol = SYMBOL[currency];
-  const isNegative = cents < 0;
-  const accentColor = isNegative ? 'text-money-negative' : 'text-fg3';
-  const intColor = isNegative ? 'text-money-negative' : 'text-fg1';
 
   const intClass =
     'num text-[44px] sm:text-[56px] font-bold leading-none tracking-[-0.035em]';
@@ -73,6 +86,26 @@ export function HeroNumber({ cents, currency = 'EUR', className }: HeroProps) {
     'num text-[22px] sm:text-[28px] font-medium leading-none tracking-tight';
   const symbolClass =
     'text-[20px] sm:text-2xl font-medium leading-none tracking-tight';
+
+  if (hidden) {
+    return (
+      <div
+        aria-label="Saldo oculto"
+        className={cn('flex flex-wrap items-baseline gap-x-1.5 select-none', className)}
+      >
+        <span className={cn(symbolClass, 'text-fg3')}>{symbol}</span>
+        <span className={cn(intClass, 'text-fg3')}>{MASK}</span>
+      </div>
+    );
+  }
+
+  const abs = Math.abs(cents) / 100;
+  const [intPart, fracPart] = abs
+    .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    .split(',');
+  const isNegative = cents < 0;
+  const accentColor = isNegative ? 'text-money-negative' : 'text-fg3';
+  const intColor = isNegative ? 'text-money-negative' : 'text-fg1';
 
   return (
     <div className={cn('flex flex-wrap items-baseline gap-x-1.5', className)}>
