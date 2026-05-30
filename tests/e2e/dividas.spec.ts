@@ -1,5 +1,18 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page, type Locator } from '@playwright/test';
 import { signInAsFixtureUser } from '../helpers/auth';
+
+const MONTHS_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+async function pickDeadlineMonth(
+  page: Page,
+  dialog: Locator,
+  yearDir: 'next' | 'prev',
+  monthIndex: number,
+): Promise<void> {
+  await dialog.getByRole('button', { name: /quitar até/i }).click();
+  await page.getByLabel(yearDir === 'next' ? 'Próximo ano' : 'Ano anterior').click();
+  await page.getByRole('button', { name: new RegExp(`^${MONTHS_SHORT[monthIndex]}$`, 'i') }).click();
+}
 
 test.describe('Dívidas', () => {
   test('E-DB — cria dívida, registra pagamento parcial e depois quita', async ({ page, context }) => {
@@ -50,21 +63,20 @@ test.describe('Dívidas', () => {
     await signInAsFixtureUser(context);
 
     const title = `Meta ${Date.now()}`;
-    const now = new Date();
-    const target = new Date(now.getFullYear(), now.getMonth() + 5, 1);
-    const targetMonth = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}`;
+    const nextYearShort = String((new Date().getFullYear() + 1) % 100).padStart(2, '0');
 
     await page.goto('/dividas');
     await page.getByRole('button', { name: /nova dívida/i }).click();
+    const dialog = page.getByRole('dialog');
     await page.getByPlaceholder(/empréstimo jefferson/i).fill(title);
     await page.getByLabel(/valor original/i).fill('5000');
-    await page.getByLabel(/quitar até/i).fill(targetMonth);
+    await pickDeadlineMonth(page, dialog, 'next', 5); // jun do próximo ano
     await page.getByRole('button', { name: /criar dívida/i }).click();
 
     const debtCard = page.locator(`[data-testid^="debt-row-"]`, { hasText: title });
     await expect(debtCard).toBeVisible();
-    await expect(debtCard.getByText(/quitar até/i)).toBeVisible();
-    await expect(debtCard.getByText(/faltam 5 meses/i)).toBeVisible();
+    await expect(debtCard.getByText(new RegExp(`quitar até jun/${nextYearShort}`, 'i'))).toBeVisible();
+    await expect(debtCard.getByText(/faltam \d+ meses/i)).toBeVisible();
     await expect(debtCard.getByText(/ritmo necessário/i)).toBeVisible();
   });
 
@@ -72,15 +84,13 @@ test.describe('Dívidas', () => {
     await signInAsFixtureUser(context);
 
     const title = `Cartao ${Date.now()}`;
-    const now = new Date();
-    const past = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-    const pastMonth = `${past.getFullYear()}-${String(past.getMonth() + 1).padStart(2, '0')}`;
 
     await page.goto('/dividas');
     await page.getByRole('button', { name: /nova dívida/i }).click();
+    const dialog = page.getByRole('dialog');
     await page.getByPlaceholder(/empréstimo jefferson/i).fill(title);
     await page.getByLabel(/valor original/i).fill('5000');
-    await page.getByLabel(/quitar até/i).fill(pastMonth);
+    await pickDeadlineMonth(page, dialog, 'prev', 5); // jun do ano passado
     await page.getByRole('button', { name: /criar dívida/i }).click();
 
     const debtCard = page.locator(`[data-testid^="debt-row-"]`, { hasText: title });

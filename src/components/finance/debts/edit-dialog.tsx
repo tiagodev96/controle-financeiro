@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { MoneyInput } from '@/components/finance/money-input';
+import { MonthInput } from '@/components/finance/month-input';
 import { Num, type Currency } from '@/components/finance/num';
 import { updateDebtAction } from '@/server/actions/debts/actions';
 import { monthToDeadlineIso } from '@/lib/finance/debt-deadline';
@@ -140,15 +141,12 @@ export function EditDebtDialog({
             </div>
           </label>
 
-          <label className="block space-y-2">
-            <span className="eyebrow">Quitar até (opcional)</span>
-            <input
-              type="month"
-              value={quitMonth}
-              onChange={(e) => setQuitMonth(e.target.value)}
-              className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-[15px] text-fg1 placeholder:text-fg4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            />
-          </label>
+          <MonthInput
+            label="Quitar até (opcional)"
+            value={quitMonth}
+            onChange={setQuitMonth}
+            placeholder="Selecionar mês"
+          />
 
           <label className="block space-y-2">
             <span className="eyebrow">Notas (opcional)</span>
