@@ -51,7 +51,7 @@ test.describe('Aba Reserva', () => {
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('E-RES2 — reserva tem subcontas read-only por moeda, sem picker', async ({ page, context }) => {
+  test('E-RES2 — reserva tem subcontas fixas por moeda, sem picker', async ({ page, context }) => {
     await signInAsFixtureUser(context);
     await page.goto('/reserva');
 
@@ -65,5 +65,16 @@ test.describe('Aba Reserva', () => {
     await expect(
       page.getByRole('button', { name: 'Ações para Reserva (€)' }),
     ).toHaveCount(0);
+  });
+
+  test('E-RES3 — aloca saldo na subconta € direto na página Reserva', async ({ page, context }) => {
+    await signInAsFixtureUser(context);
+    await page.goto('/reserva');
+
+    await page.getByRole('button', { name: 'Alocar em Reserva (€)' }).click();
+    await page.getByLabel('Valor').fill('5000');
+    await page.getByRole('button', { name: 'Alocar', exact: true }).click();
+
+    await expect(page.getByText('€ 50,00').first()).toBeVisible();
   });
 });

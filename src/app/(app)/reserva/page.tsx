@@ -65,10 +65,6 @@ export default async function ReservaPage() {
       .order('sort_order', { ascending: true }),
   ]);
 
-  const reserveByCurrency: Record<Currency, number> = { EUR: 0, BRL: 0 };
-  for (const reserve of reserves) {
-    reserveByCurrency[reserve.currency] = reserve.currentCents;
-  }
 
   const covered = monthsCovered(allocatedCents, essential.cents);
   const band = bandForMonths(covered);
@@ -105,7 +101,12 @@ export default async function ReservaPage() {
           mede contra o custo essencial.
         </p>
         <ReserveBalanceCard
-          byCurrency={reserveByCurrency}
+          reserves={reserves.map((r) => ({
+            id: r.id,
+            name: r.name,
+            currency: r.currency,
+            currentCents: r.currentCents,
+          }))}
           displayCurrency={targetCurrency as Currency}
           consolidatedCents={allocatedCents}
           showToggle={fxRateMap !== null}

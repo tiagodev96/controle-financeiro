@@ -20,6 +20,7 @@ import {
 function revalidateAll(): void {
   revalidatePath('/caixinhas');
   revalidatePath('/');
+  revalidatePath('/reserva');
 }
 
 export async function createEnvelopeAction(
