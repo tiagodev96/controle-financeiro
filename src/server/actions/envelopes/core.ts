@@ -9,6 +9,8 @@ const GENERIC = 'Não foi possível salvar.';
 const DUPLICATE = 'Já existe uma caixinha com esse nome.';
 const NOT_FOUND = 'Caixinha não encontrada.';
 const NEGATIVE = 'A caixinha ficaria com saldo negativo.';
+const RESERVE_RENAME = 'A reserva não pode ser renomeada.';
+const RESERVE_DELETE = 'A reserva não pode ser apagada.';
 
 const nameSchema = z
   .string()
@@ -103,11 +105,14 @@ export async function updateEnvelopeCore(
 
   const { data: existing } = await supabase
     .from('envelopes')
-    .select('id, household_id')
+    .select('id, household_id, is_reserve')
     .eq('id', envelopeId)
     .maybeSingle();
   if (!existing || existing.household_id !== session.householdId) {
     return { ok: false, error: NOT_FOUND };
+  }
+  if (existing.is_reserve && patch.name !== undefined) {
+    return { ok: false, error: RESERVE_RENAME };
   }
 
   const update: Database['public']['Tables']['envelopes']['Update'] = {};
@@ -132,11 +137,14 @@ export async function deleteEnvelopeCore(
 
   const { data: existing } = await supabase
     .from('envelopes')
-    .select('id, household_id')
+    .select('id, household_id, is_reserve')
     .eq('id', parsed.data.envelopeId)
     .maybeSingle();
   if (!existing || existing.household_id !== session.householdId) {
     return { ok: false, error: NOT_FOUND };
+  }
+  if (existing.is_reserve) {
+    return { ok: false, error: RESERVE_DELETE };
   }
 
   const { error } = await supabase

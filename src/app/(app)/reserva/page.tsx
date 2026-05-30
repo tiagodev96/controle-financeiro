@@ -3,15 +3,17 @@ import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession } from '@/lib/auth/session';
 import { FxUnavailableError, getRateMap, type RateMap } from '@/lib/fx';
 import { AppTopBar } from '@/components/finance/app-top-bar';
-import { listAllEnvelopesForHousehold } from '@/lib/finance/envelopes';
 import {
   loadMonthlyEssential,
-  loadReserveEnvelope,
   loadReservaAllocatedCents,
 } from '@/lib/finance/reserva-data';
+import {
+  ensureReserveEnvelopes,
+  loadReserveEnvelopes,
+} from '@/lib/finance/reserva-envelopes';
 import { bandForMonths, monthsCovered } from '@/lib/finance/reserva';
 import { ReservaHealthGauge } from '@/components/finance/reserva/health-gauge';
-import { ReserveEnvelopePicker } from '@/components/finance/reserva/reserve-envelope-picker';
+import { ReserveBalanceCard } from '@/components/finance/reserva/reserve-balance-card';
 import { EssentialCategoriesEditor } from '@/components/finance/reserva/essential-categories';
 import type { Currency } from '@/components/finance/num';
 
@@ -37,7 +39,9 @@ export default async function ReservaPage() {
     }
   }
 
-  const [essential, allocatedCents, reserve, envelopes, categoryRows] = await Promise.all([
+  await ensureReserveEnvelopes(supabase, session.householdId);
+
+  const [essential, allocatedCents, reserves, categoryRows] = await Promise.all([
     loadMonthlyEssential({
       supabase,
       householdId: session.householdId,
@@ -51,8 +55,7 @@ export default async function ReservaPage() {
       targetCurrency,
       fxRateMap,
     }),
-    loadReserveEnvelope(supabase, session.householdId),
-    listAllEnvelopesForHousehold(supabase, session.householdId),
+    loadReserveEnvelopes(supabase, session.householdId),
     supabase
       .from('categories')
       .select('id, name, is_essential')
@@ -61,6 +64,11 @@ export default async function ReservaPage() {
       .eq('is_archived', false)
       .order('sort_order', { ascending: true }),
   ]);
+
+  const reserveByCurrency: Record<Currency, number> = { EUR: 0, BRL: 0 };
+  for (const reserve of reserves) {
+    reserveByCurrency[reserve.currency] = reserve.currentCents;
+  }
 
   const covered = monthsCovered(allocatedCents, essential.cents);
   const band = bandForMonths(covered);
@@ -93,17 +101,14 @@ export default async function ReservaPage() {
       <div className="space-y-3">
         <h2>Caixinha de reserva</h2>
         <p className="text-[13px] text-fg3">
-          Qual caixinha guarda sua reserva. O gauge acima mede o saldo dela contra seu custo
-          essencial.
+          Sua reserva tem uma subconta por moeda. O total consolidado abaixo é o que o gauge
+          mede contra o custo essencial.
         </p>
-        <ReserveEnvelopePicker
-          envelopes={envelopes.map((e) => ({
-            id: e.id,
-            name: e.name,
-            currency: e.currency,
-            currentCents: e.current_cents,
-          }))}
-          reserveId={reserve?.id ?? null}
+        <ReserveBalanceCard
+          byCurrency={reserveByCurrency}
+          displayCurrency={targetCurrency as Currency}
+          consolidatedCents={allocatedCents}
+          showToggle={fxRateMap !== null}
         />
       </div>
 

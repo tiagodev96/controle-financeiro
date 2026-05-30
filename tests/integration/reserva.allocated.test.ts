@@ -84,4 +84,20 @@ describe('loadReservaAllocatedCents (integração)', () => {
     // R$ 600 * (1/6) = € 100.
     expect(cents).toBe(10_000);
   });
+
+  it('I-RESA4 — duas subcontas (€ + R$) somam consolidado na moeda alvo', async () => {
+    await seedEnvelope({ currentCents: 800_000, currency: 'EUR', isReserve: true });
+    await seedEnvelope({ currentCents: 60_000, currency: 'BRL', isReserve: true });
+
+    const supabase = await getAuthedClient();
+    const cents = await loadReservaAllocatedCents({
+      supabase,
+      householdId: SEED_SESSION.householdId,
+      targetCurrency: 'EUR',
+      fxRateMap: fxMap,
+    });
+
+    // € 8.000 + R$ 600 * (1/6) = € 8.000 + € 100 = € 8.100.
+    expect(cents).toBe(810_000);
+  });
 });

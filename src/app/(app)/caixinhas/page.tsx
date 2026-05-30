@@ -45,7 +45,7 @@ export default async function CaixinhasPage() {
 
       {envelopes.length === 0 ? (
         <p className="rounded-md border border-border-soft bg-bg-surface p-6 text-center text-sm text-fg3">
-          Sem caixinhas ainda. Crie a primeira pra dividir seu saldo em "potes mentais".
+          Sem caixinhas ainda. Crie a primeira pra dividir seu saldo em “potes mentais”.
         </p>
       ) : (
         <>
@@ -112,6 +112,7 @@ function CurrencyGroup({
             currency={e.currency}
             currentCents={e.current_cents}
             targetCents={e.target_cents}
+            isReserve={e.is_reserve}
           />
         ))}
       </div>

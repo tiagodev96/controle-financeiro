@@ -6,8 +6,8 @@ import { computeDebtSuggestion } from '@/lib/finance/debt-suggestion';
 import {
   loadMonthlyEssential,
   loadReservaAllocatedCents,
-  loadReserveEnvelope,
 } from '@/lib/finance/reserva-data';
+import { loadReserveEnvelopes } from '@/lib/finance/reserva-envelopes';
 import {
   bandForMonths,
   debtCapForBand,
@@ -46,7 +46,7 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
   const supabase = await getDashboardSupabase();
   const now = new Date(nowIso);
 
-  const [stats, debts, upcoming, categoryLimits, essential, allocatedCents, reserveEnvelope] =
+  const [stats, debts, upcoming, categoryLimits, essential, allocatedCents, reserveEnvelopes] =
     await Promise.all([
       getDashboardMonthStats(
         session.householdId,
@@ -70,7 +70,7 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
         targetCurrency: STATS_CURRENCY,
         fxRateMap: rateMap,
       }),
-      loadReserveEnvelope(supabase, session.householdId),
+      loadReserveEnvelopes(supabase, session.householdId),
     ]);
 
   const essentialKnown = essential.cents > 0;
@@ -130,7 +130,7 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
       toReserveCents: rs.toReserveCents,
       toFreeCents: rs.toFreeCents,
       mode: rs.mode,
-      hasReserveEnvelope: !!reserveEnvelope,
+      hasReserveEnvelope: reserveEnvelopes.length > 0,
     };
   }
 

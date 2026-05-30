@@ -20,6 +20,11 @@ async function cleanup(): Promise<void> {
     .delete()
     .eq('household_id', SEED_HOUSEHOLD_ID)
     .like('name', 'E2E reserva%');
+  await admin
+    .from('envelopes')
+    .delete()
+    .eq('household_id', SEED_HOUSEHOLD_ID)
+    .in('name', ['Reserva (R$)', 'Reserva (€)']);
 }
 
 test.describe.configure({ mode: 'serial' });
@@ -46,24 +51,19 @@ test.describe('Aba Reserva', () => {
     ).toHaveAttribute('aria-pressed', 'true');
   });
 
-  test('E-RES2 — designa caixinha de reserva', async ({ page, context }) => {
-    const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    await admin.from('envelopes').insert({
-      household_id: SEED_HOUSEHOLD_ID,
-      name: 'E2E reserva caixa',
-      currency: 'EUR',
-      current_cents: 500_00,
-    });
-
+  test('E-RES2 — reserva tem subcontas read-only por moeda, sem picker', async ({ page, context }) => {
     await signInAsFixtureUser(context);
     await page.goto('/reserva');
 
-    await expect(page.getByText(/caixinha de reserva/i)).toBeVisible();
-    const picker = page.getByRole('button', { name: /E2E reserva caixa/i });
-    await picker.click();
+    await expect(page.getByRole('heading', { name: 'Caixinha de reserva' })).toBeVisible();
+    await expect(page.getByText('Reserva guardada')).toBeVisible();
+    await expect(page.getByText(/caixinha de reserva definida/i)).toHaveCount(0);
 
-    await expect(page.getByText(/caixinha de reserva definida/i)).toBeVisible();
+    await page.goto('/caixinhas');
+    await expect(page.getByText('Reserva (€)')).toBeVisible();
+    await expect(page.getByText('Reserva (R$)')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Ações para Reserva (€)' }),
+    ).toHaveCount(0);
   });
 });

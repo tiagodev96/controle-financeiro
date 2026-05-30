@@ -9,6 +9,7 @@ export type Envelope = {
   target_cents: number | null;
   current_cents: number;
   sort_order: number;
+  is_reserve: boolean;
 };
 
 export async function listAllEnvelopesForHousehold(
@@ -17,7 +18,7 @@ export async function listAllEnvelopesForHousehold(
 ): Promise<Envelope[]> {
   const { data } = await supabase
     .from('envelopes')
-    .select('id, name, currency, target_cents, current_cents, sort_order')
+    .select('id, name, currency, target_cents, current_cents, sort_order, is_reserve')
     .eq('household_id', householdId)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: true });

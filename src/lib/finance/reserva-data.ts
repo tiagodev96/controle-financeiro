@@ -8,6 +8,7 @@ import {
   type MonthlyEssential,
   type RecurringExpenseRule,
 } from './reserva';
+import { loadReserveEnvelopes } from './reserva-envelopes';
 
 function monthStartIso(year: number, monthIndex: number): string {
   return new Date(Date.UTC(year, monthIndex, 1)).toISOString().slice(0, 10);
@@ -132,48 +133,23 @@ export async function loadMonthlyEssential(params: {
   });
 }
 
-export type ReserveEnvelope = {
-  id: string;
-  name: string;
-  currency: Currency;
-  currentCents: number;
-  targetCents: number | null;
-};
-
-export async function loadReserveEnvelope(
-  supabase: SupabaseClient<Database>,
-  householdId: string,
-): Promise<ReserveEnvelope | null> {
-  const { data } = await supabase
-    .from('envelopes')
-    .select('id, name, currency, current_cents, target_cents')
-    .eq('household_id', householdId)
-    .eq('is_reserve', true)
-    .maybeSingle();
-  if (!data) return null;
-  return {
-    id: data.id,
-    name: data.name,
-    currency: data.currency as Currency,
-    currentCents: data.current_cents,
-    targetCents: data.target_cents,
-  };
-}
-
-/** Saldo da caixinha de reserva consolidado em `targetCurrency` (0 se não há). */
+/** Saldo das subcontas de reserva consolidado em `targetCurrency` (0 se não há). */
 export async function loadReservaAllocatedCents(params: {
   supabase: SupabaseClient<Database>;
   householdId: string;
   targetCurrency: Currency;
   fxRateMap: RateMap | null;
 }): Promise<number> {
-  const reserve = await loadReserveEnvelope(params.supabase, params.householdId);
-  if (!reserve) return 0;
-  const converted = convertToTarget(
-    reserve.currentCents,
-    reserve.currency,
-    params.targetCurrency,
-    params.fxRateMap,
-  );
-  return converted ?? 0;
+  const reserves = await loadReserveEnvelopes(params.supabase, params.householdId);
+  let total = 0;
+  for (const reserve of reserves) {
+    const converted = convertToTarget(
+      reserve.currentCents,
+      reserve.currency,
+      params.targetCurrency,
+      params.fxRateMap,
+    );
+    total += converted ?? 0;
+  }
+  return total;
 }

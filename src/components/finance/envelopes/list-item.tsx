@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Edit3, MinusCircle, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { Edit3, Lock, MinusCircle, MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Num, type Currency } from '@/components/finance/num';
 import { deleteEnvelopeAction } from '@/server/actions/envelopes/actions';
@@ -15,9 +15,17 @@ type Props = {
   currency: Currency;
   currentCents: number;
   targetCents: number | null;
+  isReserve?: boolean;
 };
 
-export function EnvelopeListItem({ id, name, currency, currentCents, targetCents }: Props) {
+export function EnvelopeListItem({
+  id,
+  name,
+  currency,
+  currentCents,
+  targetCents,
+  isReserve = false,
+}: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const [moveMode, setMoveMode] = useState<'allocate' | 'withdraw' | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -44,7 +52,15 @@ export function EnvelopeListItem({ id, name, currency, currentCents, targetCents
     <div className="space-y-3 rounded-md border border-border-soft bg-bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <p className="truncate text-[15px] font-medium text-fg1">{name}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-[15px] font-medium text-fg1">{name}</p>
+            {isReserve && (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-xs bg-bg-inset px-1.5 py-0.5 mono text-[10px] uppercase tracking-wider text-fg4">
+                <Lock className="size-2.5" strokeWidth={1.6} aria-hidden />
+                reserva
+              </span>
+            )}
+          </div>
           <div className="flex items-baseline gap-2 text-[12px] text-fg3">
             <Num cents={currentCents} currency={currency} className="font-semibold text-fg2" />
             {hasTarget && (
@@ -59,6 +75,7 @@ export function EnvelopeListItem({ id, name, currency, currentCents, targetCents
           </div>
         </div>
 
+        {!isReserve && (
         <div className="relative shrink-0">
           <button
             type="button"
@@ -101,6 +118,7 @@ export function EnvelopeListItem({ id, name, currency, currentCents, targetCents
             </>
           )}
         </div>
+        )}
       </div>
 
       {hasTarget && (
