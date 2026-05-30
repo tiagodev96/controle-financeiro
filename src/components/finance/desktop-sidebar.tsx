@@ -11,9 +11,9 @@ import {
   Tags,
   Wallet,
   Share2,
-  Settings,
   CalendarRange,
   PiggyBank,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,10 +35,10 @@ const items: Item[] = [
   { href: '/recorrentes', label: 'Recorrentes', Icon: Repeat },
   { href: '/parcelados', label: 'Parcelados', Icon: CalendarRange },
   { href: '/caixinhas', label: 'Caixinhas', Icon: PiggyBank },
+  { href: '/reserva', label: 'Reserva', Icon: ShieldCheck },
   { href: '/contas', label: 'Contas', Icon: Wallet },
   { href: '/categorias', label: 'Categorias', Icon: Tags },
   { href: '/resumo', label: 'Resumo do mês', Icon: Share2 },
-  { href: '/mais', label: 'Configurações', Icon: Settings },
 ];
 
 type Props = {
