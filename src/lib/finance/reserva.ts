@@ -108,6 +108,30 @@ export type ReservaSuggestion = {
   mode: 'guardar' | 'investir';
 };
 
+const BAND_LABEL: Record<ReservaBand, string> = {
+  sem_reserva: 'Sem reserva',
+  em_formacao: 'Em formação',
+  minima: 'Mínima',
+  saudavel: 'Saudável',
+  reforcada: 'Reforçada',
+};
+
+const BAND_COPY: Record<ReservaBand, string> = {
+  sem_reserva: 'Qualquer imprevisto vira dívida',
+  em_formacao: 'Cobre sustos pequenos, abaixo do piso',
+  minima: 'Piso de segurança atingido',
+  saudavel: 'Padrão recomendado',
+  reforcada: 'Cobre renda variável / cenário conservador',
+};
+
+export function bandLabel(band: ReservaBand): string {
+  return BAND_LABEL[band];
+}
+
+export function bandCopy(band: ReservaBand): string {
+  return BAND_COPY[band];
+}
+
 export function computeReservaSuggestion(input: ReservaSuggestionInput): ReservaSuggestion {
   const covered = monthsCovered(input.reservaAllocatedCents, input.monthlyEssentialCents);
   const band = bandForMonths(covered);

@@ -1,8 +1,20 @@
 import { getSession } from '@/lib/auth/session';
 import { Num, type Currency } from '@/components/finance/num';
-import { DebtSuggestionCard } from '@/components/finance/debt-suggestion-card';
+import { DestinoSobraCard } from '@/components/finance/destino-sobra-card';
 import { CategoryLimitsCard } from '@/components/finance/category-limits-card';
 import { computeDebtSuggestion } from '@/lib/finance/debt-suggestion';
+import {
+  loadMonthlyEssential,
+  loadReservaAllocatedCents,
+  loadReserveEnvelope,
+} from '@/lib/finance/reserva-data';
+import {
+  bandForMonths,
+  debtCapForBand,
+  monthsCovered,
+  computeReservaSuggestion,
+} from '@/lib/finance/reserva';
+import { convertCents } from '@/lib/fx';
 import { listUpcomingPending } from '@/lib/finance/upcoming';
 import { listCategoriesWithLimits } from '@/lib/finance/category-limits';
 import {
@@ -31,27 +43,40 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
   const rateMap = both ? await getDashboardRateMap(nowIso) : null;
   const balByCcy = balanceByCurrency(accounts);
 
-  const [stats, debts, upcoming, categoryLimits] = await Promise.all([
-    getDashboardMonthStats(
-      session.householdId,
-      STATS_CURRENCY,
-      balByCcy[STATS_CURRENCY],
-      targetDateIso,
-    ),
-    getDashboardDebts(session.householdId),
-    listUpcomingPending(
-      await getDashboardSupabase(),
-      session.householdId,
-      new Date(nowIso),
-      7,
-    ),
-    listCategoriesWithLimits(
-      await getDashboardSupabase(),
-      session.householdId,
-      rateMap,
-      new Date(targetDateIso),
-    ),
-  ]);
+  const supabase = await getDashboardSupabase();
+  const now = new Date(nowIso);
+
+  const [stats, debts, upcoming, categoryLimits, essential, allocatedCents, reserveEnvelope] =
+    await Promise.all([
+      getDashboardMonthStats(
+        session.householdId,
+        STATS_CURRENCY,
+        balByCcy[STATS_CURRENCY],
+        targetDateIso,
+      ),
+      getDashboardDebts(session.householdId),
+      listUpcomingPending(supabase, session.householdId, now, 7),
+      listCategoriesWithLimits(supabase, session.householdId, rateMap, new Date(targetDateIso)),
+      loadMonthlyEssential({
+        supabase,
+        householdId: session.householdId,
+        targetCurrency: STATS_CURRENCY,
+        fxRateMap: rateMap,
+        now,
+      }),
+      loadReservaAllocatedCents({
+        supabase,
+        householdId: session.householdId,
+        targetCurrency: STATS_CURRENCY,
+        fxRateMap: rateMap,
+      }),
+      loadReserveEnvelope(supabase, session.householdId),
+    ]);
+
+  const essentialKnown = essential.cents > 0;
+  const band = essentialKnown
+    ? bandForMonths(monthsCovered(allocatedCents, essential.cents))
+    : null;
 
   const suggestion = computeDebtSuggestion({
     sobraEurCents: stats.sobraPrevistaCents,
@@ -65,25 +90,57 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
     fxRateMap: rateMap
       ? { EUR_BRL: rateMap.EUR_BRL, BRL_EUR: rateMap.BRL_EUR }
       : null,
+    maxRatio: band ? debtCapForBand(band) : undefined,
   });
 
   const suggestionAccounts = accounts
     .filter((a) => suggestion && a.currency === suggestion.debt.currency)
     .map((a) => ({ id: a.id, name: a.name, currency: a.currency }));
 
-  const now = new Date(nowIso);
+  const debtPart = suggestion
+    ? {
+        id: suggestion.debt.id,
+        title: suggestion.debt.title,
+        currency: suggestion.debt.currency,
+        remainingCents: suggestion.debt.remainingCents,
+        suggestedCents: suggestion.suggestedCents,
+        percOfDebt: suggestion.percOfDebt,
+      }
+    : null;
+
+  let reservePart: {
+    toReserveCents: number;
+    toFreeCents: number;
+    mode: 'guardar' | 'investir';
+    hasReserveEnvelope: boolean;
+  } | null = null;
+  if (essentialKnown && stats.sobraPrevistaCents > 0) {
+    const debtEurCents = suggestion
+      ? suggestion.debt.currency === 'EUR'
+        ? suggestion.suggestedCents
+        : convertCents(suggestion.suggestedCents, rateMap!.BRL_EUR)
+      : 0;
+    const rs = computeReservaSuggestion({
+      sobraCents: stats.sobraPrevistaCents,
+      suggestedDebtCents: debtEurCents,
+      reservaAllocatedCents: allocatedCents,
+      monthlyEssentialCents: essential.cents,
+    });
+    reservePart = {
+      toReserveCents: rs.toReserveCents,
+      toFreeCents: rs.toFreeCents,
+      mode: rs.mode,
+      hasReserveEnvelope: !!reserveEnvelope,
+    };
+  }
 
   return (
     <>
-      {suggestion && (
-        <DebtSuggestionCard
-          debtId={suggestion.debt.id}
-          debtTitle={suggestion.debt.title}
-          debtCurrency={suggestion.debt.currency}
-          debtRemainingCents={suggestion.debt.remainingCents}
-          suggestedCents={suggestion.suggestedCents}
-          percOfDebt={suggestion.percOfDebt}
+      {(debtPart || reservePart) && (
+        <DestinoSobraCard
           sobraEurCents={stats.sobraPrevistaCents}
+          debt={debtPart}
+          reserve={reservePart}
           accounts={suggestionAccounts}
         />
       )}

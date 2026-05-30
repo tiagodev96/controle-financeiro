@@ -101,10 +101,10 @@ test.describe('Sugestão de dívida no dashboard', () => {
     await signInAsFixtureUser(context);
 
     await page.goto('/');
-    await expect(page.getByText(/sugest[aã]o/i).first()).toBeVisible();
+    await expect(page.getByText(/destino da sobra/i).first()).toBeVisible();
     await expect(page.getByText(/SUG test Jefferson/i).first()).toBeVisible();
 
-    await page.getByRole('button', { name: /registrar pagamento/i }).first().click();
+    await page.getByRole('button', { name: /^pagar$/i }).first().click();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
@@ -118,7 +118,7 @@ test.describe('Sugestão de dívida no dashboard', () => {
     await signInAsFixtureUser(context);
 
     await page.goto('/');
-    await expect(page.getByText(/sugest[aã]o/i).first()).toBeVisible();
+    await expect(page.getByText(/destino da sobra/i).first()).toBeVisible();
     await expect(page.getByText(/SUG test Dilene/i).first()).toBeVisible();
   });
 });

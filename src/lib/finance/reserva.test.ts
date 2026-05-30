@@ -8,8 +8,18 @@ import {
   median,
   monthlyEssential,
   computeReservaSuggestion,
+  bandLabel,
+  bandCopy,
   type ReservaBand,
 } from './reserva';
+
+const ALL_BANDS: ReservaBand[] = [
+  'sem_reserva',
+  'em_formacao',
+  'minima',
+  'saudavel',
+  'reforcada',
+];
 
 describe('bandForMonths', () => {
   it('U-RES-BAND1 — 0 meses → sem_reserva', () => {
@@ -155,5 +165,24 @@ describe('computeReservaSuggestion', () => {
     expect(result.toReserveCents).toBe(0);
     expect(result.toFreeCents).toBe(40_000);
     expect(result.mode).toBe('investir');
+  });
+});
+
+describe('bandLabel / bandCopy', () => {
+  it('U-RES-LABEL — toda faixa tem label sentence case não vazio', () => {
+    for (const band of ALL_BANDS) {
+      const label = bandLabel(band);
+      expect(label.length).toBeGreaterThan(0);
+      expect(label[0]).toBe(label[0]!.toUpperCase());
+    }
+  });
+
+  it('U-RES-COPY — toda faixa tem copy não vazia e sem termos de gamificação', () => {
+    const forbidden = /league|xp|streak|badge|trophy|quest|fincoin|score/i;
+    for (const band of ALL_BANDS) {
+      const copy = bandCopy(band);
+      expect(copy.length).toBeGreaterThan(0);
+      expect(copy).not.toMatch(forbidden);
+    }
   });
 });

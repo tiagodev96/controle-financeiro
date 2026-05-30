@@ -131,3 +131,49 @@ export async function loadMonthlyEssential(params: {
     hasEnoughHistory,
   });
 }
+
+export type ReserveEnvelope = {
+  id: string;
+  name: string;
+  currency: Currency;
+  currentCents: number;
+  targetCents: number | null;
+};
+
+export async function loadReserveEnvelope(
+  supabase: SupabaseClient<Database>,
+  householdId: string,
+): Promise<ReserveEnvelope | null> {
+  const { data } = await supabase
+    .from('envelopes')
+    .select('id, name, currency, current_cents, target_cents')
+    .eq('household_id', householdId)
+    .eq('is_reserve', true)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    id: data.id,
+    name: data.name,
+    currency: data.currency as Currency,
+    currentCents: data.current_cents,
+    targetCents: data.target_cents,
+  };
+}
+
+/** Saldo da caixinha de reserva consolidado em `targetCurrency` (0 se não há). */
+export async function loadReservaAllocatedCents(params: {
+  supabase: SupabaseClient<Database>;
+  householdId: string;
+  targetCurrency: Currency;
+  fxRateMap: RateMap | null;
+}): Promise<number> {
+  const reserve = await loadReserveEnvelope(params.supabase, params.householdId);
+  if (!reserve) return 0;
+  const converted = convertToTarget(
+    reserve.currentCents,
+    reserve.currency,
+    params.targetCurrency,
+    params.fxRateMap,
+  );
+  return converted ?? 0;
+}
