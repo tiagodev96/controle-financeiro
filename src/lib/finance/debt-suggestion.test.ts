@@ -103,4 +103,23 @@ describe('computeDebtSuggestion', () => {
     expect(result?.suggestedCents).toBe(60_00);
     expect(result?.percOfDebt).toBeCloseTo(0.1, 5);
   });
+
+  it('U-SUG9 — maxRatio customizado limita a fração aplicável da sobra', () => {
+    const result = computeDebtSuggestion({
+      sobraEurCents: 300_00,
+      openDebts: [debtEUR('a', 200_00)],
+      fxRateMap: rateMap,
+      maxRatio: 0.3,
+    });
+    expect(result?.suggestedCents).toBe(90_00);
+  });
+
+  it('U-SUG10 — sem maxRatio mantém o default de 0.6', () => {
+    const result = computeDebtSuggestion({
+      sobraEurCents: 300_00,
+      openDebts: [debtEUR('a', 200_00)],
+      fxRateMap: rateMap,
+    });
+    expect(result?.suggestedCents).toBe(180_00);
+  });
 });

@@ -2,7 +2,7 @@ import { convertCents } from '@/lib/fx';
 import type { Currency } from '@/components/finance/num';
 
 const MIN_TICKET_EUR_CENTS = 5000; // € 50
-const MAX_RATIO = 0.6;
+const DEFAULT_MAX_RATIO = 0.6;
 
 export type SuggestionDebt = {
   id: string;
@@ -27,20 +27,23 @@ export type ComputeDebtSuggestionInput = {
   sobraEurCents: number;
   openDebts: SuggestionDebt[];
   fxRateMap: SuggestionFxMap | null;
+  /** Teto da sobra aplicável à dívida. Default 0.6; a reserva o reduz quando crítica. */
+  maxRatio?: number;
 };
 
 /**
  * Calcula a sugestão de pagamento de dívida no dashboard:
  *   - sem dívidas open OU sobra abaixo do ticket mínimo → null
  *   - ordena dívidas por priority asc, remaining desc
- *   - escolhe a primeira pra qual maxAplicavel (60% da sobra) cobre ≥ € 50
+ *   - escolhe a primeira pra qual maxAplicavel (maxRatio da sobra, default 60%) cobre ≥ € 50
  *   - dívidas BRL precisam de fxRateMap; sem ele, são ignoradas
  */
 export function computeDebtSuggestion(input: ComputeDebtSuggestionInput): DebtSuggestion | null {
   if (input.sobraEurCents < MIN_TICKET_EUR_CENTS) return null;
   if (input.openDebts.length === 0) return null;
 
-  const maxAplicavelEur = Math.floor(input.sobraEurCents * MAX_RATIO);
+  const maxRatio = input.maxRatio ?? DEFAULT_MAX_RATIO;
+  const maxAplicavelEur = Math.floor(input.sobraEurCents * maxRatio);
   if (maxAplicavelEur < MIN_TICKET_EUR_CENTS) return null;
 
   const sorted = [...input.openDebts].sort((a, b) => {
