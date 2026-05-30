@@ -20,6 +20,7 @@ const TODAY = new Date().toISOString().slice(0, 10);
 
 async function seedTxn(overrides: Partial<{ amount_cents: number; status: 'pending' | 'paid' }> = {}): Promise<string> {
   const admin = getAdminClient();
+  const status = overrides.status ?? 'pending';
   const { data, error } = await admin
     .from('transactions')
     .insert({
@@ -28,12 +29,12 @@ async function seedTxn(overrides: Partial<{ amount_cents: number; status: 'pendi
       account_id: SEED_ACCOUNT_EUR_ID,
       category_id: SEED_CATEGORY_MERCADO_ID,
       direction: 'expense',
-      amount_cents: 1250,
+      amount_cents: overrides.amount_cents ?? 1250,
       currency: 'EUR',
       description: 'seed',
       occurred_on: TODAY,
-      status: 'pending',
-      ...overrides,
+      status,
+      paid_on: status === 'paid' ? TODAY : null,
     })
     .select('id')
     .single();
