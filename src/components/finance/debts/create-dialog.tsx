@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { MoneyInput } from '@/components/finance/money-input';
 import { createDebtAction } from '@/server/actions/debts/actions';
+import { monthToDeadlineIso } from '@/lib/finance/debt-deadline';
 import { cn } from '@/lib/utils';
 
 type Currency = 'EUR' | 'BRL';
@@ -29,6 +30,7 @@ export function CreateDebtDialog() {
   const [amount, setAmount] = useState(0);
   const [currency, setCurrency] = useState<Currency>('EUR');
   const [priority, setPriority] = useState<Priority>(2);
+  const [quitMonth, setQuitMonth] = useState('');
   const [notes, setNotes] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,7 @@ export function CreateDebtDialog() {
       currency,
       priority,
       notes: notes.trim() || null,
+      targetQuitDate: quitMonth ? monthToDeadlineIso(quitMonth) : null,
     });
     setPending(false);
 
@@ -56,6 +59,7 @@ export function CreateDebtDialog() {
     toast.success('Dívida criada.');
     setTitle('');
     setAmount(0);
+    setQuitMonth('');
     setNotes('');
     setOpen(false);
   }
@@ -139,6 +143,16 @@ export function CreateDebtDialog() {
               </div>
             </label>
           </div>
+
+          <label className="block space-y-2">
+            <span className="eyebrow">Quitar até (opcional)</span>
+            <input
+              type="month"
+              value={quitMonth}
+              onChange={(e) => setQuitMonth(e.target.value)}
+              className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-[15px] text-fg1 placeholder:text-fg4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </label>
 
           <label className="block space-y-2">
             <span className="eyebrow">Notas (opcional)</span>

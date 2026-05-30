@@ -1,10 +1,16 @@
 import { getServerSupabase } from '@/lib/supabase/server';
 import { getSession } from '@/lib/auth/session';
-import { listDebtsForHousehold, type DebtRow } from '@/lib/finance/debts';
+import {
+  listDebtsForHousehold,
+  debtPaymentPace,
+  type DebtRow,
+} from '@/lib/finance/debts';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { CreateDebtDialog } from '@/components/finance/debts/create-dialog';
 import { DebtListItem } from '@/components/finance/debts/list-item';
+
+const MIN_PACE_MONTHS = 2;
 
 export default async function DividasPage() {
   const session = await getSession();
@@ -14,6 +20,19 @@ export default async function DividasPage() {
     listDebtsForHousehold(supabase, session.householdId),
     listAllAccountsForHousehold(supabase, session.householdId),
   ]);
+
+  const now = new Date();
+  const todayIso = now.toISOString().slice(0, 10);
+
+  const withDeadline = open.filter((d) => d.target_quit_date);
+  const paceEntries = await Promise.all(
+    withDeadline.map(async (d) => {
+      const pace = await debtPaymentPace(supabase, session.householdId, d.id, now);
+      const reliable = pace && pace.monthsElapsed >= MIN_PACE_MONTHS;
+      return [d.id, reliable ? pace.paceCents : null] as const;
+    }),
+  );
+  const paceMap = new Map(paceEntries);
 
   const accounts = allAccounts
     .filter((a) => !a.is_archived)
@@ -41,10 +60,22 @@ export default async function DividasPage() {
       ) : (
         <>
           {open.length > 0 && (
-            <Section label="Abertas" debts={open} accounts={accounts} />
+            <Section
+              label="Abertas"
+              debts={open}
+              accounts={accounts}
+              paceMap={paceMap}
+              todayIso={todayIso}
+            />
           )}
           {closed.length > 0 && (
-            <Section label={`Fechadas (${closed.length})`} debts={closed} accounts={accounts} />
+            <Section
+              label={`Fechadas (${closed.length})`}
+              debts={closed}
+              accounts={accounts}
+              paceMap={paceMap}
+              todayIso={todayIso}
+            />
           )}
         </>
       )}
@@ -56,10 +87,14 @@ function Section({
   label,
   debts,
   accounts,
+  paceMap,
+  todayIso,
 }: {
   label: string;
   debts: DebtRow[];
   accounts: { id: string; name: string; currency: 'BRL' | 'EUR' }[];
+  paceMap: Map<string, number | null>;
+  todayIso: string;
 }) {
   return (
     <section className="space-y-2">
@@ -76,6 +111,9 @@ function Section({
             priority={d.priority}
             status={d.status}
             notes={d.notes}
+            targetQuitDate={d.target_quit_date}
+            actualMonthlyCents={paceMap.get(d.id) ?? null}
+            todayIso={todayIso}
             accounts={accounts}
           />
         ))}

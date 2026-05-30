@@ -4,6 +4,16 @@ import { DestinoSobraCard } from '@/components/finance/destino-sobra-card';
 import { CategoryLimitsCard } from '@/components/finance/category-limits-card';
 import { computeDebtSuggestion } from '@/lib/finance/debt-suggestion';
 import {
+  daysUntil,
+  monthsUntil,
+  requiredMonthlyCents,
+  formatDeadlineMonth,
+} from '@/lib/finance/debt-deadline';
+import {
+  DebtDeadlinesCard,
+  type DeadlineCardItem,
+} from '@/components/finance/debt-deadlines-card';
+import {
   loadMonthlyEssential,
   loadReservaAllocatedCents,
 } from '@/lib/finance/reserva-data';
@@ -33,6 +43,7 @@ type Props = {
 };
 
 const STATS_CURRENCY: Currency = 'EUR';
+const DEADLINE_HORIZON_DAYS = 60;
 
 export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
   const session = await getSession();
@@ -72,6 +83,27 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
       }),
       loadReserveEnvelopes(supabase, session.householdId),
     ]);
+
+  const todayIso = nowIso.slice(0, 10);
+  const deadlineItems: DeadlineCardItem[] = debts.open
+    .filter((d) => d.target_quit_date)
+    .map((d) => ({ d, iso: d.target_quit_date!, days: daysUntil(d.target_quit_date!, todayIso) }))
+    .filter(({ days }) => days <= DEADLINE_HORIZON_DAYS)
+    .sort((a, b) => a.days - b.days)
+    .map(({ d, iso, days }) => ({
+      id: d.id,
+      title: d.title,
+      currency: d.currency,
+      monthLabel: formatDeadlineMonth(iso),
+      relativeLabel:
+        days < 0
+          ? `venceu há ${-days} dia${days === -1 ? '' : 's'}`
+          : days === 0
+            ? 'vence hoje'
+            : `vence em ${days} dia${days === 1 ? '' : 's'}`,
+      requiredCents: requiredMonthlyCents(d.remaining_amount_cents, monthsUntil(iso, todayIso)),
+      overdue: days < 0,
+    }));
 
   const essentialKnown = essential.cents > 0;
   const band = essentialKnown
@@ -148,6 +180,8 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
       {categoryLimits.length > 0 && (
         <CategoryLimitsCard limits={categoryLimits} />
       )}
+
+      <DebtDeadlinesCard items={deadlineItems} />
 
       {upcoming.length > 0 && (
         <section className="space-y-2">

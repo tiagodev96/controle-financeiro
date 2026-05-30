@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Currency } from '@/components/finance/num';
+import { monthsUntil } from './debt-deadline';
 
 export type DebtRow = {
   id: string;
@@ -12,6 +13,7 @@ export type DebtRow = {
   status: 'open' | 'closed';
   notes: string | null;
   closed_at: string | null;
+  target_quit_date: string | null;
 };
 
 export type DebtListResult = {
@@ -31,7 +33,7 @@ export async function listDebtsForHousehold(
   const { data, error } = await supabase
     .from('debts')
     .select(
-      'id, title, original_amount_cents, remaining_amount_cents, currency, priority, status, notes, closed_at',
+      'id, title, original_amount_cents, remaining_amount_cents, currency, priority, status, notes, closed_at, target_quit_date',
     )
     .eq('household_id', householdId);
 
@@ -90,4 +92,42 @@ export async function sumDebtPaymentsThisMonth(
     map[row.source_debt_id] = (map[row.source_debt_id] ?? 0) + row.amount_cents;
   }
   return map;
+}
+
+export type DebtPace = { paceCents: number; monthsElapsed: number };
+
+/**
+ * Ritmo médio de pagamento da dívida: total pago dividido pelos meses
+ * decorridos desde o primeiro pagamento (inclusive o mês corrente).
+ * Retorna null se a dívida nunca recebeu pagamento.
+ */
+export async function debtPaymentPace(
+  supabase: SupabaseClient<Database>,
+  householdId: string,
+  debtId: string,
+  now: Date,
+): Promise<DebtPace | null> {
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('amount_cents, paid_on')
+    .eq('household_id', householdId)
+    .eq('source_debt_id', debtId)
+    .eq('status', 'paid')
+    .not('paid_on', 'is', null);
+
+  if (error) throw new Error(`debtPaymentPace: ${error.message}`);
+
+  const rows = data ?? [];
+  if (rows.length === 0) return null;
+
+  let total = 0;
+  let firstPaidOn = rows[0]!.paid_on!;
+  for (const row of rows) {
+    total += row.amount_cents;
+    if (row.paid_on! < firstPaidOn) firstPaidOn = row.paid_on!;
+  }
+
+  const nowIso = now.toISOString().slice(0, 10);
+  const monthsElapsed = monthsUntil(nowIso, firstPaidOn) + 1;
+  return { paceCents: Math.round(total / monthsElapsed), monthsElapsed };
 }

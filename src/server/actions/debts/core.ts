@@ -19,12 +19,19 @@ const notesSchema = z
   .optional()
   .transform((v) => (v == null || v.trim() === '' ? null : v.trim().slice(0, 200)));
 
+const deadlineSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data inválida')
+  .nullable()
+  .optional();
+
 const createSchema = z.object({
   title: titleSchema,
   originalAmountCents: z.number().int().positive(),
   currency: z.enum(['BRL', 'EUR']),
   priority: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   notes: notesSchema,
+  targetQuitDate: deadlineSchema,
 });
 
 const updateSchema = z.object({
@@ -34,6 +41,7 @@ const updateSchema = z.object({
     originalAmountCents: z.number().int().positive().optional(),
     priority: z.union([z.literal(1), z.literal(2), z.literal(3)]).optional(),
     notes: notesSchema,
+    targetQuitDate: deadlineSchema,
   }),
 });
 
@@ -73,6 +81,7 @@ export async function createDebtCore(
       currency: data.currency,
       priority: data.priority,
       notes: data.notes,
+      target_quit_date: data.targetQuitDate ?? null,
     })
     .select()
     .single();
@@ -102,6 +111,7 @@ export async function updateDebtCore(
   if (patch.title !== undefined) update.title = patch.title;
   if (patch.priority !== undefined) update.priority = patch.priority;
   if (patch.notes !== undefined) update.notes = patch.notes;
+  if (patch.targetQuitDate !== undefined) update.target_quit_date = patch.targetQuitDate;
 
   // Mudar o valor original obriga recalcular remaining + status (o trigger
   // de pagamentos só dispara em insert/update/delete de transactions).

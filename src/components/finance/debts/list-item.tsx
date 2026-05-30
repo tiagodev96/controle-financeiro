@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { MoreHorizontal, RotateCcw, CheckCircle2, Pencil, Trash2, Wallet } from 'lucide-react';
+import { CalendarClock, MoreHorizontal, RotateCcw, CheckCircle2, Pencil, Trash2, Wallet } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   closeDebtManuallyAction,
@@ -9,6 +9,13 @@ import {
   reopenDebtAction,
 } from '@/server/actions/debts/actions';
 import { Num, type Currency } from '@/components/finance/num';
+import {
+  monthsUntil,
+  requiredMonthlyCents,
+  projectedQuitMonth,
+  deadlineStatus,
+  formatDeadlineMonth,
+} from '@/lib/finance/debt-deadline';
 import { EditDebtDialog } from './edit-dialog';
 import { RegisterPaymentDialog } from './register-payment-dialog';
 import { cn } from '@/lib/utils';
@@ -30,6 +37,9 @@ type Props = {
   priority: Priority;
   status: 'open' | 'closed';
   notes: string | null;
+  targetQuitDate: string | null;
+  actualMonthlyCents: number | null;
+  todayIso: string;
   accounts: Account[];
 };
 
@@ -45,6 +55,46 @@ const PRIORITY_CLASSES: Record<Priority, string> = {
   3: 'bg-brand-quiet-bg text-brand-quiet-fg',
 };
 
+const DEADLINE_CHIP = {
+  tight: { label: 'apertado', classes: 'bg-status-pending-bg text-status-pending-fg' },
+  overdue: { label: 'atrasada', classes: 'bg-status-overdue-bg text-status-overdue-fg' },
+};
+
+function pluralMonths(n: number): string {
+  return `${n} ${n === 1 ? 'mês' : 'meses'}`;
+}
+
+function buildDeadline(
+  targetQuitDate: string,
+  todayIso: string,
+  remainingCents: number,
+  actualMonthlyCents: number | null,
+) {
+  const months = monthsUntil(targetQuitDate, todayIso);
+  const status = deadlineStatus({
+    deadlineIso: targetQuitDate,
+    todayIso,
+    remainingCents,
+    actualMonthlyCents,
+  });
+  const relative =
+    months > 0
+      ? `faltam ${pluralMonths(months)}`
+      : months === 0
+        ? 'vence este mês'
+        : `venceu há ${pluralMonths(-months)}`;
+  return {
+    status,
+    relative,
+    monthLabel: formatDeadlineMonth(targetQuitDate),
+    requiredCents: requiredMonthlyCents(remainingCents, months),
+    projectedMonth: actualMonthlyCents
+      ? projectedQuitMonth(remainingCents, actualMonthlyCents, todayIso)
+      : null,
+    chip: status === 'on-track' ? null : DEADLINE_CHIP[status],
+  };
+}
+
 export function DebtListItem({
   id,
   title,
@@ -54,6 +104,9 @@ export function DebtListItem({
   priority,
   status,
   notes,
+  targetQuitDate,
+  actualMonthlyCents,
+  todayIso,
   accounts,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -65,6 +118,8 @@ export function DebtListItem({
   const paidCents = Math.max(originalCents - remainingCents, 0);
   const pct = originalCents > 0 ? Math.min(paidCents / originalCents, 1) : 0;
   const pctLabel = Math.round(pct * 100);
+
+  const deadline = isOpen && targetQuitDate ? buildDeadline(targetQuitDate, todayIso, remainingCents, actualMonthlyCents) : null;
 
   function handleClose() {
     setMenuOpen(false);
@@ -207,6 +262,50 @@ export function DebtListItem({
         </div>
       </div>
 
+      {deadline && (
+        <div className="space-y-1 rounded-md bg-bg-inset px-2.5 py-2 text-[12px]" data-testid={`debt-deadline-${id}`}>
+          <div className="flex items-center gap-1.5">
+            <CalendarClock className="size-3.5 shrink-0 text-fg4" strokeWidth={1.6} aria-hidden />
+            <span className="text-fg2">Quitar até {deadline.monthLabel}</span>
+            <span className="text-fg4">· {deadline.relative}</span>
+            {deadline.chip && (
+              <span
+                className={cn(
+                  'ml-auto inline-flex h-4 items-center rounded-sm px-1.5 text-[10px] font-semibold uppercase tracking-wider',
+                  deadline.chip.classes,
+                )}
+              >
+                {deadline.chip.label}
+              </span>
+            )}
+          </div>
+          <p className="pl-5 text-fg3">
+            ritmo necessário{' '}
+            <Num cents={deadline.requiredCents} currency={currency} className="text-fg2" />
+            /mês
+            {actualMonthlyCents != null && (
+              <>
+                {' · seu ritmo '}
+                <Num cents={actualMonthlyCents} currency={currency} className="text-fg2" />
+                /mês
+              </>
+            )}
+            {deadline.projectedMonth && (
+              <>{` · no ritmo, fecha ${formatDeadlineMonth(deadline.projectedMonth)}`}</>
+            )}
+          </p>
+          {deadline.status === 'overdue' && (
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="pl-5 text-[12px] font-medium text-brand hover:underline"
+            >
+              Definir novo prazo
+            </button>
+          )}
+        </div>
+      )}
+
       {isOpen && (
         <button
           type="button"
@@ -240,6 +339,7 @@ export function DebtListItem({
           currency={currency}
           currentPriority={priority}
           currentNotes={notes}
+          currentTargetQuitDate={targetQuitDate}
           open={editOpen}
           onOpenChange={setEditOpen}
         />

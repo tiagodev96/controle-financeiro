@@ -45,4 +45,53 @@ test.describe('Dívidas', () => {
     await expect(page.getByText(/fechadas/i).first()).toBeVisible();
     await expect(page.locator(`[data-testid^="debt-row-"]`, { hasText: title })).toBeVisible();
   });
+
+  test('E-DB-DEADLINE — cria dívida com meta de quitação futura e mostra ritmo necessário', async ({ page, context }) => {
+    await signInAsFixtureUser(context);
+
+    const title = `Meta ${Date.now()}`;
+    const now = new Date();
+    const target = new Date(now.getFullYear(), now.getMonth() + 5, 1);
+    const targetMonth = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}`;
+
+    await page.goto('/dividas');
+    await page.getByRole('button', { name: /nova dívida/i }).click();
+    await page.getByPlaceholder(/empréstimo jefferson/i).fill(title);
+    await page.getByLabel(/valor original/i).fill('5000');
+    await page.getByLabel(/quitar até/i).fill(targetMonth);
+    await page.getByRole('button', { name: /criar dívida/i }).click();
+
+    const debtCard = page.locator(`[data-testid^="debt-row-"]`, { hasText: title });
+    await expect(debtCard).toBeVisible();
+    await expect(debtCard.getByText(/quitar até/i)).toBeVisible();
+    await expect(debtCard.getByText(/faltam 5 meses/i)).toBeVisible();
+    await expect(debtCard.getByText(/ritmo necessário/i)).toBeVisible();
+  });
+
+  test('E-DB-OVERDUE — meta vencida marca atrasada, oferece novo prazo e aparece no dashboard', async ({ page, context }) => {
+    await signInAsFixtureUser(context);
+
+    const title = `Cartao ${Date.now()}`;
+    const now = new Date();
+    const past = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    const pastMonth = `${past.getFullYear()}-${String(past.getMonth() + 1).padStart(2, '0')}`;
+
+    await page.goto('/dividas');
+    await page.getByRole('button', { name: /nova dívida/i }).click();
+    await page.getByPlaceholder(/empréstimo jefferson/i).fill(title);
+    await page.getByLabel(/valor original/i).fill('5000');
+    await page.getByLabel(/quitar até/i).fill(pastMonth);
+    await page.getByRole('button', { name: /criar dívida/i }).click();
+
+    const debtCard = page.locator(`[data-testid^="debt-row-"]`, { hasText: title });
+    await expect(debtCard).toBeVisible();
+    await expect(debtCard.getByText('atrasada', { exact: true })).toBeVisible();
+    await expect(debtCard.getByRole('button', { name: /definir novo prazo/i })).toBeVisible();
+
+    await page.goto('/');
+    await expect(page.getByRole('heading', { name: /metas de quitação/i })).toBeVisible();
+    await expect(
+      page.locator('a', { hasText: title }).filter({ hasText: /venceu há/i }),
+    ).toBeVisible();
+  });
 });

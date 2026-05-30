@@ -11,6 +11,7 @@ import {
 import { MoneyInput } from '@/components/finance/money-input';
 import { Num, type Currency } from '@/components/finance/num';
 import { updateDebtAction } from '@/server/actions/debts/actions';
+import { monthToDeadlineIso } from '@/lib/finance/debt-deadline';
 import { cn } from '@/lib/utils';
 
 type Priority = 1 | 2 | 3;
@@ -29,6 +30,7 @@ type Props = {
   currency: Currency;
   currentPriority: Priority;
   currentNotes: string | null;
+  currentTargetQuitDate: string | null;
   open: boolean;
   onOpenChange: (next: boolean) => void;
 };
@@ -41,12 +43,14 @@ export function EditDebtDialog({
   currency,
   currentPriority,
   currentNotes,
+  currentTargetQuitDate,
   open,
   onOpenChange,
 }: Props) {
   const [title, setTitle] = useState(currentTitle);
   const [originalCents, setOriginalCents] = useState(currentOriginalCents);
   const [priority, setPriority] = useState<Priority>(currentPriority);
+  const [quitMonth, setQuitMonth] = useState(currentTargetQuitDate?.slice(0, 7) ?? '');
   const [notes, setNotes] = useState(currentNotes ?? '');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +71,7 @@ export function EditDebtDialog({
         originalAmountCents: originalCents,
         priority,
         notes: notes.trim() || null,
+        targetQuitDate: quitMonth ? monthToDeadlineIso(quitMonth) : null,
       },
     });
     setPending(false);
@@ -133,6 +138,16 @@ export function EditDebtDialog({
                 </button>
               ))}
             </div>
+          </label>
+
+          <label className="block space-y-2">
+            <span className="eyebrow">Quitar até (opcional)</span>
+            <input
+              type="month"
+              value={quitMonth}
+              onChange={(e) => setQuitMonth(e.target.value)}
+              className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-[15px] text-fg1 placeholder:text-fg4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
           </label>
 
           <label className="block space-y-2">
