@@ -59,13 +59,14 @@ export function BalanceHistoryDialog({
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    setLoading(true);
-    listSnapshotsAction({ accountId, limit: 24 }).then((rows) => {
+    void (async () => {
+      setLoading(true);
+      const rows = await listSnapshotsAction({ accountId, limit: 24 });
       if (!cancelled) {
         setSnapshots(rows);
         setLoading(false);
       }
-    });
+    })();
     return () => {
       cancelled = true;
     };
