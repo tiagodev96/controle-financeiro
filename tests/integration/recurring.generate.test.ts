@@ -25,6 +25,7 @@ async function cleanupRecurring(): Promise<void> {
 async function seedRule(overrides: {
   title: string;
   is_paused?: boolean;
+  active_from?: string;
   active_until?: string | null;
   category_id?: string;
 }): Promise<string> {
@@ -42,6 +43,7 @@ async function seedRule(overrides: {
       day_of_month: 10,
       frequency: 'monthly',
       is_paused: overrides.is_paused ?? false,
+      active_from: overrides.active_from,
       active_until: overrides.active_until ?? null,
     })
     .select('id')
@@ -52,6 +54,9 @@ async function seedRule(overrides: {
 
 const NOW = new Date();
 const MONTH_ISO = `${NOW.getFullYear()}-${String(NOW.getMonth() + 1).padStart(2, '0')}`;
+const NEXT_MONTH_FIRST = new Date(Date.UTC(NOW.getFullYear(), NOW.getMonth() + 1, 1))
+  .toISOString()
+  .slice(0, 10);
 
 describe('generateRecurringForMonthCore (integração)', () => {
   beforeEach(async () => {
@@ -106,6 +111,20 @@ describe('generateRecurringForMonthCore (integração)', () => {
     if (!second.ok) return;
     expect(second.created).toBe(0);
     expect(second.skipped).toBe(1);
+  });
+
+  it('I-GEN4 — regra com active_from no 1º dia do mês seguinte não gera no mês corrente', async () => {
+    await seedRule({ title: 'GEN test futura', active_from: NEXT_MONTH_FIRST });
+
+    const supabase = await getAuthedClient();
+    const result = await generateRecurringForMonthCore(
+      { supabase, session: SEED_SESSION },
+      { monthIso: MONTH_ISO },
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.created).toBe(0);
   });
 
   it('I-GEN3 — regra pausada e regra expirada (active_until passado) são ignoradas', async () => {

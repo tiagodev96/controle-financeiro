@@ -101,7 +101,8 @@ export async function projectMonthForFuture({
 
   const activeRules = (rulesRes.data ?? []).filter((r) => {
     if (r.is_paused) return false;
-    if (r.active_from && r.active_from > end) return false;
+    // `end` é exclusivo (1º dia do mês seguinte): ativa no mês exige active_from < end.
+    if (r.active_from && r.active_from >= end) return false;
     if (r.active_until && r.active_until < start) return false;
     return true;
   });

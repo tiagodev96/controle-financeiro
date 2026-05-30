@@ -58,7 +58,10 @@ export async function generateRecurringForMonthCore(
 
   const activeRules = (rules ?? []).filter((r) => {
     if (r.is_paused) return false;
-    if (r.active_from && r.active_from > end) return false;
+    // `end` é exclusivo (1º dia do mês seguinte): regra ativa no mês exige
+    // active_from < end. Com `>` uma regra que começa no 1º dia do próximo
+    // mês vazava pro mês corrente, gerando transação espúria no mês anterior.
+    if (r.active_from && r.active_from >= end) return false;
     if (r.active_until && r.active_until < start) return false;
     return true;
   });
