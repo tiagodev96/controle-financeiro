@@ -6,6 +6,7 @@ import {
   calculateCrossCurrencyMonthStats,
   type CrossCurrencyMonthStats,
 } from './cross-currency-stats';
+import { listUngeneratedRecurringForMonth } from './recurring';
 
 export type ProjectionTopCategory = {
   id: string;
@@ -30,15 +31,6 @@ export type MonthProjection = {
   /** True se algum txn ou rule em currency diferente da target ficou fora por fx. */
   fxIncomplete: boolean;
 };
-
-function monthBoundaries(targetDate: Date): { start: string; end: string } {
-  const y = targetDate.getFullYear();
-  const m = targetDate.getMonth();
-  return {
-    start: new Date(y, m, 1).toISOString().slice(0, 10),
-    end: new Date(y, m + 1, 1).toISOString().slice(0, 10),
-  };
-}
 
 function convertToTarget(
   cents: number,
@@ -80,11 +72,8 @@ export async function projectMonthForFuture({
   now: Date;
   topCategoriesLimit?: number;
 }): Promise<MonthProjection> {
-  const { start, end } = monthBoundaries(targetDate);
-
-  // 1) Stats cross-currency (pega installments + outras pending já no banco).
-  // 2) Recurring rules de TODAS as currencies (filtra ativas em JS).
-  const [stats, rulesRes] = await Promise.all([
+  // Fonte única das recorrentes virtuais (mesma usada pelo preview da lista).
+  const [stats, occurrences] = await Promise.all([
     calculateCrossCurrencyMonthStats({
       supabase,
       householdId,
@@ -95,99 +84,45 @@ export async function projectMonthForFuture({
       nowDate: now,
       topCategoriesLimit: 10, // mais larga aqui; recortamos no fim depois de mergear virtuais
     }),
-    supabase
-      .from('recurring_rules')
-      .select(
-        'id, amount_cents, currency, direction, category_id, is_paused, active_from, active_until',
-      )
-      .eq('household_id', householdId),
+    listUngeneratedRecurringForMonth({ supabase, householdId, targetDate }),
   ]);
-
-  const activeRules = (rulesRes.data ?? []).filter((r) => {
-    if (r.is_paused) return false;
-    // `end` é exclusivo (1º dia do mês seguinte): ativa no mês exige active_from < end.
-    if (r.active_from && r.active_from >= end) return false;
-    if (r.active_until && r.active_until < start) return false;
-    return true;
-  });
-
-  let alreadyGenerated = new Set<string>();
-  if (activeRules.length > 0) {
-    const { data: existing } = await supabase
-      .from('transactions')
-      .select('source_recurring_rule_id')
-      .eq('household_id', householdId)
-      .gte('occurred_on', start)
-      .lt('occurred_on', end)
-      .in(
-        'source_recurring_rule_id',
-        activeRules.map((r) => r.id),
-      );
-    alreadyGenerated = new Set(
-      (existing ?? [])
-        .map((t) => t.source_recurring_rule_id)
-        .filter((id): id is string => !!id),
-    );
-  }
-
-  const ungenerated = activeRules.filter((r) => !alreadyGenerated.has(r.id));
 
   let recurringPendingExpenseCents = 0;
   let recurringPendingIncomeCents = 0;
   let recurringFxIncomplete = false;
-  const virtualByCategory = new Map<string, number>();
+  const virtualByCategory = new Map<string, { name: string; cents: number }>();
 
-  for (const rule of ungenerated) {
-    const converted = convertToTarget(
-      rule.amount_cents,
-      rule.currency as Currency,
-      targetCurrency,
-      fxRateMap,
-    );
+  for (const occ of occurrences) {
+    const converted = convertToTarget(occ.amountCents, occ.currency, targetCurrency, fxRateMap);
     if (converted === null) {
       recurringFxIncomplete = true;
       continue;
     }
-    if (rule.direction === 'expense') {
+    if (occ.direction === 'expense') {
       recurringPendingExpenseCents += converted;
-      if (rule.category_id) {
-        virtualByCategory.set(
-          rule.category_id,
-          (virtualByCategory.get(rule.category_id) ?? 0) + converted,
-        );
+      if (occ.categoryId) {
+        const cur = virtualByCategory.get(occ.categoryId) ?? {
+          name: occ.categoryName ?? '—',
+          cents: 0,
+        };
+        cur.cents += converted;
+        virtualByCategory.set(occ.categoryId, cur);
       }
     } else {
       recurringPendingIncomeCents += converted;
     }
   }
 
-  // Resolve nomes das categorias virtuais (que não apareceram em stats.topCategories).
-  const missingCategoryIds = Array.from(virtualByCategory.keys()).filter(
-    (id) => !stats.topCategories.some((c) => c.id === id),
-  );
-  let categoryNameById = new Map<string, string>();
-  if (missingCategoryIds.length > 0) {
-    const { data: catRows } = await supabase
-      .from('categories')
-      .select('id, name')
-      .in('id', missingCategoryIds);
-    categoryNameById = new Map((catRows ?? []).map((c) => [c.id, c.name]));
-  }
-
   const mergedTopByCategory = new Map<string, ProjectionTopCategory>();
   for (const c of stats.topCategories) {
     mergedTopByCategory.set(c.id, { id: c.id, name: c.name, totalCents: c.totalCents });
   }
-  for (const [catId, addCents] of virtualByCategory.entries()) {
+  for (const [catId, { name, cents }] of virtualByCategory.entries()) {
     const existing = mergedTopByCategory.get(catId);
     if (existing) {
-      existing.totalCents += addCents;
+      existing.totalCents += cents;
     } else {
-      mergedTopByCategory.set(catId, {
-        id: catId,
-        name: categoryNameById.get(catId) ?? '—',
-        totalCents: addCents,
-      });
+      mergedTopByCategory.set(catId, { id: catId, name, totalCents: cents });
     }
   }
 

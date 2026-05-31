@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { projectMonthForFuture } from '@/lib/finance/month-projection';
+import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
 import {
   getAuthedClient,
   SEED_DEMO_HOUSEHOLD_ID,
@@ -106,5 +107,55 @@ describe('projectMonthForFuture — parcelas no mês alvo (integração)', () =>
     expect(projection.stats.pendingExpenseCents).toBe(50000);
     expect(projection.recurringPendingExpenseCents).toBe(1500);
     expect(projection.sobraProjetadaCents).toBe(48500);
+  });
+
+  it('I-PROJ3 — soma do helper bate com recurringPendingExpenseCents da projeção (fonte única)', async () => {
+    const now = new Date();
+    const { targetDate } = nextMonthBounds(now);
+
+    const admin = getAdminClient();
+    const { error } = await admin.from('recurring_rules').insert([
+      {
+        household_id: SEED_DEMO_HOUSEHOLD_ID,
+        title: 'Adobe',
+        amount_cents: 1498,
+        currency: 'EUR',
+        direction: 'expense',
+        category_id: SEED_CATEGORY_MERCADO_ID,
+        account_id: SEED_ACCOUNT_EUR_ID,
+        day_of_month: 5,
+      },
+      {
+        household_id: SEED_DEMO_HOUSEHOLD_ID,
+        title: 'Claude',
+        amount_cents: 11000,
+        currency: 'EUR',
+        direction: 'expense',
+        category_id: SEED_CATEGORY_MERCADO_ID,
+        account_id: SEED_ACCOUNT_EUR_ID,
+        day_of_month: 10,
+      },
+    ]);
+    if (error) throw new Error(`insert recurring failed: ${error.message}`);
+
+    const supabase = await getAuthedClient();
+    const [occ, projection] = await Promise.all([
+      listUngeneratedRecurringForMonth({ supabase, householdId: SEED_DEMO_HOUSEHOLD_ID, targetDate }),
+      projectMonthForFuture({
+        supabase,
+        householdId: SEED_DEMO_HOUSEHOLD_ID,
+        targetCurrency: 'EUR',
+        fxRateMap: null,
+        accountsTotalInTargetCents: 0,
+        targetDate,
+        now,
+      }),
+    ]);
+
+    const helperExpenseSum = occ
+      .filter((o) => o.direction === 'expense')
+      .reduce((s, o) => s + o.amountCents, 0);
+    expect(helperExpenseSum).toBe(12498);
+    expect(projection.recurringPendingExpenseCents).toBe(helperExpenseSum);
   });
 });
