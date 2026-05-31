@@ -61,6 +61,6 @@ Nenhuma nova. Depende de extrair/!reusar a virtualização de recorrentes hoje e
 ## Decisões (resolvidas)
 
 - **Modo intervalo (range de datas):** v1 **não** injeta previstos — só o modo mês. Em modo intervalo a lista segue só com reais.
-- **Filtro de status:** "previsto" é **categoria à parte**. Não entra em "pago" nem "pendente". Aparece sempre que o mês alvo é futuro, independente do filtro de status selecionado.
+- **Filtros (refinado na implementação):** previstos aparecem só em **modo mês** de mês futuro e **sem narrowing por status ou conta** (ao filtrar status=pago/pendente ou uma conta específica, mostra só linhas reais — evita misturar previsto, que não tem status nem conta resolvível, com um recorte de dados reais). Filtros de **categoria** e **busca** aplicam normalmente às linhas previstas.
 - **Nível de detalhe:** **uma linha por recorrente** (não agregado).
 - **Estilo visual:** linha esmaecida + badge **"previsto"** distinto das tags "recorrente"/"parcela", sem botões de ação. Refinar tokens na fase de UI seguindo o design-system.

@@ -4,6 +4,7 @@ import { type Currency } from '@/components/finance/num';
 import { TxnRow } from '@/components/finance/txn-row';
 import { CategoryProgressList } from '@/components/finance/category-progress';
 import { topCategoriesThisMonth } from '@/lib/finance/dashboard-stats';
+import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
 import {
   getDashboardSupabase,
   getDashboardAccounts,
@@ -32,13 +33,15 @@ type TxnRowData = {
   installment_number: number | null;
   categories: { name: string } | null;
   installment_plans: { total_installments: number } | null;
+  previsto?: boolean;
 };
 
 type Props = {
   targetDateIso: string;
+  isFuture: boolean;
 };
 
-export async function BottomBlock({ targetDateIso }: Props) {
+export async function BottomBlock({ targetDateIso, isFuture }: Props) {
   const session = await getSession();
   const accounts = await getDashboardAccounts(session.householdId);
   if (accounts.length === 0) return null;
@@ -71,7 +74,35 @@ export async function BottomBlock({ targetDateIso }: Props) {
   ]);
 
   const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
-  const grouped = groupByDay(txns);
+
+  const virtualRows: TxnRowData[] = isFuture
+    ? (
+        await listUngeneratedRecurringForMonth({
+          supabase,
+          householdId: session.householdId,
+          targetDate,
+        })
+      ).map((o) => ({
+        id: `previsto-${o.ruleId}`,
+        description: o.title,
+        amount_cents: o.amountCents,
+        currency: o.currency,
+        direction: o.direction,
+        status: 'pending' as const,
+        occurred_on: o.occurredOn,
+        source_recurring_rule_id: o.ruleId,
+        source_installment_plan_id: null,
+        installment_number: null,
+        categories: o.categoryName ? { name: o.categoryName } : null,
+        installment_plans: null,
+        previsto: true,
+      }))
+    : [];
+
+  const allRows = [...txns, ...virtualRows].sort((a, b) =>
+    a.occurred_on < b.occurred_on ? 1 : a.occurred_on > b.occurred_on ? -1 : 0,
+  );
+  const grouped = groupByDay(allRows);
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
@@ -85,7 +116,7 @@ export async function BottomBlock({ targetDateIso }: Props) {
         <CategoryProgressList rows={topCats} currency={STATS_CURRENCY} />
       </section>
 
-      {txns.length > 0 && (
+      {allRows.length > 0 && (
         <section className="space-y-4">
           <header className="flex items-baseline justify-between">
             <h2>Transações recentes</h2>
@@ -100,18 +131,31 @@ export async function BottomBlock({ targetDateIso }: Props) {
             <div key={label} className="space-y-1.5">
               <p className="eyebrow px-1">{label}</p>
               <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
-                {rows.map((t) => (
-                  <TxnRow
-                    key={t.id}
-                    description={t.description}
-                    category={t.categories?.name ?? '—'}
-                    amountCents={t.amount_cents}
-                    currency={t.currency}
-                    direction={t.direction}
-                    status={t.status === 'paid' ? 'paid' : 'pending'}
-                    source={txnSource(t)}
-                  />
-                ))}
+                {rows.map((t) =>
+                  t.previsto ? (
+                    <div key={t.id} data-testid="txn-row-previsto">
+                      <TxnRow
+                        description={t.description}
+                        category={t.categories?.name ?? '—'}
+                        amountCents={t.amount_cents}
+                        currency={t.currency}
+                        direction={t.direction}
+                        previsto
+                      />
+                    </div>
+                  ) : (
+                    <TxnRow
+                      key={t.id}
+                      description={t.description}
+                      category={t.categories?.name ?? '—'}
+                      amountCents={t.amount_cents}
+                      currency={t.currency}
+                      direction={t.direction}
+                      status={t.status === 'paid' ? 'paid' : 'pending'}
+                      source={txnSource(t)}
+                    />
+                  ),
+                )}
               </div>
             </div>
           ))}

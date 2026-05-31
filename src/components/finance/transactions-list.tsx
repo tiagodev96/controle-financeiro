@@ -25,6 +25,8 @@ export type Transaction = {
   installment_number: number | null;
   categories: { name: string } | null;
   installment_plans: { total_installments: number } | null;
+  /** Linha virtual de recorrente em mês futuro (não existe no banco). Read-only. */
+  previsto?: boolean;
 };
 
 type CategoryFull = {
@@ -73,26 +75,39 @@ export function TransactionsList({ groups, categories, accounts }: Props) {
           <div key={label} className="space-y-1.5">
             <p className="eyebrow px-1">{label}</p>
             <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
-              {rows.map((t) => (
-                <div key={t.id} data-testid={`txn-row-${t.id}`}>
-                  <TxnRow
-                    description={t.description}
-                    category={t.categories?.name ?? '—'}
-                    amountCents={t.amount_cents}
-                    currency={t.currency}
-                    direction={t.direction}
-                    status={t.status}
-                    source={txnSource(t)}
-                    action={
-                      <TxnRowMenu
-                        transactionId={t.id}
-                        showMarkPaid={t.status === 'pending'}
-                        onEdit={() => setEditing(t)}
-                      />
-                    }
-                  />
-                </div>
-              ))}
+              {rows.map((t) =>
+                t.previsto ? (
+                  <div key={t.id} data-testid="txn-row-previsto">
+                    <TxnRow
+                      description={t.description}
+                      category={t.categories?.name ?? '—'}
+                      amountCents={t.amount_cents}
+                      currency={t.currency}
+                      direction={t.direction}
+                      previsto
+                    />
+                  </div>
+                ) : (
+                  <div key={t.id} data-testid={`txn-row-${t.id}`}>
+                    <TxnRow
+                      description={t.description}
+                      category={t.categories?.name ?? '—'}
+                      amountCents={t.amount_cents}
+                      currency={t.currency}
+                      direction={t.direction}
+                      status={t.status}
+                      source={txnSource(t)}
+                      action={
+                        <TxnRowMenu
+                          transactionId={t.id}
+                          showMarkPaid={t.status === 'pending'}
+                          onEdit={() => setEditing(t)}
+                        />
+                      }
+                    />
+                  </div>
+                ),
+              )}
             </div>
           </div>
         ))}

@@ -97,7 +97,7 @@ export default async function DashboardPage({
         )}
 
         <Suspense fallback={<BottomBlockSkeleton />}>
-          <BottomBlock targetDateIso={targetDateIso} />
+          <BottomBlock targetDateIso={targetDateIso} isFuture={isFuture} />
         </Suspense>
       </section>
     </BalanceVisibilityProvider>

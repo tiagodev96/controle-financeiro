@@ -13,6 +13,8 @@ type Props = {
   status?: Status;
   source?: SourcePill | null;
   action?: React.ReactNode;
+  /** Linha de mês futuro virtualizada (recorrente ainda não gerada). Read-only. */
+  previsto?: boolean;
   className?: string;
 };
 
@@ -30,18 +32,24 @@ export function TxnRow({
   status,
   source,
   action,
+  previsto,
   className,
 }: Props) {
   const isIncome = direction === 'income';
 
   return (
-    <div className={cn('flex items-center gap-3 py-3', className)}>
+    <div className={cn('flex items-center gap-3 py-3', previsto && 'opacity-70', className)}>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="truncate text-[15px] text-fg1">{description}</p>
         <div className="flex items-center gap-2 text-xs text-fg3">
           <span className="truncate">{category}</span>
-          {status && <StatusPill status={status} />}
-          {source?.kind === 'recurring' && (
+          {previsto && (
+            <span className="mono inline-flex h-4 items-center rounded-xs border border-border-soft px-1 text-[9px] font-semibold uppercase tracking-wider text-fg3">
+              Previsto
+            </span>
+          )}
+          {!previsto && status && <StatusPill status={status} />}
+          {!previsto && source?.kind === 'recurring' && (
             <span className="mono inline-flex h-4 items-center rounded-xs bg-brand-quiet-bg px-1 text-[9px] font-semibold uppercase tracking-wider text-brand-quiet-fg">
               REC
             </span>

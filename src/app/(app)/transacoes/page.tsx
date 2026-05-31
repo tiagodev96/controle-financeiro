@@ -11,6 +11,7 @@ import {
   type Transaction,
 } from '@/components/finance/transactions-list';
 import { listTransactionsForHousehold, type Status } from '@/lib/finance/transactions';
+import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { convertCents, FxUnavailableError, getRateMap, type RateMap } from '@/lib/fx';
@@ -119,11 +120,57 @@ export default async function TransacoesPage({ searchParams }: Props) {
     .filter((c) => !c.is_archived)
     .map((c) => ({ id: c.id, name: c.name }));
 
+  // Preview de recorrentes em mês futuro: vira linhas "previsto" (virtuais, sem
+  // gravar) só no modo mês, sem narrowing por status/conta. Filtros de
+  // categoria/busca ainda aplicam. Fonte única compartilhada com a sobra.
+  const showPrevistos =
+    monthIso != null && monthIso > currentMonthIso() && !status && !accountId;
+  let virtualRows: Transaction[] = [];
+  if (showPrevistos && monthIso) {
+    const [yy, mm] = monthIso.split('-').map(Number) as [number, number];
+    const targetDate = new Date(yy, mm, 0);
+    const occ = await listUngeneratedRecurringForMonth({
+      supabase,
+      householdId: session.householdId,
+      targetDate,
+    });
+    const q = queryStr?.toLowerCase();
+    virtualRows = occ
+      .filter((o) =>
+        categoryId === 'none'
+          ? o.categoryId === null
+          : categoryId
+            ? o.categoryId === categoryId
+            : true,
+      )
+      .filter((o) => (q ? o.title.toLowerCase().includes(q) : true))
+      .map((o) => ({
+        id: `previsto-${o.ruleId}`,
+        description: o.title,
+        amount_cents: o.amountCents,
+        currency: o.currency,
+        direction: o.direction,
+        status: 'pending' as const,
+        occurred_on: o.occurredOn,
+        paid_on: null,
+        category_id: o.categoryId,
+        account_id: '',
+        source_recurring_rule_id: o.ruleId,
+        source_installment_plan_id: null,
+        installment_number: null,
+        categories: o.categoryName ? { name: o.categoryName } : null,
+        installment_plans: null,
+        previsto: true,
+      }));
+  }
+
+  const allRows: Transaction[] = [...(txns as Transaction[]), ...virtualRows];
+
   const totalsByCurrency: Record<'EUR' | 'BRL', { expense: number; income: number }> = {
     EUR: { expense: 0, income: 0 },
     BRL: { expense: 0, income: 0 },
   };
-  for (const t of txns) {
+  for (const t of allRows) {
     const bucket = totalsByCurrency[t.currency];
     if (t.direction === 'expense') bucket.expense += t.amount_cents;
     else bucket.income += t.amount_cents;
@@ -161,8 +208,9 @@ export default async function TransacoesPage({ searchParams }: Props) {
       }
     : null;
 
-  const grouped = groupByDay(txns as Transaction[]);
-  const eyebrow = `${total} ${total === 1 ? 'lançamento' : 'lançamentos'}`;
+  const grouped = groupByDay(allRows);
+  const displayTotal = total + virtualRows.length;
+  const eyebrow = `${displayTotal} ${displayTotal === 1 ? 'lançamento' : 'lançamentos'}`;
 
   return (
     <section className="space-y-5">
@@ -174,7 +222,7 @@ export default async function TransacoesPage({ searchParams }: Props) {
         defaultMonth={defaultMonth}
       />
 
-      {txns.length > 0 && totalsList.length > 0 && (
+      {allRows.length > 0 && totalsList.length > 0 && (
         <div className="space-y-2 rounded-md border border-border-soft bg-bg-surface px-4 py-3 text-sm">
           {convertedTotals && (
             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 pb-2 border-b border-border-soft">
@@ -243,7 +291,7 @@ export default async function TransacoesPage({ searchParams }: Props) {
         </div>
       )}
 
-      {txns.length === 0 ? (
+      {allRows.length === 0 ? (
         total === 0 ? (
           <FreshEmpty />
         ) : (
