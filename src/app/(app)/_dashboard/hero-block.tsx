@@ -83,6 +83,7 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast, isFuture }: Pro
     STATS_CURRENCY,
     balByCcy[STATS_CURRENCY],
     targetDateIso,
+    nowIso,
   );
 
   if (isPast) {

@@ -50,9 +50,12 @@ export async function calculateMonthStats(
   currency: Currency,
   balanceCents: number,
   now: Date = new Date(),
+  nowDate?: Date,
 ): Promise<MonthStats> {
   const { start, end } = monthRange(now);
-  const today = todayIso(now);
+  // `now` define o mês; `nowDate` (default = now) define o corte de atraso.
+  // Mês futuro passa a data real pra que nada do mês apareça como "em atraso".
+  const today = todayIso(nowDate ?? now);
 
   const { data } = await supabase
     .from('transactions')

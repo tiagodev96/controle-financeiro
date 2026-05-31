@@ -74,6 +74,7 @@ export const getDashboardMonthStats = cache(
     currency: Currency,
     balanceCents: number,
     targetDateIso: string,
+    nowIso: string,
   ): Promise<MonthStats> => {
     const supabase = await getDashboardSupabase();
     return calculateMonthStats(
@@ -82,6 +83,7 @@ export const getDashboardMonthStats = cache(
       currency,
       balanceCents,
       new Date(targetDateIso),
+      new Date(nowIso),
     );
   },
 );

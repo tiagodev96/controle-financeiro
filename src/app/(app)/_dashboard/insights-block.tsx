@@ -64,6 +64,7 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
         STATS_CURRENCY,
         balByCcy[STATS_CURRENCY],
         targetDateIso,
+        nowIso,
       ),
       getDashboardDebts(session.householdId),
       listUpcomingPending(supabase, session.householdId, now, 7),
