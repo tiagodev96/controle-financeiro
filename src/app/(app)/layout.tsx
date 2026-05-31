@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { BottomNav } from '@/components/finance/bottom-nav';
+import { CurrencySwitchProvider } from '@/components/finance/currency-switch';
 import { DesktopSidebar } from '@/components/finance/desktop-sidebar';
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import { ToasterLazy } from '@/components/ui/toaster-lazy';
@@ -28,7 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </header>
 
         <main className="mx-auto w-full max-w-110 flex-1 px-4 pt-5 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:max-w-5xl lg:px-8 lg:pt-8 lg:pb-12">
-          {children}
+          <CurrencySwitchProvider>{children}</CurrencySwitchProvider>
         </main>
 
         <BottomNav />
