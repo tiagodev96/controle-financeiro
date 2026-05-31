@@ -25,6 +25,17 @@ type Props = {
    * agrega valor).
    */
   showToggle?: boolean;
+  /**
+   * Quando presente, o mês é futuro: a sobra vem da projeção (recorrentes
+   * ativas virtualizadas + parcelas + saldo atual) em vez do agregado de
+   * pending real. Valores em `statsCurrency`, convertidos pro display igual
+   * ao resto do card.
+   */
+  projected?: {
+    sobraCents: number;
+    recurringExpenseCents: number;
+    pendingExpenseCents: number;
+  } | null;
 };
 
 function convertToDisplay(
@@ -46,18 +57,21 @@ export function SobraPrevistaCard({
   endOfMonthLabel,
   fxRateMap,
   showToggle,
+  projected,
 }: Props) {
-  const sobra = convertToDisplay(stats.sobraPrevistaCents, statsCurrency, displayCurrency, fxRateMap);
-  const paid = convertToDisplay(stats.paid.totalCents, statsCurrency, displayCurrency, fxRateMap);
-  const pending = convertToDisplay(stats.pending.totalCents, statsCurrency, displayCurrency, fxRateMap);
-  const overdue = convertToDisplay(stats.overdue.totalCents, statsCurrency, displayCurrency, fxRateMap);
+  const sobra = convertToDisplay(
+    projected ? projected.sobraCents : stats.sobraPrevistaCents,
+    statsCurrency,
+    displayCurrency,
+    fxRateMap,
+  );
 
   const isPositive = sobra >= 0;
   return (
     <div className="rounded-md border border-border-soft bg-bg-surface px-4 py-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-0.5">
-          <p className="text-[15px] text-fg3">Sobra prevista</p>
+          <p className="text-[15px] text-fg3">{projected ? 'Sobra projetada' : 'Sobra prevista'}</p>
           <p className="mono text-[10px] text-fg4">até {endOfMonthLabel}</p>
         </div>
         {showToggle ? (
@@ -75,11 +89,33 @@ export function SobraPrevistaCard({
         className={isPositive ? 'text-[32px] font-bold tracking-tight text-money-positive' : 'text-[32px] font-bold tracking-tight text-money-negative'}
       />
       <div className="h-px bg-border-soft" />
-      <div className="grid grid-cols-3 gap-3 text-[11px]">
-        <Breakdown label="Pago" cents={paid} currency={displayCurrency} tone="positive" />
-        <Breakdown label="Pendente" cents={pending} currency={displayCurrency} tone="neutral" />
-        <Breakdown label="Atraso" cents={overdue} currency={displayCurrency} tone={overdue > 0 ? 'negative' : 'neutral'} />
-      </div>
+      {projected ? (
+        <div className="grid grid-cols-2 gap-3 text-[11px]">
+          <Breakdown
+            label="Recorrentes"
+            cents={convertToDisplay(projected.recurringExpenseCents, statsCurrency, displayCurrency, fxRateMap)}
+            currency={displayCurrency}
+            tone="neutral"
+          />
+          <Breakdown
+            label="A vencer"
+            cents={convertToDisplay(projected.pendingExpenseCents, statsCurrency, displayCurrency, fxRateMap)}
+            currency={displayCurrency}
+            tone="neutral"
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 gap-3 text-[11px]">
+          <Breakdown label="Pago" cents={convertToDisplay(stats.paid.totalCents, statsCurrency, displayCurrency, fxRateMap)} currency={displayCurrency} tone="positive" />
+          <Breakdown label="Pendente" cents={convertToDisplay(stats.pending.totalCents, statsCurrency, displayCurrency, fxRateMap)} currency={displayCurrency} tone="neutral" />
+          <Breakdown
+            label="Atraso"
+            cents={convertToDisplay(stats.overdue.totalCents, statsCurrency, displayCurrency, fxRateMap)}
+            currency={displayCurrency}
+            tone={stats.overdue.totalCents > 0 ? 'negative' : 'neutral'}
+          />
+        </div>
+      )}
     </div>
   );
 }

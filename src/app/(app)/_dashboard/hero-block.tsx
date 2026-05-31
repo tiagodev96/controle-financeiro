@@ -9,6 +9,7 @@ import { StatTrio } from '@/components/finance/stat-trio';
 import { convertCents } from '@/lib/fx';
 import { sumEnvelopesByCurrency } from '@/lib/finance/envelopes';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
+import { projectMonthForFuture } from '@/lib/finance/month-projection';
 import {
   getDashboardSupabase,
   getDashboardAccounts,
@@ -47,11 +48,12 @@ type Props = {
   nowIso: string;
   targetDateIso: string;
   isPast: boolean;
+  isFuture: boolean;
 };
 
 const STATS_CURRENCY: Currency = 'EUR';
 
-export async function HeroBlock({ nowIso, targetDateIso, isPast }: Props) {
+export async function HeroBlock({ nowIso, targetDateIso, isPast, isFuture }: Props) {
   const session = await getSession();
   const now = new Date(nowIso);
   const targetDate = new Date(targetDateIso);
@@ -144,6 +146,21 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast }: Props) {
     : envelopeAllocations[displayCurrency];
   const freeInDisplay = totalInDisplay - allocatedInDisplay;
 
+  const accountsTotalInStatsCcy = rateMap
+    ? balByCcy.EUR + convertCents(balByCcy.BRL, rateMap.BRL_EUR)
+    : balByCcy.EUR;
+
+  const projection = isFuture
+    ? await projectMonthForFuture({
+        supabase: await getDashboardSupabase(),
+        householdId: session.householdId,
+        targetCurrency: STATS_CURRENCY,
+        fxRateMap: rateMap,
+        accountsTotalInTargetCents: accountsTotalInStatsCcy,
+        targetDate,
+      })
+    : null;
+
   return (
     <div className="space-y-6">
       <section className="grid gap-3 lg:grid-cols-[1.4fr_1fr] lg:items-start">
@@ -191,9 +208,18 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast }: Props) {
           stats={stats}
           statsCurrency={STATS_CURRENCY}
           displayCurrency={displayCurrency}
-          endOfMonthLabel={endOfMonthLabel(now)}
+          endOfMonthLabel={endOfMonthLabel(isFuture ? targetDate : now)}
           fxRateMap={rateMap ? { EUR_BRL: rateMap.EUR_BRL, BRL_EUR: rateMap.BRL_EUR } : null}
           showToggle={both && rateMap !== null}
+          projected={
+            projection
+              ? {
+                  sobraCents: projection.sobraProjetadaCents,
+                  recurringExpenseCents: projection.recurringPendingExpenseCents,
+                  pendingExpenseCents: projection.stats.pendingExpenseCents,
+                }
+              : null
+          }
         />
       </section>
       <StatTrio stats={stats} currency={STATS_CURRENCY} />
