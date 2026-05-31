@@ -158,6 +158,7 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast, isFuture }: Pro
         fxRateMap: rateMap,
         accountsTotalInTargetCents: accountsTotalInStatsCcy,
         targetDate,
+        now,
       })
     : null;
 

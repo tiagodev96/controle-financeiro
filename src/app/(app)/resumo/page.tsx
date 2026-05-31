@@ -138,6 +138,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
         fxRateMap,
         accountsTotalInTargetCents: accountsTotalInPrimary.cents,
         targetDate,
+        now,
         topCategoriesLimit: 3,
       })
     : null;

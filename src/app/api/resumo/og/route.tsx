@@ -137,6 +137,7 @@ export async function GET(request: Request) {
         fxRateMap,
         accountsTotalInTargetCents: accountsTotalInMoeda,
         targetDate,
+        now,
         topCategoriesLimit: 4,
       })
     : null;

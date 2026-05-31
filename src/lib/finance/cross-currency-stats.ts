@@ -63,6 +63,13 @@ type Args = {
   /** Soma das contas em targetCurrency (caller já fez a conversão). */
   accountsTotalInTargetCents: number;
   targetDate: Date;
+  /**
+   * Data de referência pro corte de "em atraso" (pending com occurred_on <
+   * nowDate). Default: targetDate — preserva a semântica do mês corrente/passado.
+   * Pra projeção de mês futuro, o caller passa a data real de hoje: nada do mês
+   * alvo está atrasado ainda, então tudo conta como pending (a vencer).
+   */
+  nowDate?: Date;
   topCategoriesLimit?: number;
 };
 
@@ -80,10 +87,11 @@ export async function calculateCrossCurrencyMonthStats({
   fxRateMap,
   accountsTotalInTargetCents,
   targetDate,
+  nowDate,
   topCategoriesLimit = 3,
 }: Args): Promise<CrossCurrencyMonthStats> {
   const { start, end } = monthRange(targetDate);
-  const today = todayIsoOf(targetDate);
+  const today = todayIsoOf(nowDate ?? targetDate);
 
   // Mesma query que o calculateMonthStats faz (sem filtro de currency).
   // Precisamos de todos os txns do household pra capturar overdue (pending

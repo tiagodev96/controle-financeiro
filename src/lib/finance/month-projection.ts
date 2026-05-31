@@ -67,6 +67,7 @@ export async function projectMonthForFuture({
   fxRateMap,
   accountsTotalInTargetCents,
   targetDate,
+  now,
   topCategoriesLimit = 3,
 }: {
   supabase: SupabaseClient<Database>;
@@ -75,6 +76,8 @@ export async function projectMonthForFuture({
   fxRateMap: RateMap | null;
   accountsTotalInTargetCents: number;
   targetDate: Date;
+  /** Data real de hoje — usada pro corte de "em atraso" do mês alvo. */
+  now: Date;
   topCategoriesLimit?: number;
 }): Promise<MonthProjection> {
   const { start, end } = monthBoundaries(targetDate);
@@ -89,6 +92,7 @@ export async function projectMonthForFuture({
       fxRateMap,
       accountsTotalInTargetCents,
       targetDate,
+      nowDate: now,
       topCategoriesLimit: 10, // mais larga aqui; recortamos no fim depois de mergear virtuais
     }),
     supabase
