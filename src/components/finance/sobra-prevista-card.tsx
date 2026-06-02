@@ -25,11 +25,12 @@ type Props = {
    * agrega valor).
    */
   showToggle?: boolean;
+  /** True = mês futuro (label "Sobra projetada"); false/omitido = corrente ("Sobra prevista"). */
+  future?: boolean;
   /**
-   * Quando presente, o mês é futuro: a sobra vem da projeção (recorrentes
-   * ativas virtualizadas + parcelas + saldo atual) em vez do agregado de
-   * pending real. Valores em `statsCurrency`, convertidos pro display igual
-   * ao resto do card.
+   * Quando presente, a sobra vem da projeção (saldo + pending real +
+   * recorrente virtual não gerada) em vez do agregado de pending real.
+   * Valores em `statsCurrency`, convertidos pro display igual ao resto do card.
    */
   projected?: {
     sobraCents: number;
@@ -57,6 +58,7 @@ export function SobraPrevistaCard({
   endOfMonthLabel,
   fxRateMap,
   showToggle,
+  future,
   projected,
 }: Props) {
   const sobra = convertToDisplay(
@@ -71,7 +73,7 @@ export function SobraPrevistaCard({
     <div className="rounded-md border border-border-soft bg-bg-surface px-4 py-4 space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-0.5">
-          <p className="text-[15px] text-fg3">{projected ? 'Sobra projetada' : 'Sobra prevista'}</p>
+          <p className="text-[15px] text-fg3">{future ? 'Sobra projetada' : 'Sobra prevista'}</p>
           <p className="mono text-[10px] text-fg4">até {endOfMonthLabel}</p>
         </div>
         {showToggle ? (

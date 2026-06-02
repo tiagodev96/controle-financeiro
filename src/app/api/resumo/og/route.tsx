@@ -7,7 +7,7 @@ import { getSession, UnauthorizedError } from '@/lib/auth/session';
 import { calculateCrossCurrencyMonthStats } from '@/lib/finance/cross-currency-stats';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { listDebtsForHousehold } from '@/lib/finance/debts';
-import { projectMonthForFuture } from '@/lib/finance/month-projection';
+import { projectMonth } from '@/lib/finance/month-projection';
 import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
 import type { Currency } from '@/components/finance/num';
 
@@ -130,7 +130,7 @@ export async function GET(request: Request) {
   });
 
   const projection = isFuture
-    ? await projectMonthForFuture({
+    ? await projectMonth({
         supabase,
         householdId: session.householdId,
         targetCurrency: moeda,

@@ -9,7 +9,7 @@ import { StatTrio } from '@/components/finance/stat-trio';
 import { convertCents } from '@/lib/fx';
 import { sumEnvelopesByCurrency } from '@/lib/finance/envelopes';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
-import { projectMonthForFuture } from '@/lib/finance/month-projection';
+import { projectMonth } from '@/lib/finance/month-projection';
 import {
   getDashboardSupabase,
   getDashboardAccounts,
@@ -151,17 +151,18 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast, isFuture }: Pro
     ? balByCcy.EUR + convertCents(balByCcy.BRL, rateMap.BRL_EUR)
     : balByCcy.EUR;
 
-  const projection = isFuture
-    ? await projectMonthForFuture({
-        supabase: await getDashboardSupabase(),
-        householdId: session.householdId,
-        targetCurrency: STATS_CURRENCY,
-        fxRateMap: rateMap,
-        accountsTotalInTargetCents: accountsTotalInStatsCcy,
-        targetDate,
-        now,
-      })
-    : null;
+  // Projeção pro mês corrente e futuro: saldo + pending real + recorrente
+  // virtual (não gerada). No corrente, captura recorrentes que o cron ainda
+  // não materializou (ex: salário do dia 5 quando estamos no dia 2).
+  const projection = await projectMonth({
+    supabase: await getDashboardSupabase(),
+    householdId: session.householdId,
+    targetCurrency: STATS_CURRENCY,
+    fxRateMap: rateMap,
+    accountsTotalInTargetCents: accountsTotalInStatsCcy,
+    targetDate,
+    now,
+  });
 
   return (
     <div className="space-y-6">
@@ -213,15 +214,12 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast, isFuture }: Pro
           endOfMonthLabel={endOfMonthLabel(isFuture ? targetDate : now)}
           fxRateMap={rateMap ? { EUR_BRL: rateMap.EUR_BRL, BRL_EUR: rateMap.BRL_EUR } : null}
           showToggle={both && rateMap !== null}
-          projected={
-            projection
-              ? {
-                  sobraCents: projection.sobraProjetadaCents,
-                  recurringExpenseCents: projection.recurringPendingExpenseCents,
-                  pendingExpenseCents: projection.stats.pendingExpenseCents,
-                }
-              : null
-          }
+          future={isFuture}
+          projected={{
+            sobraCents: projection.sobraProjetadaCents,
+            recurringExpenseCents: projection.recurringPendingExpenseCents,
+            pendingExpenseCents: projection.stats.pendingExpenseCents,
+          }}
         />
       </section>
       <StatTrio stats={stats} currency={STATS_CURRENCY} />

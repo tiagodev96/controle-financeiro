@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { projectMonthForFuture } from '@/lib/finance/month-projection';
+import { projectMonth } from '@/lib/finance/month-projection';
 import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
 import {
   getAuthedClient,
@@ -44,7 +44,7 @@ async function insertPendingExpense(description: string, occurredOn: string, cen
   if (error) throw new Error(`insertPendingExpense failed: ${error.message}`);
 }
 
-describe('projectMonthForFuture — parcelas no mês alvo (integração)', () => {
+describe('projectMonth — parcelas no mês alvo (integração)', () => {
   beforeEach(async () => {
     await truncateHouseholdTransactions(SEED_DEMO_HOUSEHOLD_ID);
     await clearRecurring();
@@ -61,7 +61,7 @@ describe('projectMonthForFuture — parcelas no mês alvo (integração)', () =>
     await insertPendingExpense('Parcela futura 1/3', day5Iso, 50000);
 
     const supabase = await getAuthedClient();
-    const projection = await projectMonthForFuture({
+    const projection = await projectMonth({
       supabase,
       householdId: SEED_DEMO_HOUSEHOLD_ID,
       targetCurrency: 'EUR',
@@ -94,7 +94,7 @@ describe('projectMonthForFuture — parcelas no mês alvo (integração)', () =>
     if (error) throw new Error(`insert recurring failed: ${error.message}`);
 
     const supabase = await getAuthedClient();
-    const projection = await projectMonthForFuture({
+    const projection = await projectMonth({
       supabase,
       householdId: SEED_DEMO_HOUSEHOLD_ID,
       targetCurrency: 'EUR',
@@ -141,7 +141,7 @@ describe('projectMonthForFuture — parcelas no mês alvo (integração)', () =>
     const supabase = await getAuthedClient();
     const [occ, projection] = await Promise.all([
       listUngeneratedRecurringForMonth({ supabase, householdId: SEED_DEMO_HOUSEHOLD_ID, targetDate }),
-      projectMonthForFuture({
+      projectMonth({
         supabase,
         householdId: SEED_DEMO_HOUSEHOLD_ID,
         targetCurrency: 'EUR',
@@ -157,5 +157,95 @@ describe('projectMonthForFuture — parcelas no mês alvo (integração)', () =>
       .reduce((s, o) => s + o.amountCents, 0);
     expect(helperExpenseSum).toBe(12498);
     expect(projection.recurringPendingExpenseCents).toBe(helperExpenseSum);
+  });
+
+  it('I-PROJ4 — mês corrente: recorrente entra e paid não conta em dobro', async () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const iso = (day: number) =>
+      `${y}-${String(m + 1).padStart(2, '0')}-${String(Math.min(day, 28)).padStart(2, '0')}`;
+    const paidIso = iso(Math.max(1, now.getDate() - 1));
+    const futureIso = iso(now.getDate() + 3);
+
+    const admin = getAdminClient();
+    // paid no mês (já refletido no saldo via param) — NÃO pode ser subtraído de novo
+    await admin.from('transactions').insert([
+      {
+        household_id: SEED_DEMO_HOUSEHOLD_ID,
+        profile_id: SEED_USER_ID,
+        account_id: SEED_ACCOUNT_EUR_ID,
+        category_id: SEED_CATEGORY_MERCADO_ID,
+        direction: 'expense',
+        amount_cents: 20000,
+        currency: 'EUR',
+        description: 'Pago no mês',
+        occurred_on: paidIso,
+        paid_on: paidIso,
+        status: 'paid',
+      },
+      {
+        household_id: SEED_DEMO_HOUSEHOLD_ID,
+        profile_id: SEED_USER_ID,
+        account_id: SEED_ACCOUNT_EUR_ID,
+        category_id: SEED_CATEGORY_MERCADO_ID,
+        direction: 'expense',
+        amount_cents: 30000,
+        currency: 'EUR',
+        description: 'Pendente a vencer',
+        occurred_on: futureIso,
+        status: 'pending',
+      },
+      {
+        household_id: SEED_DEMO_HOUSEHOLD_ID,
+        profile_id: SEED_USER_ID,
+        account_id: SEED_ACCOUNT_EUR_ID,
+        category_id: SEED_CATEGORY_MERCADO_ID,
+        direction: 'income',
+        amount_cents: 5000,
+        currency: 'EUR',
+        description: 'Entrada pendente',
+        occurred_on: futureIso,
+        status: 'pending',
+      },
+    ]);
+
+    await admin.from('recurring_rules').insert([
+      {
+        household_id: SEED_DEMO_HOUSEHOLD_ID,
+        title: 'Salário',
+        amount_cents: 220000,
+        currency: 'EUR',
+        direction: 'income',
+        category_id: SEED_CATEGORY_MERCADO_ID,
+        account_id: SEED_ACCOUNT_EUR_ID,
+        day_of_month: 5,
+      },
+      {
+        household_id: SEED_DEMO_HOUSEHOLD_ID,
+        title: 'Assinatura',
+        amount_cents: 10000,
+        currency: 'EUR',
+        direction: 'expense',
+        category_id: SEED_CATEGORY_MERCADO_ID,
+        account_id: SEED_ACCOUNT_EUR_ID,
+        day_of_month: 10,
+      },
+    ]);
+
+    const supabase = await getAuthedClient();
+    const projection = await projectMonth({
+      supabase,
+      householdId: SEED_DEMO_HOUSEHOLD_ID,
+      targetCurrency: 'EUR',
+      fxRateMap: null,
+      accountsTotalInTargetCents: 100000,
+      targetDate: now,
+      now,
+    });
+
+    // saldo 1000 + pendingIncome 50 + recorrente income 2200
+    //   − pendingExpense 300 − recorrente expense 100 = 2850. Paid (200) NÃO entra.
+    expect(projection.sobraProjetadaCents).toBe(285000);
   });
 });

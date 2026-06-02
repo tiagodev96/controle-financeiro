@@ -11,7 +11,7 @@ import {
   calculateCrossCurrencyMonthStats,
   type CrossCurrencyMonthStats,
 } from '@/lib/finance/cross-currency-stats';
-import { projectMonthForFuture, type MonthProjection } from '@/lib/finance/month-projection';
+import { projectMonth, type MonthProjection } from '@/lib/finance/month-projection';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
 import { listDebtsForHousehold, sumDebtPaymentsThisMonth } from '@/lib/finance/debts';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
@@ -131,7 +131,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   });
 
   const projection: MonthProjection | null = isFuture
-    ? await projectMonthForFuture({
+    ? await projectMonth({
         supabase,
         householdId: session.householdId,
         targetCurrency: primary,

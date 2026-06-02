@@ -45,14 +45,14 @@ function convertToTarget(
 }
 
 /**
- * Projeção pra mês futuro em `targetCurrency`: combina pending já no banco
- * (installments, txns criadas à mão) com recurring rules ativas que ainda
- * não geraram transaction (virtualizadas pra preview). Tudo agregado em
- * `targetCurrency` via fxRateMap.
+ * Projeção do mês (corrente ou futuro) em `targetCurrency`: saldo + pending já
+ * no banco (installments, txns à mão) + recurring rules ativas que ainda não
+ * geraram transaction (virtualizadas). Tudo agregado em `targetCurrency` via
+ * fxRateMap. `paid` não entra na sobra — já está no saldo.
  *
  * Não materializa nada no banco — é só simulação pra UI.
  */
-export async function projectMonthForFuture({
+export async function projectMonth({
   supabase,
   householdId,
   targetCurrency,
@@ -130,9 +130,10 @@ export async function projectMonthForFuture({
     .sort((a, b) => b.totalCents - a.totalCents)
     .slice(0, topCategoriesLimit);
 
-  const expenseProjectedCents =
-    stats.paidExpenseCents + stats.pendingExpenseCents + recurringPendingExpenseCents;
-  const incomeProjectedCents = stats.paidIncomeCents + recurringPendingIncomeCents;
+  // Paid já está refletido no saldo (accountsTotal) — não recontar. A sobra é
+  // saldo + o que ainda vai entrar/sair: pending real + recorrente virtual.
+  const expenseProjectedCents = stats.pendingExpenseCents + recurringPendingExpenseCents;
+  const incomeProjectedCents = stats.pendingIncomeCents + recurringPendingIncomeCents;
   const sobraProjetadaCents =
     accountsTotalInTargetCents + incomeProjectedCents - expenseProjectedCents;
 
