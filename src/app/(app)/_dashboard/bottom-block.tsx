@@ -3,19 +3,19 @@ import { getSession } from '@/lib/auth/session';
 import { type Currency } from '@/components/finance/num';
 import { TxnRow } from '@/components/finance/txn-row';
 import { CategoryProgressList } from '@/components/finance/category-progress';
-import { topCategoriesThisMonth } from '@/lib/finance/dashboard-stats';
+import { topCategoriesCrossCurrency } from '@/lib/finance/dashboard-stats';
 import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
 import {
   getDashboardSupabase,
   getDashboardAccounts,
+  getDashboardRateMap,
+  hasBothCurrencies,
 } from '@/lib/finance/dashboard-data';
 
 const MONTHS_PT_SHORT = [
   'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
   'jul', 'ago', 'set', 'out', 'nov', 'dez',
 ];
-
-const STATS_CURRENCY: Currency = 'EUR';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -37,11 +37,12 @@ type TxnRowData = {
 };
 
 type Props = {
+  nowIso: string;
   targetDateIso: string;
   isFuture: boolean;
 };
 
-export async function BottomBlock({ targetDateIso, isFuture }: Props) {
+export async function BottomBlock({ nowIso, targetDateIso, isFuture }: Props) {
   const session = await getSession();
   const accounts = await getDashboardAccounts(session.householdId);
   if (accounts.length === 0) return null;
@@ -53,14 +54,19 @@ export async function BottomBlock({ targetDateIso, isFuture }: Props) {
     .toISOString()
     .slice(0, 10);
 
+  const displayCurrency = session.preferredDisplayCurrency;
+  const both = hasBothCurrencies(accounts);
+  const rateMap = both ? await getDashboardRateMap(nowIso) : null;
+
   const [topCats, txnsRes] = await Promise.all([
-    topCategoriesThisMonth(
+    topCategoriesCrossCurrency({
       supabase,
-      session.householdId,
-      STATS_CURRENCY,
-      5,
-      targetDate,
-    ),
+      householdId: session.householdId,
+      displayCurrency,
+      fxRateMap: rateMap,
+      limit: 5,
+      now: targetDate,
+    }),
     supabase
       .from('transactions')
       .select(
@@ -110,10 +116,11 @@ export async function BottomBlock({ targetDateIso, isFuture }: Props) {
         <header className="flex items-baseline justify-between">
           <h2>Top categorias</h2>
           <span className="mono text-[10px] text-fg4">
+            {topCats.fxIncomplete && <span className="mr-2">câmbio indisponível · parcial</span>}
             {MONTHS_PT_SHORT[targetDate.getMonth()]}
           </span>
         </header>
-        <CategoryProgressList rows={topCats} currency={STATS_CURRENCY} />
+        <CategoryProgressList rows={topCats.rows} currency={displayCurrency} />
       </section>
 
       {allRows.length > 0 && (

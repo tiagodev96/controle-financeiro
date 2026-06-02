@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
+import { convertCents, type RateMap } from '@/lib/fx';
 
 export type Currency = 'BRL' | 'EUR';
 
@@ -159,4 +160,80 @@ export async function topCategoriesThisMonth(
 
   const max = sorted[0]?.totalCents ?? 1;
   return sorted.map((c) => ({ ...c, pctOfMax: c.totalCents / max }));
+}
+
+type TopCategoriesCrossCurrencyArgs = {
+  supabase: SupabaseClient<Database>;
+  householdId: string;
+  displayCurrency: Currency;
+  fxRateMap: RateMap | null;
+  limit?: number;
+  now?: Date;
+};
+
+/**
+ * Top categorias de despesa do mês agregadas em displayCurrency.
+ * Inclui despesas de qualquer moeda convertidas via fxRateMap.
+ * Txns em moeda diferente do target ficam fora quando fxRateMap=null (fxIncomplete=true).
+ */
+export async function topCategoriesCrossCurrency({
+  supabase,
+  householdId,
+  displayCurrency,
+  fxRateMap,
+  limit = 5,
+  now = new Date(),
+}: TopCategoriesCrossCurrencyArgs): Promise<{ rows: CategorySpent[]; fxIncomplete: boolean }> {
+  const { start, end } = monthRange(now);
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('amount_cents, currency, direction, occurred_on, category_id, categories(id, name)')
+    .eq('household_id', householdId)
+    .eq('direction', 'expense')
+    .gte('occurred_on', start)
+    .lt('occurred_on', end);
+
+  if (error) throw new Error(`topCategoriesCrossCurrency: ${error.message}`);
+
+  type Row = {
+    amount_cents: number;
+    currency: Currency;
+    direction: string;
+    occurred_on: string;
+    category_id: string | null;
+    categories: { id: string; name: string } | null;
+  };
+
+  const rows = (data ?? []) as unknown as Row[];
+
+  let fxIncomplete = false;
+  const byCat = new Map<string, { name: string; totalCents: number }>();
+
+  for (const t of rows) {
+    if (!t.categories) continue;
+    let converted: number;
+    if (t.currency === displayCurrency) {
+      converted = t.amount_cents;
+    } else if (!fxRateMap) {
+      fxIncomplete = true;
+      continue;
+    } else {
+      const rate = displayCurrency === 'EUR' ? fxRateMap.BRL_EUR : fxRateMap.EUR_BRL;
+      converted = convertCents(t.amount_cents, rate);
+    }
+    const cur = byCat.get(t.categories.id) ?? { name: t.categories.name, totalCents: 0 };
+    cur.totalCents += converted;
+    byCat.set(t.categories.id, cur);
+  }
+
+  const sorted = Array.from(byCat.entries())
+    .map(([id, { name, totalCents }]) => ({ id, name, totalCents }))
+    .sort((a, b) => b.totalCents - a.totalCents)
+    .slice(0, limit);
+
+  const max = sorted[0]?.totalCents ?? 1;
+  const result = sorted.map((c) => ({ ...c, pctOfMax: c.totalCents / max }));
+
+  return { rows: result, fxIncomplete };
 }
