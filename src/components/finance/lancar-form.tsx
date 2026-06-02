@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Plus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -74,6 +74,19 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
   const [date, setDate] = useState(todayIsoDate);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  function openDatePicker() {
+    const el = dateInputRef.current;
+    if (!el) return;
+    // showPicker() abre o calendário nativo direto. Lança se o browser não
+    // suporta ou fora de gesto do usuário — cai pro focus como fallback.
+    try {
+      el.showPicker();
+    } catch {
+      el.focus();
+    }
+  }
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
 
@@ -238,9 +251,17 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
           </div>
         </Field>
         <Field label="Data">
-          <label className="flex items-center gap-1.5">
-            <Calendar className="size-3.5 text-fg3" strokeWidth={1.6} aria-hidden />
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={openDatePicker}
+              aria-label="Abrir calendário"
+              className="shrink-0 rounded-xs text-fg3 transition-colors hover:text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Calendar className="size-3.5" strokeWidth={1.6} aria-hidden />
+            </button>
             <input
+              ref={dateInputRef}
               type="date"
               name="data"
               required
@@ -248,7 +269,7 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
               onChange={(e) => setDate(e.target.value)}
               className="min-w-0 flex-1 bg-transparent text-sm font-medium text-fg1 focus-visible:outline-none"
             />
-          </label>
+          </div>
         </Field>
       </div>
 
