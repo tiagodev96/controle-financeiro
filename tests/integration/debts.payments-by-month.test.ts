@@ -19,11 +19,16 @@ async function cleanupDebts(): Promise<void> {
     .like('title', 'DB monthsum test %');
 }
 
-const now = new Date();
-const TODAY = now.toISOString().slice(0, 10);
-const LAST_MONTH_DAY = new Date(now.getFullYear(), now.getMonth() - 1, 10)
-  .toISOString()
-  .slice(0, 10);
+// Determinístico e imune a fuso: monta a data ISO de componentes locais (igual
+// ao monthRange da função) e fixa o dia no meio do mês — evita o skew UTC/local
+// que toISOString introduz na virada do mês.
+function isoLocal(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+const realNow = new Date();
+const now = new Date(realNow.getFullYear(), realNow.getMonth(), 15);
+const THIS_MONTH_DAY = isoLocal(now);
+const LAST_MONTH_DAY = isoLocal(new Date(realNow.getFullYear(), realNow.getMonth() - 1, 10));
 
 describe('sumDebtPaymentsThisMonth (integração)', () => {
   beforeEach(async () => {
@@ -81,17 +86,17 @@ describe('sumDebtPaymentsThisMonth (integração)', () => {
     // 2 pagamentos pra A neste mês (somam 30k)
     await registerDebtPaymentCore(
       { supabase, session: SEED_SESSION },
-      { debtId: a.debt.id, amountCents: 20_000, accountId: SEED_ACCOUNT_EUR_ID, date: TODAY, description: 'A1' },
+      { debtId: a.debt.id, amountCents: 20_000, accountId: SEED_ACCOUNT_EUR_ID, date: THIS_MONTH_DAY, description: 'A1' },
     );
     await registerDebtPaymentCore(
       { supabase, session: SEED_SESSION },
-      { debtId: a.debt.id, amountCents: 10_000, accountId: SEED_ACCOUNT_EUR_ID, date: TODAY, description: 'A2' },
+      { debtId: a.debt.id, amountCents: 10_000, accountId: SEED_ACCOUNT_EUR_ID, date: THIS_MONTH_DAY, description: 'A2' },
     );
 
     // 1 pagamento pra B neste mês (15k)
     await registerDebtPaymentCore(
       { supabase, session: SEED_SESSION },
-      { debtId: b.debt.id, amountCents: 15_000, accountId: SEED_ACCOUNT_EUR_ID, date: TODAY, description: 'B1' },
+      { debtId: b.debt.id, amountCents: 15_000, accountId: SEED_ACCOUNT_EUR_ID, date: THIS_MONTH_DAY, description: 'B1' },
     );
 
     // 1 pagamento pra A no mês anterior (deve ser ignorado pelo somatório do mês corrente)

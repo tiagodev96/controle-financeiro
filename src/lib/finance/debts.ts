@@ -56,11 +56,14 @@ export async function listDebtsForHousehold(
 }
 
 function monthRange(now: Date): { start: string; end: string } {
+  // ISO montado de componentes locais — toISOString converteria pra UTC e
+  // deslocaria a borda do mês em fusos positivos.
   const y = now.getFullYear();
   const m = now.getMonth();
+  const first = (yy: number, mm: number) => `${yy}-${String(mm + 1).padStart(2, '0')}-01`;
   return {
-    start: new Date(y, m, 1).toISOString().slice(0, 10),
-    end: new Date(y, m + 1, 1).toISOString().slice(0, 10),
+    start: first(y, m),
+    end: m === 11 ? first(y + 1, 0) : first(y, m + 1),
   };
 }
 
