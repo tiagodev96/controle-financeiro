@@ -15,7 +15,7 @@ const HEADLINE: Record<ConversionAdvice['signal'], string> = {
 function rate(value: number): string {
   return value.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
+    maximumFractionDigits: 2,
   });
 }
 

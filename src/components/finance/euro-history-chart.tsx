@@ -31,7 +31,7 @@ const MONTHS_SHORT = [
 function formatRate(rate: number): string {
   return `R$ ${rate.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
+    maximumFractionDigits: 2,
   })}`;
 }
 
