@@ -94,7 +94,12 @@ export function ConversionSignalCard({ advice, rateDate, isStale }: Props) {
             )}
             {windowPosition !== null && windowLow !== null && windowHigh !== null && (
               <>
-                {' — '}mais alto que {Math.round(windowPosition * 100)}% dos últimos {windowDays} dias
+                {' — '}
+                {signal === 'convert_eur_to_brl'
+                  ? `euro mais caro que ${Math.round(windowPosition * 100)}% dos últimos ${windowDays} dias`
+                  : signal === 'convert_brl_to_eur'
+                    ? `euro mais barato que ${100 - Math.round(windowPosition * 100)}% dos últimos ${windowDays} dias`
+                    : `euro no meio da faixa dos últimos ${windowDays} dias`}
                 <span className="mono text-[10px] text-fg4">
                   {' '}(R$ {rate(windowLow)}–{rate(windowHigh)})
                 </span>
