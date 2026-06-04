@@ -25,6 +25,7 @@ export type ConversionListItem = {
   effectiveRate: number;
   midMarketRate: number | null;
   convertedOn: string;
+  createdAt: string;
   note: string | null;
 };
 
@@ -85,9 +86,10 @@ export const getFxBlockData = cache(
     const { data } = await supabase
       .from('currency_conversions')
       .select(
-        'id, from_currency, to_currency, from_amount_cents, to_amount_cents, effective_rate, mid_market_rate, converted_on, note',
+        'id, from_currency, to_currency, from_amount_cents, to_amount_cents, effective_rate, mid_market_rate, converted_on, created_at, note',
       )
-      .order('converted_on', { ascending: false });
+      .order('converted_on', { ascending: false })
+      .order('created_at', { ascending: false });
 
     const conversions: ConversionListItem[] = (data ?? []).map((r) => ({
       id: r.id,
@@ -98,6 +100,7 @@ export const getFxBlockData = cache(
       effectiveRate: Number(r.effective_rate),
       midMarketRate: r.mid_market_rate === null ? null : Number(r.mid_market_rate),
       convertedOn: r.converted_on,
+      createdAt: r.created_at,
       note: r.note,
     }));
 
@@ -109,6 +112,7 @@ export const getFxBlockData = cache(
       effectiveRate: c.effectiveRate,
       midMarketRate: c.midMarketRate,
       convertedOn: c.convertedOn,
+      createdAt: c.createdAt,
     }));
 
     const advice = computeConversionAdvice({

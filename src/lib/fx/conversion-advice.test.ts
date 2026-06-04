@@ -18,6 +18,7 @@ function eurToBrl(overrides: Partial<ConversionRecord> = {}): ConversionRecord {
     effectiveRate: 5.95,
     midMarketRate: 6.0,
     convertedOn: '2025-03-04',
+    createdAt: '2025-03-04T10:00:00Z',
     ...overrides,
   };
 }
@@ -31,6 +32,7 @@ function brlToEur(overrides: Partial<ConversionRecord> = {}): ConversionRecord {
     effectiveRate: 98_000 / 600_000,
     midMarketRate: 1 / 6,
     convertedOn: '2025-03-04',
+    createdAt: '2025-03-04T10:00:00Z',
     ...overrides,
   };
 }
@@ -130,6 +132,18 @@ describe('computeConversionAdvice', () => {
     expect(advice.comparisonToLast.eurToBrl?.convertedOn).toBe('2025-05-20');
     expect(advice.comparisonToLast.eurToBrl?.effectiveRate).toBe(5.95);
     expect(advice.comparisonToLast.brlToEur?.convertedOn).toBe('2025-04-01');
+  });
+
+  it('comparisonToLast desempata mesma data pela hora de criação (createdAt)', () => {
+    const advice = computeConversionAdvice({
+      currentEurBrl: 6.0,
+      history: HISTORY,
+      conversions: [
+        eurToBrl({ createdAt: '2025-03-04T09:00:00Z', effectiveRate: 5.5 }),
+        eurToBrl({ createdAt: '2025-03-04T18:00:00Z', effectiveRate: 5.95 }),
+      ],
+    });
+    expect(advice.comparisonToLast.eurToBrl?.effectiveRate).toBe(5.95);
   });
 
   it('comparisonToLast.diffPct positivo quando hoje rende mais que a última', () => {

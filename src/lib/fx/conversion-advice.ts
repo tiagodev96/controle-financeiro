@@ -18,6 +18,7 @@ export type ConversionRecord = {
   effectiveRate: number;
   midMarketRate: number | null;
   convertedOn: string;
+  createdAt: string;
 };
 
 export type LastComparison = {
@@ -82,7 +83,11 @@ function latestInDirection(
 ): ConversionRecord | null {
   const matches = conversions
     .filter((c) => c.fromCurrency === from && c.toCurrency === to)
-    .sort((a, b) => a.convertedOn.localeCompare(b.convertedOn));
+    .sort(
+      (a, b) =>
+        a.convertedOn.localeCompare(b.convertedOn) ||
+        a.createdAt.localeCompare(b.createdAt),
+    );
   return matches[matches.length - 1] ?? null;
 }
 

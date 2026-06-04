@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2 } from 'lucide-react';
+import { Calendar, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   recordConversionAction,
@@ -10,6 +10,7 @@ import {
 } from '@/server/actions/conversions/actions';
 import type { ConversionListItem } from '@/lib/finance/fx-block-data';
 import { MoneyInput } from './money-input';
+import { Field } from './field';
 import { formatCentsToBRL } from '@/lib/money/format';
 import {
   Dialog,
@@ -39,9 +40,20 @@ export function RecordConversionForm({ onDone }: { onDone?: () => void }) {
   const [note, setNote] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   const fromCurrency = direction === 'EUR_BRL' ? 'EUR' : 'BRL';
   const toCurrency = direction === 'EUR_BRL' ? 'BRL' : 'EUR';
+
+  function openDatePicker() {
+    const el = dateInputRef.current;
+    if (!el) return;
+    try {
+      el.showPicker();
+    } catch {
+      el.focus();
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,23 +125,34 @@ export function RecordConversionForm({ onDone }: { onDone?: () => void }) {
           <span className="num text-fg2">
             {(toCents / fromCents).toLocaleString('pt-BR', {
               minimumFractionDigits: 2,
-              maximumFractionDigits: 4,
+              maximumFractionDigits: 2,
             })}
           </span>{' '}
           {SYMBOL[toCurrency]}/{SYMBOL[fromCurrency]}
         </p>
       )}
 
-      <label className="block space-y-2">
-        <span className="eyebrow">Data</span>
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
-          className="block w-full min-h-11 rounded-md border border-border bg-bg-inset px-3 py-2 text-[15px] text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        />
-      </label>
+      <Field label="Data">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={openDatePicker}
+            aria-label="Abrir calendário"
+            className="shrink-0 rounded-xs text-fg3 transition-colors hover:text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Calendar className="size-3.5" strokeWidth={1.6} aria-hidden />
+          </button>
+          <input
+            ref={dateInputRef}
+            type="date"
+            name="data"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-fg1 focus-visible:outline-none"
+          />
+        </div>
+      </Field>
 
       <label className="block space-y-2">
         <span className="eyebrow">Nota (opcional)</span>
@@ -212,13 +235,22 @@ function ConversionRow({ item }: { item: ConversionListItem }) {
   );
 }
 
+const PAGE_SIZE = 10;
+
 export function ConversionsManager({
   conversions,
 }: {
   conversions: ConversionListItem[];
 }) {
   const [open, setOpen] = useState(false);
-  const recent = conversions.slice(0, 5);
+  const [page, setPage] = useState(0);
+
+  const totalPages = Math.max(1, Math.ceil(conversions.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages - 1);
+  const pageItems = conversions.slice(
+    currentPage * PAGE_SIZE,
+    currentPage * PAGE_SIZE + PAGE_SIZE,
+  );
 
   return (
     <section className="space-y-3 rounded-md border border-border-soft bg-bg-surface p-4">
@@ -238,16 +270,41 @@ export function ConversionsManager({
         </Dialog>
       </header>
 
-      {recent.length === 0 ? (
+      {conversions.length === 0 ? (
         <p className="text-[12px] text-fg4">
           Nenhuma conversão registrada. Registre a última pra acompanhar o spread da Wise.
         </p>
       ) : (
-        <div className="divide-y divide-border-soft">
-          {recent.map((item) => (
-            <ConversionRow key={item.id} item={item} />
-          ))}
-        </div>
+        <>
+          <div className="divide-y divide-border-soft">
+            {pageItems.map((item) => (
+              <ConversionRow key={item.id} item={item} />
+            ))}
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-1">
+              <button
+                type="button"
+                onClick={() => setPage(currentPage - 1)}
+                disabled={currentPage === 0}
+                className="rounded-md px-2 py-1 text-[11px] font-semibold text-fg3 transition-colors hover:text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 disabled:hover:text-fg3"
+              >
+                Anterior
+              </button>
+              <span className="mono text-[10px] text-fg4">
+                {currentPage + 1} de {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage(currentPage + 1)}
+                disabled={currentPage >= totalPages - 1}
+                className="rounded-md px-2 py-1 text-[11px] font-semibold text-fg3 transition-colors hover:text-fg1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-40 disabled:hover:text-fg3"
+              >
+                Próxima
+              </button>
+            </div>
+          )}
+        </>
       )}
     </section>
   );
