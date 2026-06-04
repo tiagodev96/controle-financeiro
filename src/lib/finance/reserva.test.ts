@@ -1,13 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   bandForMonths,
-  debtCapForBand,
-  reserveFactorForBand,
   monthsCovered,
   monthlyRecurringExpenseCents,
   median,
   monthlyEssential,
-  computeReservaSuggestion,
   bandLabel,
   bandCopy,
   type ReservaBand,
@@ -48,26 +45,6 @@ describe('bandForMonths', () => {
 
   it('U-RES-BAND7 — exatamente 12 → reforcada', () => {
     expect(bandForMonths(12)).toBe<ReservaBand>('reforcada');
-  });
-});
-
-describe('debtCapForBand', () => {
-  it('U-RES-CAP — teto da dívida desce só nas faixas críticas', () => {
-    expect(debtCapForBand('sem_reserva')).toBeCloseTo(0.3, 5);
-    expect(debtCapForBand('em_formacao')).toBeCloseTo(0.45, 5);
-    expect(debtCapForBand('minima')).toBeCloseTo(0.6, 5);
-    expect(debtCapForBand('saudavel')).toBeCloseTo(0.6, 5);
-    expect(debtCapForBand('reforcada')).toBeCloseTo(0.6, 5);
-  });
-});
-
-describe('reserveFactorForBand', () => {
-  it('U-RES-FACTOR — guarda mais quanto menos reserva; zero em reforcada', () => {
-    expect(reserveFactorForBand('sem_reserva')).toBeCloseTo(0.7, 5);
-    expect(reserveFactorForBand('em_formacao')).toBeCloseTo(0.55, 5);
-    expect(reserveFactorForBand('minima')).toBeCloseTo(0.4, 5);
-    expect(reserveFactorForBand('saudavel')).toBeCloseTo(0.2, 5);
-    expect(reserveFactorForBand('reforcada')).toBeCloseTo(0, 5);
   });
 });
 
@@ -124,47 +101,6 @@ describe('monthlyEssential', () => {
     });
     expect(result.cents).toBe(15_000);
     expect(result.variableCalibrating).toBe(true);
-  });
-});
-
-describe('computeReservaSuggestion', () => {
-  it('U-RES-SUG1 — sem_reserva: 30% dívida / 70% reserva do restante', () => {
-    const result = computeReservaSuggestion({
-      sobraCents: 100_000,
-      suggestedDebtCents: 30_000,
-      reservaAllocatedCents: 0,
-      monthlyEssentialCents: 200_000,
-    });
-    expect(result.band).toBe<ReservaBand>('sem_reserva');
-    expect(result.toReserveCents).toBe(49_000);
-    expect(result.toFreeCents).toBe(21_000);
-    expect(result.mode).toBe('guardar');
-  });
-
-  it('U-RES-SUG2 — minima: dívida no teto 60%, reserva 40% do restante', () => {
-    const result = computeReservaSuggestion({
-      sobraCents: 100_000,
-      suggestedDebtCents: 60_000,
-      reservaAllocatedCents: 800_000,
-      monthlyEssentialCents: 200_000,
-    });
-    expect(result.band).toBe<ReservaBand>('minima');
-    expect(result.toReserveCents).toBe(16_000);
-    expect(result.toFreeCents).toBe(24_000);
-    expect(result.mode).toBe('guardar');
-  });
-
-  it('U-RES-SUG3 — reforcada: reserva 0, modo investir, todo o restante livre', () => {
-    const result = computeReservaSuggestion({
-      sobraCents: 100_000,
-      suggestedDebtCents: 60_000,
-      reservaAllocatedCents: 3_000_000,
-      monthlyEssentialCents: 200_000,
-    });
-    expect(result.band).toBe<ReservaBand>('reforcada');
-    expect(result.toReserveCents).toBe(0);
-    expect(result.toFreeCents).toBe(40_000);
-    expect(result.mode).toBe('investir');
   });
 });
 

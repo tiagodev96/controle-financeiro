@@ -15,34 +15,6 @@ export function bandForMonths(monthsCovered: number): ReservaBand {
   return 'reforcada';
 }
 
-// Teto da sugestão de dívida por faixa: 60% é o máximo; só desce abaixo dele
-// quando a reserva é crítica, pra liberar sobra ao piso de emergência primeiro.
-const DEBT_CAP_BY_BAND: Record<ReservaBand, number> = {
-  sem_reserva: 0.3,
-  em_formacao: 0.45,
-  minima: 0.6,
-  saudavel: 0.6,
-  reforcada: 0.6,
-};
-
-export function debtCapForBand(band: ReservaBand): number {
-  return DEBT_CAP_BY_BAND[band];
-}
-
-// Fração do restante pós-dívida sugerida pra reserva. Guarda mais quanto menos
-// reserva existe; zera em reforcada (excedente vai pra investimento).
-const RESERVE_FACTOR_BY_BAND: Record<ReservaBand, number> = {
-  sem_reserva: 0.7,
-  em_formacao: 0.55,
-  minima: 0.4,
-  saudavel: 0.2,
-  reforcada: 0,
-};
-
-export function reserveFactorForBand(band: ReservaBand): number {
-  return RESERVE_FACTOR_BY_BAND[band];
-}
-
 export function monthsCovered(reservaCents: number, monthlyEssentialCents: number): number {
   if (monthlyEssentialCents <= 0) return 0;
   return reservaCents / monthlyEssentialCents;
@@ -92,22 +64,6 @@ export function monthlyEssential(input: MonthlyEssentialInput): MonthlyEssential
   };
 }
 
-export type ReservaSuggestionInput = {
-  sobraCents: number;
-  /** Já capado por debtCapForBand a montante (computeDebtSuggestion). */
-  suggestedDebtCents: number;
-  reservaAllocatedCents: number;
-  monthlyEssentialCents: number;
-};
-
-export type ReservaSuggestion = {
-  band: ReservaBand;
-  monthsCovered: number;
-  toReserveCents: number;
-  toFreeCents: number;
-  mode: 'guardar' | 'investir';
-};
-
 const BAND_LABEL: Record<ReservaBand, string> = {
   sem_reserva: 'Sem reserva',
   em_formacao: 'Em formação',
@@ -130,19 +86,4 @@ export function bandLabel(band: ReservaBand): string {
 
 export function bandCopy(band: ReservaBand): string {
   return BAND_COPY[band];
-}
-
-export function computeReservaSuggestion(input: ReservaSuggestionInput): ReservaSuggestion {
-  const covered = monthsCovered(input.reservaAllocatedCents, input.monthlyEssentialCents);
-  const band = bandForMonths(covered);
-  const remainder = Math.max(0, input.sobraCents - input.suggestedDebtCents);
-  const toReserveCents = Math.round(remainder * reserveFactorForBand(band));
-
-  return {
-    band,
-    monthsCovered: covered,
-    toReserveCents,
-    toFreeCents: remainder - toReserveCents,
-    mode: band === 'reforcada' ? 'investir' : 'guardar',
-  };
 }
