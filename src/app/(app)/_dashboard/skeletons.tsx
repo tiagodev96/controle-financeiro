@@ -28,6 +28,19 @@ export function InsightsBlockSkeleton() {
   );
 }
 
+export function FxBlockSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between">
+        <SkeletonLine width="w-16" height="h-4" />
+        <SkeletonLine width="w-16" height="h-2.5" />
+      </div>
+      <SkeletonCard height="h-60" />
+      <SkeletonCard height="h-32" />
+    </div>
+  );
+}
+
 export function BottomBlockSkeleton() {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">

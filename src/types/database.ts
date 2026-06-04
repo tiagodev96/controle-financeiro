@@ -266,6 +266,66 @@ export type Database = {
           },
         ]
       }
+      currency_conversions: {
+        Row: {
+          converted_on: string
+          created_at: string
+          effective_rate: number
+          from_amount_cents: number
+          from_currency: string
+          household_id: string
+          id: string
+          mid_market_rate: number | null
+          note: string | null
+          profile_id: string
+          to_amount_cents: number
+          to_currency: string
+        }
+        Insert: {
+          converted_on: string
+          created_at?: string
+          effective_rate: number
+          from_amount_cents: number
+          from_currency: string
+          household_id: string
+          id?: string
+          mid_market_rate?: number | null
+          note?: string | null
+          profile_id: string
+          to_amount_cents: number
+          to_currency: string
+        }
+        Update: {
+          converted_on?: string
+          created_at?: string
+          effective_rate?: number
+          from_amount_cents?: number
+          from_currency?: string
+          household_id?: string
+          id?: string
+          mid_market_rate?: number | null
+          note?: string | null
+          profile_id?: string
+          to_amount_cents?: number
+          to_currency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "currency_conversions_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "currency_conversions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       debts: {
         Row: {
           closed_at: string | null
@@ -951,4 +1011,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

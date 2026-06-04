@@ -8,10 +8,12 @@ import {
 import { HeroBlock } from './_dashboard/hero-block';
 import { InsightsBlock } from './_dashboard/insights-block';
 import { BottomBlock } from './_dashboard/bottom-block';
+import { FxBlock } from './_dashboard/fx-block';
 import {
   HeroBlockSkeleton,
   InsightsBlockSkeleton,
   BottomBlockSkeleton,
+  FxBlockSkeleton,
 } from './_dashboard/skeletons';
 
 const MONTHS_PT = [
@@ -98,6 +100,10 @@ export default async function DashboardPage({
 
         <Suspense fallback={<BottomBlockSkeleton />}>
           <BottomBlock nowIso={nowIso} targetDateIso={targetDateIso} isFuture={isFuture} />
+        </Suspense>
+
+        <Suspense fallback={<FxBlockSkeleton />}>
+          <FxBlock nowIso={nowIso} />
         </Suspense>
       </section>
     </BalanceVisibilityProvider>
