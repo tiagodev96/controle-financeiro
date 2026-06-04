@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Session } from '@/lib/auth/session';
+import { buildCoverageTransfers, transactionHasCoverage } from './coverage';
 
 const GENERIC = 'Não foi possível atualizar.';
 const NOT_FOUND = 'Lançamento não encontrado.';
@@ -40,12 +41,18 @@ export type UpdateTransactionResult = { ok: true } | { ok: false; error: string 
 type Deps = {
   supabase: SupabaseClient<Database>;
   session: Session;
+  serviceSupabase?: SupabaseClient<Database>;
 };
 
 type DbUpdate = Database['public']['Tables']['transactions']['Update'];
 
+function todayServerDate(): string {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}
+
 export async function updateTransactionCore(
-  { supabase, session }: Deps,
+  { supabase, session, serviceSupabase }: Deps,
   input: UpdateTransactionInput,
 ): Promise<UpdateTransactionResult> {
   const parsed = inputSchema.safeParse(input);
@@ -111,13 +118,52 @@ export async function updateTransactionCore(
   // bloquear edição de transações com source_recurring_rule_id ou source_debt_id
   // setados — ou propagar a mudança pra fonte.
 
+  const wasPaid = existing.status === 'paid';
+  const willBePaid = patch.paid === undefined ? wasPaid : patch.paid;
+  const finalAccountId = update.account_id ?? existing.account_id;
+  const finalAmount = update.amount_cents ?? existing.amount_cents;
+  const amountChanged =
+    update.amount_cents !== undefined && update.amount_cents !== existing.amount_cents;
+  const accountChanged =
+    update.account_id !== undefined && update.account_id !== existing.account_id;
+
+  // Despesa paga que gerou cobertura: ao desmarcar, mudar valor ou conta,
+  // reverte a cobertura (e o débito da despesa) antes de aplicar a mudança, e
+  // recomputa depois se continuar paga. Transações sem cobertura seguem o
+  // caminho inline abaixo, preservando o comportamento atual.
+  const hasCoverage = wasPaid ? await transactionHasCoverage(supabase, id) : false;
+  const recomputeCoverage =
+    hasCoverage && (!willBePaid || amountChanged || accountChanged);
+
+  if (recomputeCoverage) {
+    const { error: reverseError } = await supabase.rpc('reverse_payment', {
+      p_transaction_id: id,
+    });
+    if (reverseError) return { ok: false, error: GENERIC };
+  }
+
   const { error } = await supabase.from('transactions').update(update).eq('id', id);
   if (error) return { ok: false, error: GENERIC };
 
+  if (recomputeCoverage) {
+    if (willBePaid && finalAccountId && existing.direction === 'expense') {
+      const paidOn = todayServerDate();
+      const transfers = await buildCoverageTransfers(
+        { supabase, serviceSupabase },
+        { expenseAccountId: finalAccountId, amountCents: finalAmount, fxDate: paidOn },
+      );
+      const { error: rpcError } = await supabase.rpc('mark_paid_with_coverage', {
+        p_transaction_id: id,
+        p_paid_on: paidOn,
+        p_transfers: transfers,
+      });
+      if (rpcError) return { ok: false, error: GENERIC };
+    }
+    return { ok: true };
+  }
+
   const transitionedToPaid = patch.paid === true && existing.status === 'pending';
   if (transitionedToPaid && patch.updateBalance === true) {
-    const finalAccountId = patch.accountId ?? existing.account_id;
-    const finalAmount = patch.amountCents ?? existing.amount_cents;
     if (finalAccountId) {
       const { data: acc } = await supabase
         .from('accounts')

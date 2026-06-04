@@ -38,6 +38,14 @@ export async function deleteTransactionCore(
   // TODO(recurring/debt): quando existir, considerar bloquear delete de
   // transação com source_* não-null OU propagar pra fonte.
 
+  // Reverte cobertura (e o débito da própria despesa, quando houve cobertura)
+  // antes de remover. Sem cobertura é no-op de saldo — preserva o comportamento
+  // atual de delete. O cascade da FK limparia as linhas, mas não os saldos.
+  const { error: reverseError } = await supabase.rpc('reverse_payment', {
+    p_transaction_id: parsed.data.id,
+  });
+  if (reverseError) return { ok: false, error: GENERIC };
+
   const { error } = await supabase.from('transactions').delete().eq('id', parsed.data.id);
   if (error) return { ok: false, error: GENERIC };
   return { ok: true };

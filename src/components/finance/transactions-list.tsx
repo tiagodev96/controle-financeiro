@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { TxnRow } from './txn-row';
 import { TxnRowMenu } from './txn-row-menu';
+import { TransferRow } from './transfer-row';
 import { EditTransactionDialog } from './edit-transaction-dialog';
 import type { Currency } from './num';
 
@@ -27,6 +28,13 @@ export type Transaction = {
   installment_plans: { total_installments: number } | null;
   /** Linha virtual de recorrente em mês futuro (não existe no banco). Read-only. */
   previsto?: boolean;
+  /** Linha de cobertura (conversão/transferência entre contas). Read-only. */
+  transfer?: {
+    fromCents: number;
+    fromCurrency: Currency;
+    toCents: number;
+    toCurrency: Currency;
+  } | null;
 };
 
 type CategoryFull = {
@@ -76,7 +84,16 @@ export function TransactionsList({ groups, categories, accounts }: Props) {
             <p className="eyebrow px-1">{label}</p>
             <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
               {rows.map((t) =>
-                t.previsto ? (
+                t.transfer ? (
+                  <div key={t.id} data-testid={`transfer-row-${t.id}`}>
+                    <TransferRow
+                      fromCents={t.transfer.fromCents}
+                      fromCurrency={t.transfer.fromCurrency}
+                      toCents={t.transfer.toCents}
+                      toCurrency={t.transfer.toCurrency}
+                    />
+                  </div>
+                ) : t.previsto ? (
                   <div key={t.id} data-testid="txn-row-previsto">
                     <TxnRow
                       description={t.description}

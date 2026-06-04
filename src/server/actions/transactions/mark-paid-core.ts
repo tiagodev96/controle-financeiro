@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Session } from '@/lib/auth/session';
+import { buildCoverageTransfers } from './coverage';
 
 const GENERIC_ERROR = 'Não foi possível marcar como pago.';
 const ALREADY_PAID = 'Transação já está marcada como paga.';
@@ -22,6 +23,7 @@ export type MarkPaidResult = { ok: true } | { ok: false; error: string };
 type Deps = {
   supabase: SupabaseClient<Database>;
   session: Session;
+  serviceSupabase?: SupabaseClient<Database>;
 };
 
 function todayServerDate(): string {
@@ -30,7 +32,7 @@ function todayServerDate(): string {
 }
 
 export async function markPaidCore(
-  { supabase, session }: Deps,
+  { supabase, session, serviceSupabase }: Deps,
   input: MarkPaidInput,
 ): Promise<MarkPaidResult> {
   const parsed = schema.safeParse(input);
@@ -40,7 +42,7 @@ export async function markPaidCore(
   // household, mas devolve null em vez de erro — checamos explícito.
   const { data: txn, error: readError } = await supabase
     .from('transactions')
-    .select('id, household_id, status, account_id, direction, amount_cents')
+    .select('id, household_id, status, account_id, direction, amount_cents, occurred_on')
     .eq('id', parsed.data.transactionId)
     .maybeSingle();
 
@@ -48,9 +50,29 @@ export async function markPaidCore(
   if (txn.household_id !== session.householdId) return { ok: false, error: GENERIC_ERROR };
   if (txn.status === 'paid') return { ok: false, error: ALREADY_PAID };
 
+  const paidOn = todayServerDate();
+
+  // Despesa paga numa conta sem saldo: cobre o déficit puxando de outras contas.
+  // RPC marca como paga + aplica transferências + saldos numa transação única.
+  if (parsed.data.updateBalance && txn.account_id && txn.direction === 'expense') {
+    const transfers = await buildCoverageTransfers(
+      { supabase, serviceSupabase },
+      { expenseAccountId: txn.account_id, amountCents: txn.amount_cents, fxDate: paidOn },
+    );
+    if (transfers.length > 0) {
+      const { error: rpcError } = await supabase.rpc('mark_paid_with_coverage', {
+        p_transaction_id: parsed.data.transactionId,
+        p_paid_on: paidOn,
+        p_transfers: transfers,
+      });
+      if (rpcError) return { ok: false, error: GENERIC_ERROR };
+      return { ok: true };
+    }
+  }
+
   const { error: updateError } = await supabase
     .from('transactions')
-    .update({ status: 'paid', paid_on: todayServerDate() })
+    .update({ status: 'paid', paid_on: paidOn })
     .eq('id', parsed.data.transactionId);
 
   if (updateError) return { ok: false, error: GENERIC_ERROR };

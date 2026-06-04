@@ -208,7 +208,58 @@ export default async function TransacoesPage({ searchParams }: Props) {
       }
     : null;
 
-  const grouped = groupByDay(allRows);
+  // Coberturas (conversão/transferência entre contas) entram só na lista, nunca
+  // nos totais de despesa/entrada — são neutras no fluxo de caixa. Escondidas
+  // sob filtro de status/categoria (não têm nenhum dos dois).
+  let transferRows: Transaction[] = [];
+  if (!status && !categoryId) {
+    let transferQuery = supabase
+      .from('account_transfers')
+      .select('id, from_amount_cents, to_amount_cents, from_currency, to_currency, occurred_on')
+      .order('created_at', { ascending: false });
+    if (monthIso) {
+      const [yy, mm] = monthIso.split('-').map(Number) as [number, number];
+      const nextMonth =
+        mm === 12 ? `${yy + 1}-01-01` : `${yy}-${String(mm + 1).padStart(2, '0')}-01`;
+      transferQuery = transferQuery
+        .gte('occurred_on', `${monthIso}-01`)
+        .lt('occurred_on', nextMonth);
+    } else {
+      if (startDate) transferQuery = transferQuery.gte('occurred_on', startDate);
+      if (endDate) transferQuery = transferQuery.lte('occurred_on', endDate);
+    }
+    if (accountId && UUID_RE.test(accountId)) {
+      transferQuery = transferQuery.or(
+        `from_account_id.eq.${accountId},to_account_id.eq.${accountId}`,
+      );
+    }
+    const { data: transfers } = await transferQuery;
+    transferRows = (transfers ?? []).map((tr) => ({
+      id: `transfer-${tr.id}`,
+      description: tr.from_currency === tr.to_currency ? 'Transferência' : 'Conversão',
+      amount_cents: tr.to_amount_cents,
+      currency: tr.to_currency as Currency,
+      direction: 'expense',
+      status: 'paid',
+      occurred_on: tr.occurred_on,
+      paid_on: tr.occurred_on,
+      category_id: null,
+      account_id: '',
+      source_recurring_rule_id: null,
+      source_installment_plan_id: null,
+      installment_number: null,
+      categories: null,
+      installment_plans: null,
+      transfer: {
+        fromCents: tr.from_amount_cents,
+        fromCurrency: tr.from_currency as Currency,
+        toCents: tr.to_amount_cents,
+        toCurrency: tr.to_currency as Currency,
+      },
+    }));
+  }
+
+  const grouped = groupByDay([...allRows, ...transferRows]);
   const displayTotal = total + virtualRows.length;
   const eyebrow = `${displayTotal} ${displayTotal === 1 ? 'lançamento' : 'lançamentos'}`;
 

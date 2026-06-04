@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { getServerSupabase } from '@/lib/supabase/server';
+import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession, UnauthorizedError } from '@/lib/auth/session';
 import type { CreateTransactionInput } from '@/lib/transactions/schema';
 import {
@@ -27,7 +28,10 @@ export async function createTransaction(
   }
 
   const supabase = await getServerSupabase();
-  const result = await createTransactionForSession({ supabase, session }, input);
+  const result = await createTransactionForSession(
+    { supabase, session, serviceSupabase: getServiceRoleSupabase() },
+    input,
+  );
 
   if (result.ok) {
     const cookieStore = await cookies();
