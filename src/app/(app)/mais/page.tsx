@@ -7,6 +7,7 @@ import {
   CalendarRange,
   PiggyBank,
   ShieldCheck,
+  TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
 import { AppTopBar } from '@/components/finance/app-top-bar';
@@ -23,6 +24,7 @@ const items: Item[] = [
   { href: '/parcelados', label: 'Parcelados', description: 'Compras em N×', Icon: CalendarRange },
   { href: '/caixinhas', label: 'Caixinhas', description: 'Envelopes virtuais', Icon: PiggyBank },
   { href: '/reserva', label: 'Reserva', description: 'Saúde da reserva', Icon: ShieldCheck },
+  { href: '/evolucao', label: 'Evolução', description: 'Tendências mensais', Icon: TrendingUp },
   { href: '/categorias', label: 'Categorias', description: 'Cadastro', Icon: Tags },
   { href: '/contas', label: 'Contas', description: 'Cadastro', Icon: Wallet },
   { href: '/resumo', label: 'Resumo', description: 'Exportar o mês', Icon: Share2 },

@@ -12,22 +12,21 @@ import {
 } from 'recharts';
 import type { TrendPoint } from '@/lib/finance/balance-trend';
 import type { Currency } from '@/components/finance/num';
-import { MONTHS_PT_SHORT } from '@/lib/dates';
+import { formatCents as formatMoney } from '@/lib/money/format';
 import {
-  CURRENCY_SYMBOL as SYMBOL,
-  formatCents as formatMoney,
-  formatNumberPtBR,
-} from '@/lib/money/format';
+  TooltipShell,
+  chartAxisLineProps,
+  chartCursorProps,
+  chartGridProps,
+  chartTickProps,
+  formatDayShort,
+  moneyTickFormatter,
+} from '@/components/finance/charts/chart-primitives';
 
 type Props = {
   series: { EUR: TrendPoint[]; BRL: TrendPoint[] };
   defaultCurrency: Currency;
 };
-
-function formatDateShort(iso: string): string {
-  const [, m, d] = iso.split('-');
-  return `${d}/${MONTHS_PT_SHORT[Number(m) - 1]}`;
-}
 
 type RechartTooltipProps = {
   active?: boolean;
@@ -43,13 +42,13 @@ function ChartTooltip({
   const point = payload[0]?.payload;
   if (!point) return null;
   return (
-    <div className="rounded-md border border-border-soft bg-bg-raised px-3 py-2 shadow-md">
-      <p className="mono text-[10px] uppercase tracking-wider text-fg4">{formatDateShort(point.date)}</p>
+    <TooltipShell>
+      <p className="mono text-[10px] uppercase tracking-wider text-fg4">{formatDayShort(point.date)}</p>
       <p className="num text-[14px] font-semibold text-fg1">{formatMoney(point.totalCents, currency)}</p>
       {point.accountsCount > 1 && (
         <p className="text-[10px] text-fg4">{point.accountsCount} contas</p>
       )}
-    </div>
+    </TooltipShell>
   );
 }
 
@@ -89,27 +88,27 @@ export function BalanceTrendChart({ series, defaultCurrency }: Props) {
         <div className="h-56 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 12, right: 12, bottom: 4, left: 4 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-soft)" vertical={false} />
+              <CartesianGrid {...chartGridProps} />
               <XAxis
                 dataKey="date"
-                tickFormatter={formatDateShort}
+                tickFormatter={formatDayShort}
                 stroke="var(--color-fg4)"
-                tick={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}
+                tick={chartTickProps}
                 tickLine={false}
-                axisLine={{ stroke: 'var(--color-border-soft)' }}
+                axisLine={chartAxisLineProps}
                 minTickGap={32}
               />
               <YAxis
-                tickFormatter={(v: number) => `${SYMBOL[currency]}${formatNumberPtBR(v / 100, 0)}`}
+                tickFormatter={moneyTickFormatter(currency)}
                 stroke="var(--color-fg4)"
-                tick={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}
+                tick={chartTickProps}
                 tickLine={false}
                 axisLine={false}
                 width={64}
               />
               <Tooltip
                 content={(p: RechartTooltipProps) => <ChartTooltip {...p} currency={currency} />}
-                cursor={{ stroke: 'var(--color-border)', strokeDasharray: '3 3' }}
+                cursor={chartCursorProps}
               />
               <Line
                 type="monotone"
