@@ -20,7 +20,7 @@ import {
 } from '@/lib/finance/debts';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { buildMonthSummaryText, type FxRateMap } from '@/lib/finance/month-summary';
-import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
+import { convertCents, getRateMapSafe, type RateMap } from '@/lib/fx';
 import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { monthEyebrow, monthIso as toMonthIso, parseMonthParam, parseMoedaParam } from '@/lib/dates';
 
@@ -48,16 +48,11 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
     ...closedDebtsThisMonth.map((d) => ({ debt: d, isClosed: true })),
   ];
 
-  let fxRateMap: RateMap | null = null;
-  try {
-    fxRateMap = await getRateMap({
-      supabase,
-      serviceSupabase: getServiceRoleSupabase(),
-      when: now,
-    });
-  } catch (err) {
-    if (!(err instanceof FxUnavailableError)) throw err;
-  }
+  const fxRateMap: RateMap | null = await getRateMapSafe({
+    supabase,
+    serviceSupabase: getServiceRoleSupabase(),
+    when: now,
+  });
   const fxRateMapSlim: FxRateMap | null = fxRateMap
     ? { EUR_BRL: fxRateMap.EUR_BRL, BRL_EUR: fxRateMap.BRL_EUR }
     : null;

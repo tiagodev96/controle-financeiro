@@ -73,7 +73,9 @@ async function fetchSeries(
       .map(([date, byQuote]) => ({ date, rate: byQuote?.[quote] }))
       .filter((p): p is RatePoint => typeof p.rate === 'number' && p.rate > 0)
       .sort((a, b) => a.date.localeCompare(b.date));
-  } catch {
+  } catch (err) {
+    // Null degrada pro cache no caller; loga pra causa não sumir.
+    console.error(`fx: série frankfurter ${base}/${quote} ${start}..${end} falhou`, err);
     return null;
   }
 }
@@ -93,7 +95,8 @@ async function fetchSingle(
     const byDate = json.rates ? Object.values(json.rates)[0] : undefined;
     const rate = byDate?.[quote];
     return typeof rate === 'number' && rate > 0 ? rate : null;
-  } catch {
+  } catch (err) {
+    console.error(`fx: cotação frankfurter ${base}/${quote} em ${date} falhou`, err);
     return null;
   }
 }

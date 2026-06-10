@@ -2,7 +2,7 @@ import { cache } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getServerSupabase } from '@/lib/supabase/server';
 import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
-import { FxUnavailableError, getRateMap, type RateMap } from '@/lib/fx';
+import { getRateMapSafe, type RateMap } from '@/lib/fx';
 import type { Database } from '@/types/database';
 import type { Currency } from '@/components/finance/num';
 import {
@@ -36,16 +36,11 @@ export const getDashboardAccounts = cache(
 export const getDashboardRateMap = cache(
   async (whenIso: string): Promise<RateMap | null> => {
     const supabase = await getDashboardSupabase();
-    try {
-      return await getRateMap({
-        supabase: supabase as SupabaseClient<Database>,
-        serviceSupabase: getServiceRoleSupabase(),
-        when: new Date(whenIso),
-      });
-    } catch (err) {
-      if (err instanceof FxUnavailableError) return null;
-      throw err;
-    }
+    return getRateMapSafe({
+      supabase: supabase as SupabaseClient<Database>,
+      serviceSupabase: getServiceRoleSupabase(),
+      when: new Date(whenIso),
+    });
   },
 );
 

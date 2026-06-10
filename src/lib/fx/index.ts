@@ -56,11 +56,16 @@ async function fetchFrankfurter(base: Currency, quote: Currency): Promise<number
   try {
     const url = `${FRANKFURTER_URL}?from=${base}&to=${quote}`;
     const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`fx: frankfurter ${base}/${quote} respondeu ${res.status}`);
+      return null;
+    }
     const json = (await res.json()) as { rates?: Record<string, number> };
     const rate = json.rates?.[quote];
     return typeof rate === 'number' && rate > 0 ? rate : null;
-  } catch {
+  } catch (err) {
+    // Null degrada pro cache stale no caller; loga pra causa não sumir.
+    console.error(`fx: frankfurter ${base}/${quote} falhou`, err);
     return null;
   }
 }
@@ -140,4 +145,17 @@ export async function getRateMap(input: GetRateMapInput): Promise<RateMap> {
     rateDate: eurBrl.rateDate,
     isStale: eurBrl.isStale,
   };
+}
+
+/**
+ * getRateMap que degrada pra null quando o câmbio está indisponível
+ * (cache vazio + fetch falhou). Qualquer outro erro continua propagando.
+ */
+export async function getRateMapSafe(input: GetRateMapInput): Promise<RateMap | null> {
+  try {
+    return await getRateMap(input);
+  } catch (err) {
+    if (err instanceof FxUnavailableError) return null;
+    throw err;
+  }
 }

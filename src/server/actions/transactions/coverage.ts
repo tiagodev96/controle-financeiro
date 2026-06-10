@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Currency } from '@/lib/fx';
-import { getRateMap, FxUnavailableError } from '@/lib/fx';
+import { getRateMapSafe } from '@/lib/fx';
 import { planPaymentCoverage } from '@/lib/finance/payment-coverage';
 
 export type RpcTransfer = {
@@ -51,15 +51,11 @@ export async function buildCoverageTransfers(
   const needsFx = others.some((a) => a.currency !== expense.currency);
   let rateMap: { EUR_BRL: number; BRL_EUR: number } | null = null;
   if (needsFx && serviceSupabase) {
-    try {
-      rateMap = await getRateMap({
-        supabase,
-        serviceSupabase,
-        when: new Date(fxDate),
-      });
-    } catch (err) {
-      if (!(err instanceof FxUnavailableError)) throw err;
-    }
+    rateMap = await getRateMapSafe({
+      supabase,
+      serviceSupabase,
+      when: new Date(fxDate),
+    });
   }
 
   const transfers = planPaymentCoverage({

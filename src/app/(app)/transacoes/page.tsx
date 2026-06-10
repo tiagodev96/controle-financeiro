@@ -14,7 +14,7 @@ import { listTransactionsForHousehold, type Status } from '@/lib/finance/transac
 import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
-import { convertCents, FxUnavailableError, getRateMap, type RateMap } from '@/lib/fx';
+import { convertCents, getRateMapSafe, type RateMap } from '@/lib/fx';
 import { monthIso, monthRangeFromIso, toIsoDate } from '@/lib/dates';
 
 function currentMonthIso(): string {
@@ -183,15 +183,11 @@ export default async function TransacoesPage({ searchParams }: Props) {
 
   let rateMap: RateMap | null = null;
   if (hasBothCurrencies) {
-    try {
-      rateMap = await getRateMap({
-        supabase,
-        serviceSupabase: getServiceRoleSupabase(),
-        when: new Date(),
-      });
-    } catch (err) {
-      if (!(err instanceof FxUnavailableError)) throw err;
-    }
+    rateMap = await getRateMapSafe({
+      supabase,
+      serviceSupabase: getServiceRoleSupabase(),
+      when: new Date(),
+    });
   }
 
   function toDisplay(cents: number, from: Currency): number {

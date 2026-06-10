@@ -8,7 +8,7 @@ import { calculateCrossCurrencyMonthStats } from '@/lib/finance/cross-currency-s
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { listDebtsForHousehold, debtsClosedInMonth } from '@/lib/finance/debts';
 import { projectMonth } from '@/lib/finance/month-projection';
-import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
+import { convertCents, getRateMapSafe, type RateMap } from '@/lib/fx';
 import { monthEyebrow, parseMonthParam, parseMoedaParam } from '@/lib/dates';
 import { formatCents as formatMoney } from '@/lib/money/format';
 import type { Currency } from '@/components/finance/num';
@@ -64,16 +64,11 @@ export async function GET(request: Request) {
     ...debtsClosedInMonth(closedDebts, targetDate).map((d) => ({ debt: d, isClosed: true })),
   ];
 
-  let fxRateMap: RateMap | null = null;
-  try {
-    fxRateMap = await getRateMap({
-      supabase,
-      serviceSupabase: getServiceRoleSupabase(),
-      when: now,
-    });
-  } catch (err) {
-    if (!(err instanceof FxUnavailableError)) throw err;
-  }
+  const fxRateMap: RateMap | null = await getRateMapSafe({
+    supabase,
+    serviceSupabase: getServiceRoleSupabase(),
+    when: now,
+  });
 
   const accounts = accountsAll.filter((a) => !a.is_archived);
   // Soma cross-currency em `moeda`.

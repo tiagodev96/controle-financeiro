@@ -1,7 +1,7 @@
 import { getServerSupabase } from '@/lib/supabase/server';
 import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession } from '@/lib/auth/session';
-import { FxUnavailableError, getRateMap, type RateMap } from '@/lib/fx';
+import { getRateMapSafe, type RateMap } from '@/lib/fx';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import {
   loadMonthlyEssential,
@@ -29,14 +29,10 @@ export default async function ReservaPage() {
   const currencies = new Set((accountRows ?? []).map((a) => a.currency));
   let fxRateMap: RateMap | null = null;
   if (currencies.has('EUR') && currencies.has('BRL')) {
-    try {
-      fxRateMap = await getRateMap({
-        supabase,
-        serviceSupabase: getServiceRoleSupabase(),
-      });
-    } catch (err) {
-      if (!(err instanceof FxUnavailableError)) throw err;
-    }
+    fxRateMap = await getRateMapSafe({
+      supabase,
+      serviceSupabase: getServiceRoleSupabase(),
+    });
   }
 
   await ensureReserveEnvelopes(supabase, session.householdId);

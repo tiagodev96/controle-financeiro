@@ -3,10 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { getServerSupabase } from '@/lib/supabase/server';
 import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import {
-  FxUnavailableError,
   computeConversionAdvice,
   getRateHistory,
-  getRateMap,
+  getRateMapSafe,
   type ConversionAdvice,
   type ConversionRecord,
   type RatePoint,
@@ -63,13 +62,12 @@ export const getFxBlockData = cache(
     let currentEurBrl: number | null = null;
     let rateDate: string | null = null;
     let isStale = false;
-    try {
-      const map = await getRateMap({ supabase, serviceSupabase, when: now });
+    const map = await getRateMapSafe({ supabase, serviceSupabase, when: now });
+    if (map) {
       currentEurBrl = map.EUR_BRL;
       rateDate = map.rateDate;
       isStale = map.isStale;
-    } catch (err) {
-      if (!(err instanceof FxUnavailableError)) throw err;
+    } else {
       const last = series[series.length - 1];
       if (last) {
         currentEurBrl = last.rate;
