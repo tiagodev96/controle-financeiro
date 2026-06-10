@@ -108,6 +108,8 @@ function Section({
             currency={r.currency}
             direction={r.direction}
             dayOfMonth={r.day_of_month}
+            frequency={r.frequency}
+            activeFrom={r.active_from}
             paused={paused}
             categoryId={r.category_id}
             accountId={r.account_id}

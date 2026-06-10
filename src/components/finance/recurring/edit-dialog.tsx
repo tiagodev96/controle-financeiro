@@ -10,10 +10,14 @@ import {
 } from '@/components/ui/dialog';
 import { MoneyInput } from '@/components/finance/money-input';
 import { FormSelect } from '@/components/finance/form-select';
+import { MonthInput } from '@/components/finance/month-input';
 import { updateRecurringAction } from '@/server/actions/recurring/actions';
+import { monthIso } from '@/lib/dates';
+import { cn } from '@/lib/utils';
 import type { Currency } from '@/components/finance/num';
 
 type Direction = 'expense' | 'income';
+type Frequency = 'monthly' | 'yearly';
 
 type Category = { id: string; name: string; kind: Direction };
 type Account = { id: string; name: string; currency: Currency };
@@ -24,6 +28,8 @@ type Props = {
   currentTitle: string;
   currentAmountCents: number;
   currentDayOfMonth: number;
+  currentFrequency: Frequency;
+  currentAnniversaryMonth: string | null;
   currentCategoryId: string | null;
   currentAccountId: string | null;
   currentNotes: string | null;
@@ -46,6 +52,8 @@ export function EditRecurringDialog({
   currentTitle,
   currentAmountCents,
   currentDayOfMonth,
+  currentFrequency,
+  currentAnniversaryMonth,
   currentCategoryId,
   currentAccountId,
   currentNotes,
@@ -57,6 +65,10 @@ export function EditRecurringDialog({
   const [title, setTitle] = useState(currentTitle);
   const [amountCents, setAmountCents] = useState(currentAmountCents);
   const [dayOfMonthRaw, setDayOfMonthRaw] = useState(String(currentDayOfMonth));
+  const [frequency, setFrequency] = useState<Frequency>(currentFrequency);
+  const [anniversaryMonth, setAnniversaryMonth] = useState(
+    currentAnniversaryMonth ?? monthIso(new Date()),
+  );
   const [categoryId, setCategoryId] = useState(currentCategoryId ?? '');
   const [accountId, setAccountId] = useState(currentAccountId ?? '');
   const [notes, setNotes] = useState(currentNotes ?? '');
@@ -77,6 +89,8 @@ export function EditRecurringDialog({
         title,
         amountCents,
         dayOfMonth: clampDayOfMonth(dayOfMonthRaw),
+        frequency,
+        ...(frequency === 'yearly' ? { anniversaryMonth } : {}),
         categoryId,
         accountId,
         notes: notes.trim() || null,
@@ -149,6 +163,34 @@ export function EditRecurringDialog({
               />
             </label>
           </div>
+
+          <label className="block space-y-2">
+            <span className="eyebrow">Frequência</span>
+            <div className="grid grid-cols-2 gap-0.5 rounded-md border border-border-soft bg-bg-inset p-1">
+              {(['monthly', 'yearly'] as const).map((f) => (
+                <button
+                  type="button"
+                  key={f}
+                  onClick={() => setFrequency(f)}
+                  aria-pressed={frequency === f}
+                  className={cn(
+                    'h-9 rounded-sm text-sm font-medium transition-colors',
+                    frequency === f ? 'bg-bg-surface text-fg1 shadow-sm' : 'text-fg3 hover:text-fg1',
+                  )}
+                >
+                  {f === 'monthly' ? 'Mensal' : 'Anual'}
+                </button>
+              ))}
+            </div>
+          </label>
+
+          {frequency === 'yearly' && (
+            <MonthInput
+              label="Mês do ano"
+              value={anniversaryMonth}
+              onChange={setAnniversaryMonth}
+            />
+          )}
 
           <label className="block space-y-2">
             <span className="eyebrow">Notas (opcional)</span>

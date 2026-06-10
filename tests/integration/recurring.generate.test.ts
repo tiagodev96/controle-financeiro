@@ -28,6 +28,7 @@ async function seedRule(overrides: {
   active_from?: string;
   active_until?: string | null;
   category_id?: string;
+  frequency?: 'monthly' | 'yearly';
 }): Promise<string> {
   const admin = getAdminClient();
   const { data, error } = await admin
@@ -41,7 +42,7 @@ async function seedRule(overrides: {
       category_id: overrides.category_id ?? SEED_CATEGORY_MERCADO_ID,
       account_id: SEED_ACCOUNT_EUR_ID,
       day_of_month: 10,
-      frequency: 'monthly',
+      frequency: overrides.frequency ?? 'monthly',
       is_paused: overrides.is_paused ?? false,
       active_from: overrides.active_from,
       active_until: overrides.active_until ?? null,
@@ -144,6 +145,53 @@ describe('generateRecurringForMonthCore (integração)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.created).toBe(1);
+  });
+
+  it('I-GEN-Y1 — regra anual gera no mês-aniversário de active_from', async () => {
+    const lastYearSameMonth = `${NOW.getFullYear() - 1}-${String(NOW.getMonth() + 1).padStart(2, '0')}-01`;
+    const ruleId = await seedRule({
+      title: 'GEN test anual seguro',
+      frequency: 'yearly',
+      active_from: lastYearSameMonth,
+    });
+
+    const supabase = await getAuthedClient();
+    const result = await generateRecurringForMonthCore(
+      { supabase, session: SEED_SESSION },
+      { monthIso: MONTH_ISO },
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.created).toBe(1);
+
+    const admin = getAdminClient();
+    const { data } = await admin
+      .from('transactions')
+      .select('source_recurring_rule_id')
+      .eq('source_recurring_rule_id', ruleId);
+    expect(data).toHaveLength(1);
+  });
+
+  it('I-GEN-Y2 — regra anual fora do mês-aniversário não gera nem conta como falha', async () => {
+    const otherMonth = NOW.getMonth() === 0 ? 11 : NOW.getMonth() - 1;
+    const activeFrom = `${NOW.getFullYear() - 1}-${String(otherMonth + 1).padStart(2, '0')}-01`;
+    await seedRule({
+      title: 'GEN test anual fora',
+      frequency: 'yearly',
+      active_from: activeFrom,
+    });
+
+    const supabase = await getAuthedClient();
+    const result = await generateRecurringForMonthCore(
+      { supabase, session: SEED_SESSION },
+      { monthIso: MONTH_ISO },
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.created).toBe(0);
+    expect(result.failed).toBe(0);
   });
 });
 

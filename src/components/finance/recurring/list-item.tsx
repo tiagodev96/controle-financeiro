@@ -10,6 +10,7 @@ import {
 } from '@/server/actions/recurring/actions';
 import { Num, type Currency } from '@/components/finance/num';
 import { EditRecurringDialog } from './edit-dialog';
+import { MONTHS_PT } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
 type Direction = 'expense' | 'income';
@@ -24,6 +25,9 @@ type Props = {
   currency: Currency;
   direction: Direction;
   dayOfMonth: number;
+  frequency: 'monthly' | 'yearly';
+  /** Mês-aniversário (active_from) — só relevante pra frequency anual. */
+  activeFrom: string | null;
   paused: boolean;
   categoryId: string | null;
   accountId: string | null;
@@ -39,6 +43,8 @@ export function RecurringListItem({
   currency,
   direction,
   dayOfMonth,
+  frequency,
+  activeFrom,
   paused,
   categoryId,
   accountId,
@@ -75,7 +81,11 @@ export function RecurringListItem({
     <div className={cn('flex items-center gap-3 py-3', paused && 'opacity-60')}>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="truncate text-[15px] text-fg1">{title}</p>
-        <p className="mono text-[10px] text-fg4">todo dia {dayOfMonth}</p>
+        <p className="mono text-[10px] text-fg4">
+          {frequency === 'yearly' && activeFrom
+            ? `anual · ${MONTHS_PT[Number(activeFrom.slice(5, 7)) - 1]}, dia ${dayOfMonth}`
+            : `todo dia ${dayOfMonth}`}
+        </p>
       </div>
 
       <Num
@@ -155,6 +165,8 @@ export function RecurringListItem({
           currentTitle={title}
           currentAmountCents={amountCents}
           currentDayOfMonth={dayOfMonth}
+          currentFrequency={frequency}
+          currentAnniversaryMonth={activeFrom ? activeFrom.slice(0, 7) : null}
           currentCategoryId={categoryId}
           currentAccountId={accountId}
           currentNotes={notes}

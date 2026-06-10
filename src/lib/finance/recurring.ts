@@ -3,6 +3,8 @@ import type { Database } from '@/types/database';
 import type { Currency } from '@/components/finance/num';
 import { endOfMonth, monthIso, monthRange } from '@/lib/dates';
 
+export type RecurringFrequency = 'monthly' | 'yearly';
+
 export type RecurringRule = {
   id: string;
   title: string;
@@ -12,10 +14,25 @@ export type RecurringRule = {
   category_id: string | null;
   account_id: string | null;
   day_of_month: number;
+  frequency: RecurringFrequency;
   is_paused: boolean;
+  active_from: string | null;
   active_until: string | null;
   notes: string | null;
 };
+
+/**
+ * Regra se aplica ao mês alvo (YYYY-MM): mensal sempre; anual só no
+ * mês-aniversário de active_from, em qualquer ano.
+ */
+export function ruleAppliesToMonth(
+  rule: { frequency: string; active_from: string | null },
+  ym: string,
+): boolean {
+  if (rule.frequency !== 'yearly') return true;
+  if (!rule.active_from) return false;
+  return rule.active_from.slice(5, 7) === ym.slice(5, 7);
+}
 
 export type RecurringListResult = {
   active: RecurringRule[];
@@ -56,7 +73,7 @@ export async function listUngeneratedRecurringForMonth({
   const { data: rules, error } = await supabase
     .from('recurring_rules')
     .select(
-      'id, title, amount_cents, currency, direction, category_id, day_of_month, is_paused, active_from, active_until, categories(name)',
+      'id, title, amount_cents, currency, direction, category_id, day_of_month, frequency, is_paused, active_from, active_until, categories(name)',
     )
     .eq('household_id', householdId)
     .order('day_of_month', { ascending: true });
@@ -70,17 +87,19 @@ export async function listUngeneratedRecurringForMonth({
     direction: 'expense' | 'income';
     category_id: string | null;
     day_of_month: number;
+    frequency: RecurringFrequency;
     is_paused: boolean;
     active_from: string | null;
     active_until: string | null;
     categories: { name: string } | null;
   };
 
+  const targetYm = monthIso(targetDate);
   const active = ((rules ?? []) as unknown as Row[]).filter((r) => {
     if (r.is_paused) return false;
     if (r.active_from && r.active_from >= end) return false;
     if (r.active_until && r.active_until < start) return false;
-    return true;
+    return ruleAppliesToMonth(r, targetYm);
   });
   if (active.length === 0) return [];
 
@@ -135,7 +154,7 @@ export async function listRecurringRulesForHousehold(
     supabase
       .from('recurring_rules')
       .select(
-        'id, title, amount_cents, currency, direction, category_id, account_id, day_of_month, is_paused, active_until, notes',
+        'id, title, amount_cents, currency, direction, category_id, account_id, day_of_month, frequency, is_paused, active_from, active_until, notes',
       )
       .eq('household_id', householdId)
       .order('day_of_month', { ascending: true }),
@@ -158,6 +177,7 @@ export async function listRecurringRulesForHousehold(
       .filter((id): id is string => !!id),
   );
 
+  const currentYm = monthIso(now);
   const active: RecurringRule[] = [];
   const paused: RecurringRule[] = [];
   let notGeneratedThisMonth = 0;
@@ -167,7 +187,10 @@ export async function listRecurringRulesForHousehold(
       paused.push(r);
     } else {
       active.push(r);
-      if (!generatedIds.has(r.id)) notGeneratedThisMonth += 1;
+      // Anual fora do mês-aniversário não está "faltando" — não conta.
+      if (!generatedIds.has(r.id) && ruleAppliesToMonth(r, currentYm)) {
+        notGeneratedThisMonth += 1;
+      }
     }
   }
 

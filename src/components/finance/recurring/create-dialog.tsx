@@ -12,10 +12,13 @@ import {
 } from '@/components/ui/dialog';
 import { MoneyInput } from '@/components/finance/money-input';
 import { FormSelect } from '@/components/finance/form-select';
+import { MonthInput } from '@/components/finance/month-input';
 import { createRecurringAction } from '@/server/actions/recurring/actions';
+import { monthIso } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
 type Direction = 'expense' | 'income';
+type Frequency = 'monthly' | 'yearly';
 
 type Category = { id: string; name: string; kind: 'expense' | 'income' };
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
@@ -35,6 +38,8 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
   );
   const [accountId, setAccountId] = useState<string>(accounts[0]?.id ?? '');
   const [dayOfMonthRaw, setDayOfMonthRaw] = useState('5');
+  const [frequency, setFrequency] = useState<Frequency>('monthly');
+  const [anniversaryMonth, setAnniversaryMonth] = useState(() => monthIso(new Date()));
   const [notes, setNotes] = useState('');
 
   function clampDayOfMonth(raw: string): number {
@@ -67,6 +72,8 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
       categoryId,
       accountId,
       dayOfMonth,
+      frequency,
+      ...(frequency === 'yearly' ? { anniversaryMonth } : {}),
       notes: notes.trim() || null,
     });
     setPending(false);
@@ -172,6 +179,34 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
               />
             </label>
           </div>
+
+          <label className="block space-y-2">
+            <span className="eyebrow">Frequência</span>
+            <div className="grid grid-cols-2 gap-0.5 rounded-md border border-border-soft bg-bg-inset p-1">
+              {(['monthly', 'yearly'] as const).map((f) => (
+                <button
+                  type="button"
+                  key={f}
+                  onClick={() => setFrequency(f)}
+                  aria-pressed={frequency === f}
+                  className={cn(
+                    'h-9 rounded-sm text-sm font-medium transition-colors',
+                    frequency === f ? 'bg-bg-surface text-fg1 shadow-sm' : 'text-fg3 hover:text-fg1',
+                  )}
+                >
+                  {f === 'monthly' ? 'Mensal' : 'Anual'}
+                </button>
+              ))}
+            </div>
+          </label>
+
+          {frequency === 'yearly' && (
+            <MonthInput
+              label="Mês do ano"
+              value={anniversaryMonth}
+              onChange={setAnniversaryMonth}
+            />
+          )}
 
           <label className="block space-y-2">
             <span className="eyebrow">Notas (opcional)</span>

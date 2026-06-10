@@ -21,6 +21,8 @@ const notesSchema = z
   .optional()
   .transform((v) => (v == null || v.trim() === '' ? null : v.trim().slice(0, 200)));
 
+const frequencySchema = z.enum(['monthly', 'yearly']);
+
 const createSchema = z.object({
   title: titleSchema,
   amountCents: z.number().int().positive(),
@@ -28,6 +30,15 @@ const createSchema = z.object({
   categoryId: z.string().uuid(),
   accountId: z.string().uuid(),
   dayOfMonth: z.number().int().min(1).max(28),
+  frequency: frequencySchema.default('monthly'),
+  /**
+   * Mês-aniversário da regra anual (YYYY-MM). Vira active_from = dia 1 do
+   * mês. Ignorado pra mensal.
+   */
+  anniversaryMonth: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
   notes: notesSchema,
 });
 
@@ -39,6 +50,11 @@ const updateSchema = z.object({
     categoryId: z.string().uuid().optional(),
     accountId: z.string().uuid().optional(),
     dayOfMonth: z.number().int().min(1).max(28).optional(),
+    frequency: frequencySchema.optional(),
+    anniversaryMonth: z
+      .string()
+      .regex(/^\d{4}-\d{2}$/)
+      .optional(),
     notes: notesSchema,
   }),
 });
@@ -98,7 +114,11 @@ export async function createRecurringCore(
       category_id: data.categoryId,
       account_id: data.accountId,
       day_of_month: data.dayOfMonth,
-      frequency: 'monthly',
+      frequency: data.frequency,
+      // Anual: active_from define o mês-aniversário da geração.
+      ...(data.frequency === 'yearly' && data.anniversaryMonth
+        ? { active_from: `${data.anniversaryMonth}-01` }
+        : {}),
       notes: data.notes,
     })
     .select()
@@ -129,6 +149,8 @@ export async function updateRecurringCore(
   if (patch.title !== undefined) update.title = patch.title;
   if (patch.amountCents !== undefined) update.amount_cents = patch.amountCents;
   if (patch.dayOfMonth !== undefined) update.day_of_month = patch.dayOfMonth;
+  if (patch.frequency !== undefined) update.frequency = patch.frequency;
+  if (patch.anniversaryMonth !== undefined) update.active_from = `${patch.anniversaryMonth}-01`;
   if (patch.notes !== undefined) update.notes = patch.notes;
 
   if (patch.categoryId !== undefined) {

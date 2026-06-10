@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Session } from '@/lib/auth/session';
 import { monthRangeFromIso } from '@/lib/dates';
+import { ruleAppliesToMonth } from '@/lib/finance/recurring';
 
 const GENERIC = 'Não foi possível gerar.';
 
@@ -48,7 +49,7 @@ export async function generateRecurringForMonthCore(
   const { data: rules, error: rulesError } = await supabase
     .from('recurring_rules')
     .select(
-      'id, title, amount_cents, currency, direction, category_id, account_id, day_of_month, is_paused, active_from, active_until',
+      'id, title, amount_cents, currency, direction, category_id, account_id, day_of_month, frequency, is_paused, active_from, active_until',
     )
     .eq('household_id', session.householdId);
   if (rulesError) return { ok: false, error: GENERIC };
@@ -60,7 +61,7 @@ export async function generateRecurringForMonthCore(
     // mês vazava pro mês corrente, gerando transação espúria no mês anterior.
     if (r.active_from && r.active_from >= end) return false;
     if (r.active_until && r.active_until < start) return false;
-    return true;
+    return ruleAppliesToMonth(r, monthIso);
   });
 
   if (activeRules.length === 0) {
