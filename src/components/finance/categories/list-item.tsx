@@ -11,6 +11,7 @@ import {
 } from '@/server/actions/categories/actions';
 import { EditCategoryDialog } from './edit-dialog';
 import { cn } from '@/lib/utils';
+import { CURRENCY_SYMBOL, formatCentsToBRL } from '@/lib/money/format';
 
 const PROTECTED_NAME = 'Outros';
 
@@ -88,8 +89,8 @@ export function CategoryListItem({
         <span className="truncate text-[15px] text-fg1">{name}</span>
         {isExpenseKind && monthlyLimitCents != null && monthlyLimitCents > 0 && (
           <span className="mono text-[10px] text-fg4">
-            limite {limitCurrency === 'BRL' ? 'R$' : '€'}{' '}
-            {(monthlyLimitCents / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+            limite {CURRENCY_SYMBOL[limitCurrency ?? 'EUR']}{' '}
+            {formatCentsToBRL(monthlyLimitCents)}/mês
           </span>
         )}
       </button>

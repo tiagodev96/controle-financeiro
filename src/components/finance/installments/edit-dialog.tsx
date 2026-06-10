@@ -12,6 +12,7 @@ import { MoneyInput } from '@/components/finance/money-input';
 import { FormSelect } from '@/components/finance/form-select';
 import { updateInstallmentPlanAction } from '@/server/actions/installments/actions';
 import { splitInstallments } from '@/lib/finance/installments';
+import { formatCentsToBRL } from '@/lib/money/format';
 import type { Currency } from '@/components/finance/num';
 
 type Category = { id: string; name: string; kind: 'expense' | 'income' };
@@ -224,10 +225,8 @@ export function EditInstallmentDialog({
 
           {firstPreview > 0 && (
             <p className="text-[12px] text-fg3">
-              Próximas pendentes: {(firstPreview / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              {firstPreview !== lastPreview && (
-                <> · última {(lastPreview / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
-              )}
+              Próximas pendentes: {formatCentsToBRL(firstPreview)}
+              {firstPreview !== lastPreview && <> · última {formatCentsToBRL(lastPreview)}</>}
             </p>
           )}
 

@@ -1,4 +1,5 @@
 import { type ReservaBand, bandLabel, bandCopy } from '@/lib/finance/reserva';
+import { formatNumberPtBR } from '@/lib/money/format';
 import { Num, type Currency } from '@/components/finance/num';
 
 type Props = {
@@ -28,10 +29,7 @@ export function ReservaHealthGauge({
   variableCalibrating,
 }: Props) {
   const fillPct = Math.min(monthsCovered / SCALE_MAX, 1) * 100;
-  const monthsLabel = monthsCovered.toLocaleString('pt-BR', {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
+  const monthsLabel = formatNumberPtBR(monthsCovered, 1);
   const isCritical = band === 'sem_reserva';
 
   return (

@@ -15,6 +15,7 @@ import { FormSelect } from '@/components/finance/form-select';
 import { createInstallmentPlanAction } from '@/server/actions/installments/actions';
 import { splitInstallments } from '@/lib/finance/installments';
 import { toLocalIsoDate } from '@/lib/dates';
+import { formatCentsToBRL } from '@/lib/money/format';
 
 type Currency = 'EUR' | 'BRL';
 
@@ -206,10 +207,8 @@ export function CreateInstallmentDialog({ categories, accounts }: Props) {
 
           {firstParcela > 0 && (
             <p className="text-[12px] text-fg3">
-              {totalInstallments}× {(firstParcela / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              {firstParcela !== lastParcela && (
-                <> · última {(lastParcela / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</>
-              )}
+              {totalInstallments}× {formatCentsToBRL(firstParcela)}
+              {firstParcela !== lastParcela && <> · última {formatCentsToBRL(lastParcela)}</>}
             </p>
           )}
 

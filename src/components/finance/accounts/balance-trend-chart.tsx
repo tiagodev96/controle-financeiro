@@ -13,20 +13,16 @@ import {
 import type { TrendPoint } from '@/lib/finance/balance-trend';
 import type { Currency } from '@/components/finance/num';
 import { MONTHS_PT_SHORT } from '@/lib/dates';
+import {
+  CURRENCY_SYMBOL as SYMBOL,
+  formatCents as formatMoney,
+  formatNumberPtBR,
+} from '@/lib/money/format';
 
 type Props = {
   series: { EUR: TrendPoint[]; BRL: TrendPoint[] };
   defaultCurrency: Currency;
 };
-
-const SYMBOL = { EUR: '€', BRL: 'R$' } as const;
-
-function formatMoney(cents: number, currency: Currency): string {
-  return `${SYMBOL[currency]} ${(cents / 100).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
 
 function formatDateShort(iso: string): string {
   const [, m, d] = iso.split('-');
@@ -104,9 +100,7 @@ export function BalanceTrendChart({ series, defaultCurrency }: Props) {
                 minTickGap={32}
               />
               <YAxis
-                tickFormatter={(v: number) =>
-                  `${SYMBOL[currency]}${Math.round(v / 100).toLocaleString('pt-BR')}`
-                }
+                tickFormatter={(v: number) => `${SYMBOL[currency]}${formatNumberPtBR(v / 100, 0)}`}
                 stroke="var(--color-fg4)"
                 tick={{ fontSize: 11, fontFamily: 'var(--font-mono)' }}
                 tickLine={false}

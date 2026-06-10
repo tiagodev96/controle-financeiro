@@ -10,6 +10,7 @@ import { listDebtsForHousehold, debtsClosedInMonth } from '@/lib/finance/debts';
 import { projectMonth } from '@/lib/finance/month-projection';
 import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
 import { monthEyebrow, parseMonthParam, parseMoedaParam } from '@/lib/dates';
+import { formatCents as formatMoney } from '@/lib/money/format';
 import type { Currency } from '@/components/finance/num';
 
 // Node runtime (default). Mover pra edge depois se latência incomodar —
@@ -28,17 +29,6 @@ const COLORS = {
   positive: '#7ea177',
   negative: '#d27089',
 } as const;
-
-const SYMBOL = { EUR: '€', BRL: 'R$' } as const;
-
-function formatMoney(cents: number, currency: Currency): string {
-  const abs = Math.abs(cents) / 100;
-  const formatted = abs.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${cents < 0 ? '−' : ''}${SYMBOL[currency]} ${formatted}`;
-}
 
 function dayMonthYear(d: Date): string {
   const dd = String(d.getDate()).padStart(2, '0');

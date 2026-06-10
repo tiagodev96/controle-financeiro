@@ -19,6 +19,7 @@ import {
   hasBothCurrencies,
 } from '@/lib/finance/dashboard-data';
 import { MONTHS_PT_SHORT, endOfMonth, monthEyebrow } from '@/lib/dates';
+import { formatRate } from '@/lib/money/format';
 
 function endOfMonthLabel(d: Date): string {
   const last = endOfMonth(d);
@@ -27,13 +28,6 @@ function endOfMonthLabel(d: Date): string {
 
 function shortDate(iso: string): string {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-}
-
-function formatRate(rate: number): string {
-  return rate.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 }
 
 type Props = {

@@ -99,10 +99,7 @@ export function HeroNumber({ cents, currency = 'EUR', className }: HeroProps) {
     );
   }
 
-  const abs = Math.abs(cents) / 100;
-  const [intPart, fracPart] = abs
-    .toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    .split(',');
+  const [intPart, fracPart] = formatCentsToBRL(Math.abs(cents)).split(',');
   const isNegative = cents < 0;
   const accentColor = isNegative ? 'text-money-negative' : 'text-fg3';
   const intColor = isNegative ? 'text-money-negative' : 'text-fg1';

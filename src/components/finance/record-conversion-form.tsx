@@ -11,7 +11,7 @@ import {
 import type { ConversionListItem } from '@/lib/finance/fx-block-data';
 import { MoneyInput } from './money-input';
 import { Field } from './field';
-import { formatCentsToBRL } from '@/lib/money/format';
+import { formatCentsToBRL, formatRate } from '@/lib/money/format';
 import {
   Dialog,
   DialogContent,
@@ -121,12 +121,7 @@ export function RecordConversionForm({ onDone }: { onDone?: () => void }) {
       {fromCents > 0 && toCents > 0 && (
         <p className="text-[12px] text-fg4">
           Taxa efetiva:{' '}
-          <span className="num text-fg2">
-            {(toCents / fromCents).toLocaleString('pt-BR', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </span>{' '}
+          <span className="num text-fg2">{formatRate(toCents / fromCents)}</span>{' '}
           {SYMBOL[toCurrency]}/{SYMBOL[fromCurrency]}
         </p>
       )}

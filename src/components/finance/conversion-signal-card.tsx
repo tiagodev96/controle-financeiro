@@ -1,4 +1,5 @@
 import type { ConversionAdvice, LastComparison } from '@/lib/fx';
+import { formatNumberPtBR, formatRate } from '@/lib/money/format';
 
 type Props = {
   advice: ConversionAdvice;
@@ -13,17 +14,11 @@ const HEADLINE: Record<ConversionAdvice['signal'], string> = {
 };
 
 function rate(value: number): string {
-  return value.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return formatRate(value);
 }
 
 function pct(value: number): string {
-  return value.toLocaleString('pt-BR', {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  });
+  return formatNumberPtBR(value, 1);
 }
 
 function signedPct(fraction: number): string {

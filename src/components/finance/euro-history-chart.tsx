@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import type { RatePoint } from '@/lib/fx';
 import { MONTHS_PT_SHORT } from '@/lib/dates';
+import { formatRate as formatRatePtBR } from '@/lib/money/format';
 
 type Period = '7d' | '30d' | '1y';
 
@@ -26,10 +27,7 @@ const PERIODS: { key: Period; label: string; days: number | null }[] = [
 ];
 
 function formatRate(rate: number): string {
-  return `R$ ${rate.toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return `R$ ${formatRatePtBR(rate)}`;
 }
 
 function formatDateShort(iso: string): string {
