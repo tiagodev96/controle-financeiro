@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Session } from '@/lib/auth/session';
 import { buildCoverageTransfers } from './coverage';
+import { toLocalIsoDate } from '@/lib/dates';
 
 const GENERIC_ERROR = 'Não foi possível marcar como pago.';
 const ALREADY_PAID = 'Transação já está marcada como paga.';
@@ -27,8 +28,7 @@ type Deps = {
 };
 
 function todayServerDate(): string {
-  const d = new Date();
-  return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+  return toLocalIsoDate(new Date());
 }
 
 export async function markPaidCore(

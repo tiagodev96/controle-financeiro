@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
+import { toIsoDate } from '@/lib/dates';
 
 export type BalanceLookup = {
   cents: number;
@@ -21,7 +22,7 @@ export async function getBalanceOn(
   date: Date,
   liveBalanceFallback: number,
 ): Promise<BalanceLookup> {
-  const isoDate = date.toISOString().slice(0, 10);
+  const isoDate = toIsoDate(date);
 
   const { data } = await supabase
     .from('account_balance_snapshots')

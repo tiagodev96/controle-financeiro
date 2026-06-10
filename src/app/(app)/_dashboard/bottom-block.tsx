@@ -11,11 +11,7 @@ import {
   getDashboardRateMap,
   hasBothCurrencies,
 } from '@/lib/finance/dashboard-data';
-
-const MONTHS_PT_SHORT = [
-  'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-  'jul', 'ago', 'set', 'out', 'nov', 'dez',
-];
+import { MONTHS_PT_SHORT, monthRange, toIsoDate } from '@/lib/dates';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -49,10 +45,7 @@ export async function BottomBlock({ nowIso, targetDateIso, isFuture }: Props) {
 
   const supabase = await getDashboardSupabase();
   const targetDate = new Date(targetDateIso);
-  const monthStartIso = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-01`;
-  const monthEndIso = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0)
-    .toISOString()
-    .slice(0, 10);
+  const { start: monthStartIso, end: monthEndExclusiveIso } = monthRange(targetDate);
 
   const displayCurrency = session.preferredDisplayCurrency;
   const both = hasBothCurrencies(accounts);
@@ -74,7 +67,7 @@ export async function BottomBlock({ nowIso, targetDateIso, isFuture }: Props) {
       )
       .eq('household_id', session.householdId)
       .gte('occurred_on', monthStartIso)
-      .lte('occurred_on', monthEndIso)
+      .lt('occurred_on', monthEndExclusiveIso)
       .order('occurred_on', { ascending: false })
       .limit(10),
   ]);
@@ -189,10 +182,10 @@ function txnSource(t: TxnRowData):
 
 function groupByDay(txns: TxnRowData[]): { label: string; rows: TxnRowData[] }[] {
   const today = new Date();
-  const todayIso = today.toISOString().slice(0, 10);
+  const todayIso = toIsoDate(today);
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  const yesterdayIso = yesterday.toISOString().slice(0, 10);
+  const yesterdayIso = toIsoDate(yesterday);
 
   const groups = new Map<string, TxnRowData[]>();
   for (const t of txns) {

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import { convertCents, type RateMap } from '@/lib/fx';
+import { monthRange, toIsoDate } from '@/lib/dates';
 
 export type Currency = 'BRL' | 'EUR';
 
@@ -24,18 +25,6 @@ export type CategorySpent = {
   pctOfMax: number;
 };
 
-function monthRange(now: Date): { start: string; end: string } {
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  const start = new Date(y, m, 1).toISOString().slice(0, 10);
-  const end = new Date(y, m + 1, 1).toISOString().slice(0, 10);
-  return { start, end };
-}
-
-function todayIso(now: Date): string {
-  return now.toISOString().slice(0, 10);
-}
-
 /**
  * Stats agregadas do mês corrente pra uma moeda:
  *   - pago: o que já foi liquidado este mês (saída)
@@ -56,7 +45,7 @@ export async function calculateMonthStats(
   const { start, end } = monthRange(now);
   // `now` define o mês; `nowDate` (default = now) define o corte de atraso.
   // Mês futuro passa a data real pra que nada do mês apareça como "em atraso".
-  const today = todayIso(nowDate ?? now);
+  const today = toIsoDate(nowDate ?? now);
 
   const { data } = await supabase
     .from('transactions')

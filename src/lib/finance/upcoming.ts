@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Currency } from '@/components/finance/num';
+import { toIsoDate as isoDate } from '@/lib/dates';
 
 export type UpcomingRow = {
   id: string;
@@ -12,10 +13,6 @@ export type UpcomingRow = {
   category_id: string | null;
   categories: { name: string } | null;
 };
-
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function daysFromIso(d: Date, days: number): string {
   const out = new Date(d);

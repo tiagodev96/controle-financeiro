@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Currency } from '@/components/finance/num';
+import { endOfMonth, monthIso, monthRange } from '@/lib/dates';
 
 export type RecurringRule = {
   id: string;
@@ -21,15 +22,6 @@ export type RecurringListResult = {
   paused: RecurringRule[];
   notGeneratedThisMonth: number;
 };
-
-function monthRange(now: Date): { start: string; end: string } {
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  return {
-    start: new Date(y, m, 1).toISOString().slice(0, 10),
-    end: new Date(y, m + 1, 1).toISOString().slice(0, 10),
-  };
-}
 
 export type VirtualRecurringOccurrence = {
   ruleId: string;
@@ -108,12 +100,8 @@ export async function listUngeneratedRecurringForMonth({
       .filter((id): id is string => !!id),
   );
 
-  const y = targetDate.getFullYear();
-  const m = targetDate.getMonth();
-  const lastDay = new Date(y, m + 1, 0).getDate();
-  // Prefixo do mês direto do targetDate local — evita o shift de timezone que
-  // `monthRange` (via toISOString) introduz na borda do mês.
-  const monthPrefix = `${y}-${String(m + 1).padStart(2, '0')}`;
+  const lastDay = endOfMonth(targetDate).getDate();
+  const monthPrefix = monthIso(targetDate);
 
   return active
     .filter((r) => !generatedIds.has(r.id))

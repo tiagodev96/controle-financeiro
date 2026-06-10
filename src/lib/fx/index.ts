@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
+import { toIsoDate as isoDate } from '@/lib/dates';
 
 export { convertCents } from './convert';
 export {
@@ -44,10 +45,6 @@ export type GetRateResult = {
   rateDate: string;
   isStale: boolean;
 };
-
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function daysBefore(d: Date, days: number): string {
   const out = new Date(d);

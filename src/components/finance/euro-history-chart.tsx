@@ -11,6 +11,7 @@ import {
   YAxis,
 } from 'recharts';
 import type { RatePoint } from '@/lib/fx';
+import { MONTHS_PT_SHORT } from '@/lib/dates';
 
 type Period = '7d' | '30d' | '1y';
 
@@ -24,10 +25,6 @@ const PERIODS: { key: Period; label: string; days: number | null }[] = [
   { key: '1y', label: '1 ano', days: null },
 ];
 
-const MONTHS_SHORT = [
-  'jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez',
-];
-
 function formatRate(rate: number): string {
   return `R$ ${rate.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
@@ -37,7 +34,7 @@ function formatRate(rate: number): string {
 
 function formatDateShort(iso: string): string {
   const [, m, d] = iso.split('-');
-  return `${d}/${MONTHS_SHORT[Number(m) - 1]}`;
+  return `${d}/${MONTHS_PT_SHORT[Number(m) - 1]}`;
 }
 
 function dateBefore(iso: string, days: number): string {

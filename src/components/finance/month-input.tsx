@@ -4,12 +4,7 @@ import { useState } from 'react';
 import { Popover } from '@base-ui/react/popover';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const MONTHS_PT_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-const MONTHS_PT_LONG = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-];
+import { MONTHS_PT as MONTHS_PT_LONG, MONTHS_PT_SHORT } from '@/lib/dates';
 
 type Props = {
   label?: string;

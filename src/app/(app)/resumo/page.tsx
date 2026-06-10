@@ -22,51 +22,9 @@ import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { buildMonthSummaryText, type FxRateMap } from '@/lib/finance/month-summary';
 import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
 import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
-
-const MONTHS_PT = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-];
-
-function monthEyebrow(d: Date): string {
-  return `${MONTHS_PT[d.getMonth()]} · ${d.getFullYear()}`;
-}
+import { monthEyebrow, monthIso as toMonthIso, parseMonthParam, parseMoedaParam } from '@/lib/dates';
 
 type SearchParams = Promise<{ mes?: string; moeda?: string }>;
-
-function parseMonthParam(
-  raw: string | undefined,
-  now: Date,
-): { targetDate: Date; monthIso: string; isPast: boolean; isFuture: boolean } {
-  const currentIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const match = raw && /^(\d{4})-(\d{2})$/.exec(raw);
-  if (!match) {
-    return { targetDate: now, monthIso: currentIso, isPast: false, isFuture: false };
-  }
-  const y = Number(match[1]);
-  const m = Number(match[2]);
-  if (!Number.isFinite(y) || m < 1 || m > 12) {
-    return { targetDate: now, monthIso: currentIso, isPast: false, isFuture: false };
-  }
-  const monthIso = `${y}-${String(m).padStart(2, '0')}`;
-  if (monthIso === currentIso) {
-    return { targetDate: now, monthIso: currentIso, isPast: false, isFuture: false };
-  }
-  // Último dia do mês alvo — preserva semântica de "fim do mês" pra stats.
-  const targetDate = new Date(y, m, 0);
-  return {
-    targetDate,
-    monthIso,
-    isPast: monthIso < currentIso,
-    isFuture: monthIso > currentIso,
-  };
-}
-
-function parseMoedaParam(raw: string | undefined, fallback: Currency): Currency {
-  if (raw === 'EUR' || raw === 'eur') return 'EUR';
-  if (raw === 'BRL' || raw === 'brl') return 'BRL';
-  return fallback;
-}
 
 export default async function ResumoPage({ searchParams }: { searchParams: SearchParams }) {
   const session = await getSession();
@@ -74,7 +32,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   const now = new Date();
   const params = await searchParams;
   const { targetDate, monthIso, isPast, isFuture } = parseMonthParam(params.mes, now);
-  const currentMonthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthIso = toMonthIso(now);
   const primary: Currency = parseMoedaParam(params.moeda, 'EUR');
 
   const [accountsAll, { open: openDebts, closed: closedDebts }, debtPaymentsByDebtId] =

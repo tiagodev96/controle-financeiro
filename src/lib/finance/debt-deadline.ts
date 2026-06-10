@@ -1,3 +1,5 @@
+import { MONTHS_PT_SHORT, toIsoDate } from '@/lib/dates';
+
 export type DeadlineStatus = 'on-track' | 'tight' | 'overdue';
 
 function yearMonth(iso: string): { y: number; m: number } {
@@ -57,7 +59,7 @@ export function monthToDeadlineIso(yearMonthStr: string): string {
   const y = Number(yearMonthStr.slice(0, 4));
   const m = Number(yearMonthStr.slice(5, 7));
   const lastDay = new Date(Date.UTC(y, m, 0));
-  return lastDay.toISOString().slice(0, 10);
+  return toIsoDate(lastDay);
 }
 
 function utcDay(iso: string): number {
@@ -72,12 +74,7 @@ export function daysUntil(deadlineIso: string, todayIso: string): number {
   return Math.round((utcDay(deadlineIso) - utcDay(todayIso)) / 86_400_000);
 }
 
-const MONTHS_SHORT = [
-  'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-  'jul', 'ago', 'set', 'out', 'nov', 'dez',
-];
-
 export function formatDeadlineMonth(iso: string): string {
   const m = Number(iso.slice(5, 7));
-  return `${MONTHS_SHORT[m - 1]}/${iso.slice(2, 4)}`;
+  return `${MONTHS_PT_SHORT[m - 1]}/${iso.slice(2, 4)}`;
 }

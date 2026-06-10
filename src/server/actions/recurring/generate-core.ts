@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Session } from '@/lib/auth/session';
+import { monthRangeFromIso } from '@/lib/dates';
 
 const GENERIC = 'Não foi possível gerar.';
 
@@ -20,13 +21,9 @@ type Deps = {
 };
 
 function monthRange(monthIso: string): { start: string; end: string; lastDay: number } {
+  const { start, end } = monthRangeFromIso(monthIso);
   const [y, m] = monthIso.split('-').map(Number);
-  if (!y || !m) throw new Error(`monthIso inválido: ${monthIso}`);
-  const lastDay = new Date(y, m, 0).getDate();
-  const start = `${y}-${String(m).padStart(2, '0')}-01`;
-  const end =
-    m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
-  return { start, end, lastDay };
+  return { start, end, lastDay: new Date(y!, m!, 0).getDate() };
 }
 
 function dateOfRule(monthIso: string, dayOfMonth: number, lastDay: number): string {

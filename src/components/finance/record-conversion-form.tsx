@@ -20,15 +20,14 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { toLocalIsoDate } from '@/lib/dates';
 
 type Direction = 'EUR_BRL' | 'BRL_EUR';
 
 const SYMBOL = { EUR: '€', BRL: 'R$' } as const;
 
 function todayIsoDate(): string {
-  const now = new Date();
-  const tzOffsetMs = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+  return toLocalIsoDate(new Date());
 }
 
 export function RecordConversionForm({ onDone }: { onDone?: () => void }) {

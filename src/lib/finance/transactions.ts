@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
+import { monthRangeFromIso } from '@/lib/dates';
 
 export type Direction = 'expense' | 'income';
 export type Status = 'pending' | 'paid';
@@ -40,14 +41,6 @@ export type ListFilters = {
 
 const DEFAULT_LIMIT = 100;
 
-function monthRange(monthIso: string): { start: string; end: string } {
-  const [y, m] = monthIso.split('-').map(Number);
-  if (!y || !m) throw new Error(`monthIso inválido: ${monthIso}`);
-  const start = `${y}-${String(m).padStart(2, '0')}-01`;
-  const next = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`;
-  return { start, end: next };
-}
-
 /**
  * Lista transações do household. RLS-safe (cliente autenticado).
  * Retorna { transactions, total } — total reflete contagem antes do limit
@@ -81,7 +74,7 @@ export async function listTransactionsForHousehold(
     if (filters.startDate) query = query.gte('occurred_on', filters.startDate);
     if (filters.endDate) query = query.lte('occurred_on', filters.endDate);
   } else if (filters.monthIso) {
-    const { start, end } = monthRange(filters.monthIso);
+    const { start, end } = monthRangeFromIso(filters.monthIso);
     query = query.gte('occurred_on', start).lt('occurred_on', end);
   }
 

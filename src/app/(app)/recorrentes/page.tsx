@@ -7,8 +7,7 @@ import { AppTopBar } from '@/components/finance/app-top-bar';
 import { CreateRecurringDialog } from '@/components/finance/recurring/create-dialog';
 import { RecurringListItem } from '@/components/finance/recurring/list-item';
 import { GenerateMonthButton } from '@/components/finance/recurring/generate-button';
-
-const MONTHS_PT_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+import { MONTHS_PT_SHORT, monthIso as toMonthIso } from '@/lib/dates';
 
 export default async function RecorrentesPage() {
   const session = await getSession();
@@ -22,7 +21,7 @@ export default async function RecorrentesPage() {
       listAllAccountsForHousehold(supabase, session.householdId),
     ]);
 
-  const monthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const monthIso = toMonthIso(now);
   const monthShort = MONTHS_PT_SHORT[now.getMonth()];
   const eyebrow =
     active.length === 0

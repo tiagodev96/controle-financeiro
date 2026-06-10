@@ -20,6 +20,7 @@ import {
   getDashboardDebts,
   hasBothCurrencies,
 } from '@/lib/finance/dashboard-data';
+import { toIsoDate } from '@/lib/dates';
 
 type Props = {
   nowIso: string;
@@ -113,10 +114,9 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
 }
 
 function shortDayLabel(iso: string, now: Date): string {
-  const today = now.toISOString().slice(0, 10);
-  if (iso === today) return 'hoje';
+  if (iso === toIsoDate(now)) return 'hoje';
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  if (iso === tomorrow.toISOString().slice(0, 10)) return 'amanhã';
+  if (iso === toIsoDate(tomorrow)) return 'amanhã';
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 }

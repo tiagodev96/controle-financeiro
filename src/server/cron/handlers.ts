@@ -3,6 +3,7 @@ import type { Database } from '@/types/database';
 import type { Session } from '@/lib/auth/session';
 import { generateRecurringForMonthCore } from '@/server/actions/recurring/generate-core';
 import { getRate } from '@/lib/fx';
+import { monthIso, toIsoDate } from '@/lib/dates';
 
 type CronDeps = {
   serviceSupabase: SupabaseClient<Database>;
@@ -18,16 +19,11 @@ export type RecurringCronSummary = {
 
 const MONTHS_TO_SWEEP = 3;
 
-function monthIso(y: number, m: number): string {
-  return `${y}-${String(m).padStart(2, '0')}`;
-}
-
 /** Últimos N meses (incluindo o corrente), do mais antigo pro mais novo. */
 function recentMonthsIso(now: Date, n: number): string[] {
   const list: string[] = [];
   for (let i = n - 1; i >= 0; i -= 1) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    list.push(monthIso(d.getFullYear(), d.getMonth() + 1));
+    list.push(monthIso(new Date(now.getFullYear(), now.getMonth() - i, 1)));
   }
   return list;
 }
@@ -112,7 +108,7 @@ export async function runSnapshotCron(
   { serviceSupabase }: CronDeps,
   now: Date = new Date(),
 ): Promise<{ ok: true; summary: SnapshotCronSummary[] }> {
-  const snapshotDate = now.toISOString().slice(0, 10);
+  const snapshotDate = toIsoDate(now);
   const { data: households } = await serviceSupabase.from('households').select('id');
   const summary: SnapshotCronSummary[] = [];
 

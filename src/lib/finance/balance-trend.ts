@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Currency } from '@/components/finance/num';
+import { toIsoDate } from '@/lib/dates';
 
 export type TrendPoint = {
   /** ISO YYYY-MM-DD. */
@@ -32,7 +33,7 @@ export async function listSnapshotsForChart(
 ): Promise<TrendPoint[]> {
   const since = new Date();
   since.setDate(since.getDate() - weeks * 7);
-  const sinceIso = since.toISOString().slice(0, 10);
+  const sinceIso = toIsoDate(since);
 
   const { data, error } = await supabase
     .from('account_balance_snapshots')

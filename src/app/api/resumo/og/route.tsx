@@ -9,15 +9,11 @@ import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { listDebtsForHousehold, debtsClosedInMonth } from '@/lib/finance/debts';
 import { projectMonth } from '@/lib/finance/month-projection';
 import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
+import { monthEyebrow, parseMonthParam, parseMoedaParam } from '@/lib/dates';
 import type { Currency } from '@/components/finance/num';
 
 // Node runtime (default). Mover pra edge depois se latência incomodar —
 // volume é ~2 calls/mês, confiabilidade > latência.
-
-const MONTHS_PT = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-];
 
 const COLORS = {
   bg: '#1a1416',
@@ -32,29 +28,6 @@ const COLORS = {
   positive: '#7ea177',
   negative: '#d27089',
 } as const;
-
-function parseMes(raw: string | null, now: Date): { targetDate: Date; isPast: boolean; isFuture: boolean } {
-  if (!raw) return { targetDate: now, isPast: false, isFuture: false };
-  const match = /^(\d{4})-(\d{2})$/.exec(raw);
-  if (!match) return { targetDate: now, isPast: false, isFuture: false };
-  const y = Number(match[1]);
-  const m = Number(match[2]);
-  if (!Number.isFinite(y) || m < 1 || m > 12) {
-    return { targetDate: now, isPast: false, isFuture: false };
-  }
-  const currentIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const monthIso = `${y}-${String(m).padStart(2, '0')}`;
-  if (monthIso === currentIso) {
-    return { targetDate: now, isPast: false, isFuture: false };
-  }
-  const targetDate = new Date(y, m, 0);
-  return { targetDate, isPast: monthIso < currentIso, isFuture: monthIso > currentIso };
-}
-
-function parseMoeda(raw: string | null): Currency {
-  if (raw === 'BRL' || raw === 'brl') return 'BRL';
-  return 'EUR';
-}
 
 const SYMBOL = { EUR: '€', BRL: 'R$' } as const;
 
@@ -85,8 +58,8 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const now = new Date();
-  const { targetDate, isPast, isFuture } = parseMes(url.searchParams.get('mes'), now);
-  const moeda = parseMoeda(url.searchParams.get('moeda'));
+  const { targetDate, isPast, isFuture } = parseMonthParam(url.searchParams.get('mes'), now);
+  const moeda: Currency = parseMoedaParam(url.searchParams.get('moeda'), 'EUR');
 
   const supabase = await getServerSupabase();
   const session = await getSession();
@@ -179,7 +152,7 @@ export async function GET(request: Request) {
     4,
   );
 
-  const monthTitle = `${MONTHS_PT[targetDate.getMonth()]} · ${targetDate.getFullYear()}`;
+  const monthTitle = monthEyebrow(targetDate);
   const contextLabel = isFuture ? 'projeção' : isPast ? 'fechado' : 'mês atual';
 
   const fontsDir = join(process.cwd(), 'public/fonts/og');

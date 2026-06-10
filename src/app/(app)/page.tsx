@@ -15,46 +15,9 @@ import {
   BottomBlockSkeleton,
   FxBlockSkeleton,
 } from './_dashboard/skeletons';
-
-const MONTHS_PT = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-];
-
-function monthEyebrow(d: Date): string {
-  return `${MONTHS_PT[d.getMonth()]} · ${d.getFullYear()}`;
-}
+import { monthEyebrow, monthIso as toMonthIso, parseMonthParam } from '@/lib/dates';
 
 type SearchParams = Promise<{ mes?: string }>;
-
-function parseMonthParam(raw: string | undefined, now: Date): {
-  targetDate: Date;
-  monthIso: string;
-  isPast: boolean;
-  isFuture: boolean;
-} {
-  const currentIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const match = raw && /^(\d{4})-(\d{2})$/.exec(raw);
-  if (!match) {
-    return { targetDate: now, monthIso: currentIso, isPast: false, isFuture: false };
-  }
-  const y = Number(match[1]);
-  const m = Number(match[2]);
-  if (!Number.isFinite(y) || m < 1 || m > 12) {
-    return { targetDate: now, monthIso: currentIso, isPast: false, isFuture: false };
-  }
-  const monthIso = `${y}-${String(m).padStart(2, '0')}`;
-  if (monthIso === currentIso) {
-    return { targetDate: now, monthIso: currentIso, isPast: false, isFuture: false };
-  }
-  const targetDate = new Date(y, m, 0);
-  return {
-    targetDate,
-    monthIso,
-    isPast: monthIso < currentIso,
-    isFuture: monthIso > currentIso,
-  };
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -64,7 +27,7 @@ export default async function DashboardPage({
   const now = new Date();
   const params = await searchParams;
   const { targetDate, monthIso, isPast, isFuture } = parseMonthParam(params.mes, now);
-  const currentMonthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthIso = toMonthIso(now);
 
   const nowIso = now.toISOString();
   const targetDateIso = targetDate.toISOString();

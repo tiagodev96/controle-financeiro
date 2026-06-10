@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import type { TrendPoint } from '@/lib/finance/balance-trend';
 import type { Currency } from '@/components/finance/num';
+import { MONTHS_PT_SHORT } from '@/lib/dates';
 
 type Props = {
   series: { EUR: TrendPoint[]; BRL: TrendPoint[] };
@@ -29,8 +30,7 @@ function formatMoney(cents: number, currency: Currency): string {
 
 function formatDateShort(iso: string): string {
   const [, m, d] = iso.split('-');
-  const monthsShort = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-  return `${d}/${monthsShort[Number(m) - 1]}`;
+  return `${d}/${MONTHS_PT_SHORT[Number(m) - 1]}`;
 }
 
 type RechartTooltipProps = {

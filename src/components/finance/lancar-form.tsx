@@ -13,6 +13,7 @@ import { CCY } from './ccy';
 import { FormSelect } from './form-select';
 import { Num } from './num';
 import { cn } from '@/lib/utils';
+import { toLocalIsoDate } from '@/lib/dates';
 
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
 type Category = { id: string; name: string; icon: string | null };
@@ -26,9 +27,7 @@ type Props = {
 };
 
 function todayIsoDate(): string {
-  const now = new Date();
-  const tzOffsetMs = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+  return toLocalIsoDate(new Date());
 }
 
 const COPY: Record<Direction, { cta: string; toast: string }> = {

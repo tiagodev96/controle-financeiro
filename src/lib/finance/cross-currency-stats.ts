@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Currency } from '@/components/finance/num';
 import { convertCents, type RateMap } from '@/lib/fx';
+import { monthRange, toIsoDate } from '@/lib/dates';
 
 export type CrossCurrencyTopCategory = {
   id: string;
@@ -29,19 +30,6 @@ export type CrossCurrencyMonthStats = {
   /** True se algum txn em currency diferente do target ficou fora por falta de FX. */
   fxIncomplete: boolean;
 };
-
-function monthRange(targetDate: Date): { start: string; end: string } {
-  const y = targetDate.getFullYear();
-  const m = targetDate.getMonth();
-  return {
-    start: new Date(y, m, 1).toISOString().slice(0, 10),
-    end: new Date(y, m + 1, 1).toISOString().slice(0, 10),
-  };
-}
-
-function todayIsoOf(targetDate: Date): string {
-  return targetDate.toISOString().slice(0, 10);
-}
 
 function convertToTarget(
   cents: number,
@@ -91,7 +79,7 @@ export async function calculateCrossCurrencyMonthStats({
   topCategoriesLimit = 3,
 }: Args): Promise<CrossCurrencyMonthStats> {
   const { start, end } = monthRange(targetDate);
-  const today = todayIsoOf(nowDate ?? targetDate);
+  const today = toIsoDate(nowDate ?? targetDate);
 
   // Mesma query que o calculateMonthStats faz (sem filtro de currency).
   // Precisamos de todos os txns do household pra capturar overdue (pending

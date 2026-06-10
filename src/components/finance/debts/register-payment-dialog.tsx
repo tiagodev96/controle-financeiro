@@ -15,6 +15,7 @@ import { CCY } from '@/components/finance/ccy';
 import { FormSelect } from '@/components/finance/form-select';
 import { Num, type Currency } from '@/components/finance/num';
 import { registerDebtPaymentAction } from '@/server/actions/debts/actions';
+import { toLocalIsoDate } from '@/lib/dates';
 
 type Account = {
   id: string;
@@ -34,9 +35,7 @@ type Props = {
 };
 
 function todayIsoDate(): string {
-  const now = new Date();
-  const tzOffsetMs = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+  return toLocalIsoDate(new Date());
 }
 
 export function RegisterPaymentDialog({

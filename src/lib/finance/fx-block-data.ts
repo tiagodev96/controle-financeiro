@@ -12,6 +12,7 @@ import {
   type RatePoint,
 } from '@/lib/fx';
 import type { Database } from '@/types/database';
+import { toIsoDate as isoDate } from '@/lib/dates';
 import type { Currency } from '@/components/finance/num';
 
 const HISTORY_DAYS = 365;
@@ -36,10 +37,6 @@ export type FxBlockData = {
   advice: ConversionAdvice;
   conversions: ConversionListItem[];
 };
-
-function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
 
 function daysBefore(d: Date, days: number): string {
   const out = new Date(d);

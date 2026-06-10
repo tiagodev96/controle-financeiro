@@ -20,6 +20,7 @@ import {
   type GenerateInput,
   type GenerateResult,
 } from './generate-core';
+import { monthIso } from '@/lib/dates';
 
 function revalidateAll(): void {
   revalidatePath('/recorrentes');
@@ -37,9 +38,10 @@ export async function createRecurringAction(
     // Gera imediatamente a transaction do mês corrente — sem isso a regra
     // fica "fantasma" até o cron do dia 1 do mês seguinte rodar. A geração
     // é idempotente: se já existir por algum motivo, é pulada.
-    const now = new Date();
-    const monthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    await generateRecurringForMonthCore({ supabase, session }, { monthIso });
+    await generateRecurringForMonthCore(
+      { supabase, session },
+      { monthIso: monthIso(new Date()) },
+    );
     revalidateAll();
   }
   return result;

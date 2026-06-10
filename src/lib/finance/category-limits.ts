@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Currency } from '@/components/finance/num';
 import { convertCents, type RateMap } from '@/lib/fx';
+import { monthRange } from '@/lib/dates';
 
 export type LimitStatus = 'ok' | 'warning' | 'over';
 
@@ -19,15 +20,6 @@ export type CategoryLimit = {
   /** True se algum gasto foi excluído por falta de FX (raro mas possível). */
   fxIncomplete: boolean;
 };
-
-function monthRange(date: Date): { start: string; end: string } {
-  const y = date.getFullYear();
-  const m = date.getMonth();
-  return {
-    start: new Date(y, m, 1).toISOString().slice(0, 10),
-    end: new Date(y, m + 1, 1).toISOString().slice(0, 10),
-  };
-}
 
 function statusFromPct(pct: number): LimitStatus {
   if (pct >= 1) return 'over';

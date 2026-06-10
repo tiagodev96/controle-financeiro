@@ -18,23 +18,15 @@ import {
   balanceByCurrency,
   hasBothCurrencies,
 } from '@/lib/finance/dashboard-data';
-
-const MONTHS_PT_SHORT = [
-  'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-  'jul', 'ago', 'set', 'out', 'nov', 'dez',
-];
+import { MONTHS_PT_SHORT, endOfMonth, monthEyebrow } from '@/lib/dates';
 
 function endOfMonthLabel(d: Date): string {
-  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const last = endOfMonth(d);
   return `${String(last.getDate()).padStart(2, '0')} ${MONTHS_PT_SHORT[last.getMonth()]}`;
 }
 
 function shortDate(iso: string): string {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-}
-
-function isoLocal(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 function formatRate(rate: number): string {
@@ -227,15 +219,6 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast, isFuture }: Pro
   );
 }
 
-const MONTHS_PT = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-];
-
-function monthEyebrow(d: Date): string {
-  return `${MONTHS_PT[d.getMonth()]} · ${d.getFullYear()}`;
-}
-
 function FlowStat({
   label,
   cents,
@@ -278,5 +261,3 @@ function EmptyHero() {
     </div>
   );
 }
-
-export { isoLocal };

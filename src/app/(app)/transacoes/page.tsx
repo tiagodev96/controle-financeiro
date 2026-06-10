@@ -15,10 +15,10 @@ import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { convertCents, FxUnavailableError, getRateMap, type RateMap } from '@/lib/fx';
+import { monthIso, monthRangeFromIso, toIsoDate } from '@/lib/dates';
 
 function currentMonthIso(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return monthIso(new Date());
 }
 
 const VALID_MONTH = /^\d{4}-\d{2}$/;
@@ -44,10 +44,10 @@ function parseCategoryParam(raw: string | undefined): string | 'none' | undefine
 
 function groupByDay(txns: Transaction[]): { label: string; rows: Transaction[] }[] {
   const today = new Date();
-  const todayIso = today.toISOString().slice(0, 10);
+  const todayIso = toIsoDate(today);
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  const yesterdayIso = yesterday.toISOString().slice(0, 10);
+  const yesterdayIso = toIsoDate(yesterday);
 
   const groups = new Map<string, Transaction[]>();
   for (const t of txns) {
@@ -218,12 +218,8 @@ export default async function TransacoesPage({ searchParams }: Props) {
       .select('id, from_amount_cents, to_amount_cents, from_currency, to_currency, occurred_on')
       .order('created_at', { ascending: false });
     if (monthIso) {
-      const [yy, mm] = monthIso.split('-').map(Number) as [number, number];
-      const nextMonth =
-        mm === 12 ? `${yy + 1}-01-01` : `${yy}-${String(mm + 1).padStart(2, '0')}-01`;
-      transferQuery = transferQuery
-        .gte('occurred_on', `${monthIso}-01`)
-        .lt('occurred_on', nextMonth);
+      const { start, end } = monthRangeFromIso(monthIso);
+      transferQuery = transferQuery.gte('occurred_on', start).lt('occurred_on', end);
     } else {
       if (startDate) transferQuery = transferQuery.gte('occurred_on', startDate);
       if (endDate) transferQuery = transferQuery.lte('occurred_on', endDate);

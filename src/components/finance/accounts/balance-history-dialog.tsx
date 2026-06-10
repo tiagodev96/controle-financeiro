@@ -17,6 +17,7 @@ import {
   setSnapshotAction,
 } from '@/server/actions/snapshots/actions';
 import { cn } from '@/lib/utils';
+import { toLocalIsoDate } from '@/lib/dates';
 
 type Snapshot = {
   id: string;
@@ -34,9 +35,7 @@ type Props = {
 };
 
 function todayIso(): string {
-  const now = new Date();
-  const tzOffsetMs = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+  return toLocalIsoDate(new Date());
 }
 
 function formatDateBR(iso: string): string {

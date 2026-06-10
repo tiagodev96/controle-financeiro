@@ -14,6 +14,7 @@ import { MoneyInput } from '@/components/finance/money-input';
 import { FormSelect } from '@/components/finance/form-select';
 import { createInstallmentPlanAction } from '@/server/actions/installments/actions';
 import { splitInstallments } from '@/lib/finance/installments';
+import { toLocalIsoDate } from '@/lib/dates';
 
 type Currency = 'EUR' | 'BRL';
 
@@ -26,9 +27,7 @@ type Props = {
 };
 
 function todayIsoDate(): string {
-  const now = new Date();
-  const tzOffsetMs = now.getTimezoneOffset() * 60_000;
-  return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+  return toLocalIsoDate(new Date());
 }
 
 export function CreateInstallmentDialog({ categories, accounts }: Props) {

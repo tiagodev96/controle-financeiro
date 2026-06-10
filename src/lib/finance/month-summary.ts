@@ -1,10 +1,6 @@
 import { formatCentsToBRL } from '@/lib/money/format';
+import { MONTHS_PT } from '@/lib/dates';
 import type { Currency } from '@/components/finance/num';
-
-const MONTHS_PT = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
-] as const;
 
 const SYMBOL: Record<Currency, string> = { BRL: 'R$', EUR: '€' };
 

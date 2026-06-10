@@ -9,6 +9,7 @@ import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { CreateDebtDialog } from '@/components/finance/debts/create-dialog';
 import { DebtListItem } from '@/components/finance/debts/list-item';
+import { toIsoDate } from '@/lib/dates';
 
 const MIN_PACE_MONTHS = 2;
 
@@ -22,7 +23,7 @@ export default async function DividasPage() {
   ]);
 
   const now = new Date();
-  const todayIso = now.toISOString().slice(0, 10);
+  const todayIso = toIsoDate(now);
 
   const withDeadline = open.filter((d) => d.target_quit_date);
   const paceEntries = await Promise.all(
