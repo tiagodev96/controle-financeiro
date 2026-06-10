@@ -12,12 +12,14 @@ export type TrendPoint = {
   accountsCount: number;
 };
 
-type SnapshotRow = {
-  account_id: string;
-  snapshot_date: string;
-  balance_cents: number;
-  accounts: { currency: string } | null;
-};
+type JoinedAccount = { currency: string };
+
+function normalizeJoined(
+  value: JoinedAccount | JoinedAccount[] | null,
+): JoinedAccount | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value;
+}
 
 /**
  * Agrega snapshots por data pra uma currency, últimas N semanas. Cada ponto
@@ -42,13 +44,17 @@ export async function listSnapshotsForChart(
     .gte('snapshot_date', sinceIso)
     .order('snapshot_date', { ascending: true });
 
-  if (error || !data) return [];
+  if (error) {
+    console.error(`balance-trend: query de snapshots falhou: ${error.message}`);
+    return [];
+  }
+  if (!data) return [];
 
-  // Supabase pode retornar `accounts` como array ou objeto dependendo da inferência —
-  // normaliza pra um único objeto pra simplificar o filtro.
-  const rows = (data as unknown as SnapshotRow[]).filter(
-    (r) => r.accounts?.currency === currency,
-  );
+  // Supabase pode retornar `accounts` como array ou objeto dependendo da
+  // inferência — normaliza em runtime em vez de forçar o tipo.
+  const rows = data
+    .map((r) => ({ ...r, accounts: normalizeJoined(r.accounts) }))
+    .filter((r) => r.accounts?.currency === currency);
 
   const byDate = new Map<string, { totalCents: number; accountsCount: number }>();
   for (const r of rows) {

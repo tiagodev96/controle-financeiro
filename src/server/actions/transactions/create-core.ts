@@ -123,10 +123,17 @@ export async function createTransactionForSession(
 
   if (data.paid && data.updateBalance) {
     const delta = data.direction === 'income' ? data.amountCents : -data.amountCents;
-    await supabase
+    const { error: balanceError } = await supabase
       .from('accounts')
       .update({ balance_cents: account.balance_cents + delta })
       .eq('id', data.accountId);
+    if (balanceError) {
+      // A transaction já existe; falhar aqui geraria duplicata no retry.
+      // O saldo é editável manualmente — loga e segue.
+      console.error(
+        `create-transaction: saldo da conta ${data.accountId} não atualizado: ${balanceError.message}`,
+      );
+    }
   }
 
   return { ok: true, transaction: inserted };

@@ -142,8 +142,17 @@ export async function createInstallmentPlanCore(
 
   const { error: txnError } = await supabase.from('transactions').insert(rows);
   if (txnError) {
+    console.error(`installments: insert das parcelas falhou: ${txnError.message}`);
     // Rollback manual: remove o plano órfão.
-    await supabase.from('installment_plans').delete().eq('id', inserted.id);
+    const { error: rollbackError } = await supabase
+      .from('installment_plans')
+      .delete()
+      .eq('id', inserted.id);
+    if (rollbackError) {
+      console.error(
+        `installments: rollback do plano ${inserted.id} falhou (plano órfão): ${rollbackError.message}`,
+      );
+    }
     return { ok: false, error: GENERIC };
   }
 

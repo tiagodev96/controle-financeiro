@@ -219,8 +219,9 @@ export async function deleteCategoryCore(
     .maybeSingle();
 
   if (backup) {
-    // Reassign em paralelo. ON DELETE SET NULL cuida do resto se algum falhar.
-    await Promise.all([
+    // Reassign em paralelo. ON DELETE SET NULL cuida do resto se algum falhar
+    // — mas falha não pode ser invisível.
+    const reassigns = await Promise.all([
       supabase
         .from('transactions')
         .update({ category_id: backup.id })
@@ -234,6 +235,13 @@ export async function deleteCategoryCore(
         .update({ category_id: backup.id })
         .eq('category_id', parsed.data.categoryId),
     ]);
+    for (const { error: reassignError } of reassigns) {
+      if (reassignError) {
+        console.error(
+          `categories: reassign pra "${PROTECTED_NAME}" falhou (vão orfanar): ${reassignError.message}`,
+        );
+      }
+    }
   }
 
   const { error } = await supabase
