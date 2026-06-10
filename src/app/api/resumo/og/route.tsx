@@ -2,13 +2,8 @@ import { ImageResponse } from 'next/og';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getServerSupabase } from '@/lib/supabase/server';
-import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession, UnauthorizedError } from '@/lib/auth/session';
-import { calculateCrossCurrencyMonthStats } from '@/lib/finance/cross-currency-stats';
-import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
-import { listDebtsForHousehold, debtsClosedInMonth } from '@/lib/finance/debts';
-import { projectMonth } from '@/lib/finance/month-projection';
-import { convertCents, getRateMapSafe, type RateMap } from '@/lib/fx';
+import { loadResumoData } from '@/lib/finance/resumo-data';
 import { monthEyebrow, parseMonthParam, parseMoedaParam } from '@/lib/dates';
 import { formatCents as formatMoney } from '@/lib/money/format';
 import type { Currency } from '@/components/finance/num';
@@ -54,64 +49,15 @@ export async function GET(request: Request) {
   const supabase = await getServerSupabase();
   const session = await getSession();
 
-  const [accountsAll, { open: openDebts, closed: closedDebts }] = await Promise.all([
-    listAllAccountsForHousehold(supabase, session.householdId),
-    listDebtsForHousehold(supabase, session.householdId),
-  ]);
-
-  const debtsToShow = [
-    ...openDebts.map((d) => ({ debt: d, isClosed: false })),
-    ...debtsClosedInMonth(closedDebts, targetDate).map((d) => ({ debt: d, isClosed: true })),
-  ];
-
-  const fxRateMap: RateMap | null = await getRateMapSafe({
-    supabase,
-    serviceSupabase: getServiceRoleSupabase(),
-    when: now,
-  });
-
-  const accounts = accountsAll.filter((a) => !a.is_archived);
-  // Soma cross-currency em `moeda`.
-  let accountsTotalInMoeda = 0;
-  for (const a of accounts) {
-    if (a.currency === moeda) {
-      accountsTotalInMoeda += a.balance_cents;
-    } else if (fxRateMap) {
-      const rate = moeda === 'EUR' ? fxRateMap.BRL_EUR : fxRateMap.EUR_BRL;
-      accountsTotalInMoeda += convertCents(a.balance_cents, rate);
-    }
-  }
-
-  const stats = await calculateCrossCurrencyMonthStats({
+  const { debtsToShow, stats, projection, hasData } = await loadResumoData({
     supabase,
     householdId: session.householdId,
-    targetCurrency: moeda,
-    fxRateMap,
-    accountsTotalInTargetCents: accountsTotalInMoeda,
+    currency: moeda,
     targetDate,
+    now,
+    isFuture,
     topCategoriesLimit: 4,
   });
-
-  const projection = isFuture
-    ? await projectMonth({
-        supabase,
-        householdId: session.householdId,
-        targetCurrency: moeda,
-        fxRateMap,
-        accountsTotalInTargetCents: accountsTotalInMoeda,
-        targetDate,
-        now,
-        topCategoriesLimit: 4,
-      })
-    : null;
-
-  const hasData =
-    accounts.length > 0 ||
-    debtsToShow.length > 0 ||
-    stats.topCategories.length > 0 ||
-    stats.paidExpenseCents > 0 ||
-    stats.pendingExpenseCents > 0 ||
-    (projection !== null && projection.expenseProjectedCents > 0);
 
   if (!hasData) {
     return new Response(null, { status: 204 });

@@ -7,21 +7,10 @@ import { HeroNumber, Num, type Currency } from '@/components/finance/num';
 import { SharePngActions } from '@/components/finance/share-png-actions';
 import { MonthPicker } from '@/components/finance/dashboard-month-picker';
 import { ResumoCurrencyToggle } from '@/components/finance/resumo-currency-toggle';
-import {
-  calculateCrossCurrencyMonthStats,
-  type CrossCurrencyMonthStats,
-} from '@/lib/finance/cross-currency-stats';
-import { projectMonth, type MonthProjection } from '@/lib/finance/month-projection';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
-import {
-  listDebtsForHousehold,
-  sumDebtPaymentsThisMonth,
-  debtsClosedInMonth,
-} from '@/lib/finance/debts';
-import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
+import { loadResumoData } from '@/lib/finance/resumo-data';
 import { buildMonthSummaryText, type FxRateMap } from '@/lib/finance/month-summary';
-import { convertCents, getRateMapSafe, type RateMap } from '@/lib/fx';
-import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
+import { convertCents } from '@/lib/fx';
 import { monthEyebrow, monthIso as toMonthIso, parseMonthParam, parseMoedaParam } from '@/lib/dates';
 
 type SearchParams = Promise<{ mes?: string; moeda?: string }>;
@@ -35,91 +24,39 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   const currentMonthIso = toMonthIso(now);
   const primary: Currency = parseMoedaParam(params.moeda, 'EUR');
 
-  const [accountsAll, { open: openDebts, closed: closedDebts }, debtPaymentsByDebtId] =
-    await Promise.all([
-      listAllAccountsForHousehold(supabase, session.householdId),
-      listDebtsForHousehold(supabase, session.householdId),
-      sumDebtPaymentsThisMonth(supabase, session.householdId, targetDate),
-    ]);
-
-  const closedDebtsThisMonth = debtsClosedInMonth(closedDebts, targetDate);
-  const debtsToShow = [
-    ...openDebts.map((d) => ({ debt: d, isClosed: false })),
-    ...closedDebtsThisMonth.map((d) => ({ debt: d, isClosed: true })),
-  ];
-
-  const fxRateMap: RateMap | null = await getRateMapSafe({
-    supabase,
-    serviceSupabase: getServiceRoleSupabase(),
-    when: now,
-  });
-  const fxRateMapSlim: FxRateMap | null = fxRateMap
-    ? { EUR_BRL: fxRateMap.EUR_BRL, BRL_EUR: fxRateMap.BRL_EUR }
-    : null;
-
-  const accounts = accountsAll.filter((a) => !a.is_archived);
-  const hasBothCurrencies =
-    accounts.some((a) => a.currency === 'EUR') &&
-    accounts.some((a) => a.currency === 'BRL');
-
-  // Soma de TODAS as contas, convertendo cada uma pra `primary` (moeda
-  // selecionada no toggle). Se não tem fxRateMap e há contas em currency
-  // diferente da primary, essas viram 0 e marcamos `fxIncomplete`.
-  const accountsTotalInPrimary = (() => {
-    let total = 0;
-    let fxIncomplete = false;
-    for (const a of accounts) {
-      if (a.currency === primary) {
-        total += a.balance_cents;
-      } else if (fxRateMap) {
-        const rate = primary === 'EUR' ? fxRateMap.BRL_EUR : fxRateMap.EUR_BRL;
-        total += convertCents(a.balance_cents, rate);
-      } else {
-        fxIncomplete = true;
-      }
-    }
-    return { cents: total, fxIncomplete };
-  })();
-
-  // Stats cross-currency (tudo já convertido pra primary). Aqui dentro
-  // rodam paid/pending income+expense, overdue, top categorias e o
-  // saldoPrevistoFimDoMes (= accountsTotalInPrimary + pendingIncome - pendingExpense).
-  const stats: CrossCurrencyMonthStats = await calculateCrossCurrencyMonthStats({
+  const {
+    accounts,
+    openDebts,
+    closedDebtsThisMonth,
+    debtsToShow,
+    debtPaymentsByDebtId,
+    fxRateMap,
+    accountsTotal: accountsTotalInPrimary,
+    stats,
+    projection,
+    hasData,
+  } = await loadResumoData({
     supabase,
     householdId: session.householdId,
-    targetCurrency: primary,
-    fxRateMap,
-    accountsTotalInTargetCents: accountsTotalInPrimary.cents,
+    currency: primary,
     targetDate,
+    now,
+    isFuture,
     topCategoriesLimit: 3,
   });
 
-  const projection: MonthProjection | null = isFuture
-    ? await projectMonth({
-        supabase,
-        householdId: session.householdId,
-        targetCurrency: primary,
-        fxRateMap,
-        accountsTotalInTargetCents: accountsTotalInPrimary.cents,
-        targetDate,
-        now,
-        topCategoriesLimit: 3,
-      })
+  const fxRateMapSlim: FxRateMap | null = fxRateMap
+    ? { EUR_BRL: fxRateMap.EUR_BRL, BRL_EUR: fxRateMap.BRL_EUR }
     : null;
+  const hasBothCurrencies =
+    accounts.some((a) => a.currency === 'EUR') &&
+    accounts.some((a) => a.currency === 'BRL');
 
   const entradasMesCents = stats.paidIncomeCents;
   const despesasPaidCents = stats.paidExpenseCents;
   const despesasPendingCents = stats.pendingExpenseCents;
   const saldoPrevistoFimDoMesCents = stats.saldoPrevistoFimDoMesCents;
   const monthFlowNetCents = entradasMesCents - despesasPaidCents;
-
-  const hasData =
-    accounts.length > 0 ||
-    debtsToShow.length > 0 ||
-    stats.topCategories.length > 0 ||
-    despesasPaidCents > 0 ||
-    despesasPendingCents > 0 ||
-    (projection !== null && projection.expenseProjectedCents > 0);
 
   const summaryText = buildMonthSummaryText({
     now: targetDate,
