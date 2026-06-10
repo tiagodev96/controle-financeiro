@@ -120,6 +120,10 @@ export function DebtListItem({
   const pctLabel = Math.round(pct * 100);
 
   const deadline = isOpen && targetQuitDate ? buildDeadline(targetQuitDate, todayIso, remainingCents, actualMonthlyCents) : null;
+  const paceProjection =
+    isOpen && !targetQuitDate && actualMonthlyCents
+      ? projectedQuitMonth(remainingCents, actualMonthlyCents, todayIso)
+      : null;
 
   function handleClose() {
     setMenuOpen(false);
@@ -303,6 +307,19 @@ export function DebtListItem({
               Definir novo prazo
             </button>
           )}
+        </div>
+      )}
+
+      {paceProjection && actualMonthlyCents != null && (
+        <div
+          className="flex items-center gap-1.5 rounded-md bg-bg-inset px-2.5 py-2 text-[12px]"
+          data-testid={`debt-pace-${id}`}
+        >
+          <CalendarClock className="size-3.5 shrink-0 text-fg4" strokeWidth={1.6} aria-hidden />
+          <span className="text-fg3">
+            seu ritmo <Num cents={actualMonthlyCents} currency={currency} className="text-fg2" />
+            /mês · no ritmo, fecha {formatDeadlineMonth(paceProjection)}
+          </span>
         </div>
       )}
 

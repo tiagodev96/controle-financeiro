@@ -25,9 +25,8 @@ export default async function DividasPage() {
   const now = new Date();
   const todayIso = toIsoDate(now);
 
-  const withDeadline = open.filter((d) => d.target_quit_date);
   const paceEntries = await Promise.all(
-    withDeadline.map(async (d) => {
+    open.map(async (d) => {
       const pace = await debtPaymentPace(supabase, session.householdId, d.id, now);
       const reliable = pace && pace.monthsElapsed >= MIN_PACE_MONTHS;
       return [d.id, reliable ? pace.paceCents : null] as const;
