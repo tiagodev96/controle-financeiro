@@ -13,7 +13,11 @@ import {
 } from '@/lib/finance/cross-currency-stats';
 import { projectMonth, type MonthProjection } from '@/lib/finance/month-projection';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
-import { listDebtsForHousehold, sumDebtPaymentsThisMonth } from '@/lib/finance/debts';
+import {
+  listDebtsForHousehold,
+  sumDebtPaymentsThisMonth,
+  debtsClosedInMonth,
+} from '@/lib/finance/debts';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { buildMonthSummaryText, type FxRateMap } from '@/lib/finance/month-summary';
 import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
@@ -73,11 +77,18 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   const currentMonthIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const primary: Currency = parseMoedaParam(params.moeda, 'EUR');
 
-  const [accountsAll, { open: openDebts }, debtPaymentsByDebtId] = await Promise.all([
-    listAllAccountsForHousehold(supabase, session.householdId),
-    listDebtsForHousehold(supabase, session.householdId),
-    sumDebtPaymentsThisMonth(supabase, session.householdId, targetDate),
-  ]);
+  const [accountsAll, { open: openDebts, closed: closedDebts }, debtPaymentsByDebtId] =
+    await Promise.all([
+      listAllAccountsForHousehold(supabase, session.householdId),
+      listDebtsForHousehold(supabase, session.householdId),
+      sumDebtPaymentsThisMonth(supabase, session.householdId, targetDate),
+    ]);
+
+  const closedDebtsThisMonth = debtsClosedInMonth(closedDebts, targetDate);
+  const debtsToShow = [
+    ...openDebts.map((d) => ({ debt: d, isClosed: false })),
+    ...closedDebtsThisMonth.map((d) => ({ debt: d, isClosed: true })),
+  ];
 
   let fxRateMap: RateMap | null = null;
   try {
@@ -151,7 +162,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
 
   const hasData =
     accounts.length > 0 ||
-    openDebts.length > 0 ||
+    debtsToShow.length > 0 ||
     stats.topCategories.length > 0 ||
     despesasPaidCents > 0 ||
     despesasPendingCents > 0 ||
@@ -169,6 +180,12 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
     overdueCount: stats.overdueCount,
     topCategories: stats.topCategories.map((c) => ({ name: c.name, totalCents: c.totalCents })),
     openDebts: openDebts.map((d) => ({
+      id: d.id,
+      title: d.title,
+      currency: d.currency,
+      remainingCents: d.remaining_amount_cents,
+    })),
+    closedDebts: closedDebtsThisMonth.map((d) => ({
       id: d.id,
       title: d.title,
       currency: d.currency,
@@ -379,16 +396,23 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
             </section>
           )}
 
-          {openDebts.length > 0 && (
+          {debtsToShow.length > 0 && (
             <section className="space-y-2">
-              <p className="eyebrow px-1">Dívidas abertas</p>
+              <p className="eyebrow px-1">Dívidas</p>
               <ul className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3 py-1">
-                {openDebts.map((d) => {
+                {debtsToShow.map(({ debt: d, isClosed }) => {
                   const paidThis = debtPaymentsByDebtId[d.id] ?? 0;
                   return (
                     <li key={d.id} className="flex items-center justify-between gap-3 py-2.5 text-[14px]">
                       <div className="flex min-w-0 flex-col">
-                        <span className="truncate text-fg2">{d.title}</span>
+                        <div className="flex min-w-0 items-center gap-2">
+                          <span className="truncate text-fg2">{d.title}</span>
+                          {isClosed && (
+                            <span className="mono shrink-0 rounded-sm bg-bg-inset px-1.5 text-[9px] uppercase tracking-wider text-fg4">
+                              quitada
+                            </span>
+                          )}
+                        </div>
                         {paidThis > 0 && (
                           <span className="mono text-[10px] text-fg4">
                             pago este mês: <Num cents={paidThis} currency={d.currency} className="text-fg3" />
@@ -398,7 +422,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
                       <Num
                         cents={d.remaining_amount_cents}
                         currency={d.currency}
-                        className="shrink-0 font-semibold text-fg1"
+                        className={`shrink-0 font-semibold ${isClosed ? 'text-fg3' : 'text-fg1'}`}
                       />
                     </li>
                   );

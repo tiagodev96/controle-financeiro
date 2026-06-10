@@ -23,6 +23,7 @@ function base(): MonthSummaryInput {
       { id: 'd1', title: 'Jefferson', currency: 'BRL', remainingCents: 240000 },
       { id: 'd2', title: 'Cartão', currency: 'BRL', remainingCents: 32000 },
     ],
+    closedDebts: [],
     debtPaymentsByDebtId: { d1: 60000 },
     accounts: [
       { name: 'Itaú', currency: 'BRL', balanceCents: 182000 },
@@ -48,7 +49,7 @@ describe('buildMonthSummaryText', () => {
         '- Restaurantes: € 215,90',
         '- Casa: € 180,00',
         '',
-        'Dívidas abertas:',
+        'Dívidas:',
         '- Jefferson: R$ 2.400,00 restante (pago este mês: R$ 600,00)',
         '- Cartão: R$ 320,00 restante',
         '',
@@ -63,18 +64,44 @@ describe('buildMonthSummaryText', () => {
     const text = buildMonthSummaryText({ ...base(), topCategories: [] });
     expect(text).not.toContain('Top categorias');
     expect(text).toContain('Despesas:');
-    expect(text).toContain('Dívidas abertas:');
+    expect(text).toContain('Dívidas:');
   });
 
-  it('U-RES3 — omite seção "Dívidas abertas" quando zero abertas', () => {
+  it('U-RES3 — omite seção "Dívidas" quando zero abertas e zero quitadas', () => {
     const text = buildMonthSummaryText({
       ...base(),
       openDebts: [],
+      closedDebts: [],
       debtPaymentsByDebtId: {},
     });
-    expect(text).not.toContain('Dívidas abertas');
+    expect(text).not.toContain('Dívidas:');
     expect(text).toContain('Top categorias:');
     expect(text).toContain('Saldo total das contas:');
+  });
+
+  it('U-RES9 — dívidas quitadas no mês aparecem no bloco "Dívidas" com marca de quitada', () => {
+    const text = buildMonthSummaryText({
+      ...base(),
+      closedDebts: [{ id: 'd3', title: 'Vivo', currency: 'BRL', remainingCents: 0 }],
+      debtPaymentsByDebtId: { d1: 60000, d3: 15164 },
+    });
+    expect(text).toContain('- Vivo: quitada (pago este mês: R$ 151,64)');
+    // Abertas continuam com "restante"; quitadas vêm depois.
+    const lines = text.split('\n');
+    const jeffIdx = lines.findIndex((l) => l.startsWith('- Jefferson:'));
+    const vivoIdx = lines.findIndex((l) => l.startsWith('- Vivo:'));
+    expect(vivoIdx).toBeGreaterThan(jeffIdx);
+  });
+
+  it('U-RES10 — bloco "Dívidas" aparece mesmo sem abertas, só com quitadas', () => {
+    const text = buildMonthSummaryText({
+      ...base(),
+      openDebts: [],
+      closedDebts: [{ id: 'd3', title: 'Vivo', currency: 'BRL', remainingCents: 0 }],
+      debtPaymentsByDebtId: { d3: 15164 },
+    });
+    expect(text).toContain('Dívidas:');
+    expect(text).toContain('- Vivo: quitada (pago este mês: R$ 151,64)');
   });
 
   it('U-RES4 — linha "Em atraso" só aparece se overdueCount > 0', () => {

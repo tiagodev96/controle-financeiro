@@ -6,7 +6,7 @@ import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession, UnauthorizedError } from '@/lib/auth/session';
 import { calculateCrossCurrencyMonthStats } from '@/lib/finance/cross-currency-stats';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
-import { listDebtsForHousehold } from '@/lib/finance/debts';
+import { listDebtsForHousehold, debtsClosedInMonth } from '@/lib/finance/debts';
 import { projectMonth } from '@/lib/finance/month-projection';
 import { convertCents, getRateMap, FxUnavailableError, type RateMap } from '@/lib/fx';
 import type { Currency } from '@/components/finance/num';
@@ -91,10 +91,15 @@ export async function GET(request: Request) {
   const supabase = await getServerSupabase();
   const session = await getSession();
 
-  const [accountsAll, { open: openDebts }] = await Promise.all([
+  const [accountsAll, { open: openDebts, closed: closedDebts }] = await Promise.all([
     listAllAccountsForHousehold(supabase, session.householdId),
     listDebtsForHousehold(supabase, session.householdId),
   ]);
+
+  const debtsToShow = [
+    ...openDebts.map((d) => ({ debt: d, isClosed: false })),
+    ...debtsClosedInMonth(closedDebts, targetDate).map((d) => ({ debt: d, isClosed: true })),
+  ];
 
   let fxRateMap: RateMap | null = null;
   try {
@@ -144,7 +149,7 @@ export async function GET(request: Request) {
 
   const hasData =
     accounts.length > 0 ||
-    openDebts.length > 0 ||
+    debtsToShow.length > 0 ||
     stats.topCategories.length > 0 ||
     stats.paidExpenseCents > 0 ||
     stats.pendingExpenseCents > 0 ||
@@ -302,8 +307,8 @@ export async function GET(request: Request) {
           </div>
         )}
 
-        {/* Dívidas abertas */}
-        {openDebts.length > 0 && (
+        {/* Dívidas (abertas + quitadas no mês) */}
+        {debtsToShow.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', marginTop: 24, gap: 10 }}>
             <p
               style={{
@@ -315,7 +320,7 @@ export async function GET(request: Request) {
                 letterSpacing: 4,
               }}
             >
-              dívidas em aberto
+              dívidas
             </p>
             <div
               style={{
@@ -326,7 +331,7 @@ export async function GET(request: Request) {
                 borderRadius: 10,
               }}
             >
-              {openDebts.slice(0, 4).map((d, idx) => (
+              {debtsToShow.slice(0, 4).map(({ debt: d, isClosed }, idx) => (
                 <div
                   key={d.id}
                   style={{
@@ -337,12 +342,27 @@ export async function GET(request: Request) {
                     borderTop: idx === 0 ? 'none' : `1px solid ${COLORS.border}`,
                   }}
                 >
-                  <span style={{ fontSize: 26, color: COLORS.fg2 }}>{d.title}</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 26, color: COLORS.fg2 }}>{d.title}</span>
+                    {isClosed && (
+                      <span
+                        style={{
+                          fontSize: 16,
+                          color: COLORS.fg4,
+                          fontFamily: 'JetBrainsMono',
+                          textTransform: 'uppercase',
+                          letterSpacing: 2,
+                        }}
+                      >
+                        quitada
+                      </span>
+                    )}
+                  </span>
                   <span
                     style={{
                       fontSize: 26,
                       fontWeight: 700,
-                      color: COLORS.fg1,
+                      color: isClosed ? COLORS.fg3 : COLORS.fg1,
                       fontFamily: 'JetBrainsMono',
                       fontFeatureSettings: '"tnum"',
                     }}
@@ -351,7 +371,7 @@ export async function GET(request: Request) {
                   </span>
                 </div>
               ))}
-              {openDebts.length > 4 && (
+              {debtsToShow.length > 4 && (
                 <div
                   style={{
                     display: 'flex',
@@ -360,8 +380,8 @@ export async function GET(request: Request) {
                   }}
                 >
                   <span style={{ fontSize: 20, color: COLORS.fg4, fontFamily: 'JetBrainsMono' }}>
-                    + {openDebts.length - 4}{' '}
-                    {openDebts.length - 4 === 1 ? 'outra dívida' : 'outras dívidas'}
+                    + {debtsToShow.length - 4}{' '}
+                    {debtsToShow.length - 4 === 1 ? 'outra dívida' : 'outras dívidas'}
                   </span>
                 </div>
               )}

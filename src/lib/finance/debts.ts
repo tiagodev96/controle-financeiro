@@ -68,6 +68,20 @@ function monthRange(now: Date): { start: string; end: string } {
 }
 
 /**
+ * Filtra dívidas fechadas pra só as que foram quitadas dentro do mês de
+ * `targetDate` (closed_at no intervalo). closed_at é timestamptz; a data
+ * UTC basta pra casar o mês, consistente com sumDebtPaymentsThisMonth.
+ */
+export function debtsClosedInMonth(closed: DebtRow[], targetDate: Date): DebtRow[] {
+  const { start, end } = monthRange(targetDate);
+  return closed.filter((d) => {
+    if (!d.closed_at) return false;
+    const day = d.closed_at.slice(0, 10);
+    return day >= start && day < end;
+  });
+}
+
+/**
  * Soma valor pago por dívida no mês corrente (status=paid, paid_on no
  * intervalo). Retorna map debtId → cents. Apenas debt_ids que tiveram
  * pagamento aparecem.

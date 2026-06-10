@@ -29,6 +29,7 @@ export type MonthSummaryInput = {
   overdueCount: number;
   topCategories: CategoryLite[];
   openDebts: DebtLite[];
+  closedDebts: DebtLite[];
   debtPaymentsByDebtId: Record<string, number>;
   accounts: AccountLite[];
   fxRateMap?: FxRateMap | null;
@@ -100,15 +101,16 @@ export function buildMonthSummaryText(input: MonthSummaryInput): string {
     ]);
   }
 
-  if (input.openDebts.length > 0) {
-    const debtLines = input.openDebts.map((d) => {
+  if (input.openDebts.length > 0 || input.closedDebts.length > 0) {
+    const paidSuffix = (d: DebtLite) => {
       const paidThis = input.debtPaymentsByDebtId[d.id] ?? 0;
-      const base = `- ${d.title}: ${money(d.remainingCents, d.currency)} restante`;
-      return paidThis > 0
-        ? `${base} (pago este mês: ${money(paidThis, d.currency)})`
-        : base;
-    });
-    blocks.push(['Dívidas abertas:', ...debtLines]);
+      return paidThis > 0 ? ` (pago este mês: ${money(paidThis, d.currency)})` : '';
+    };
+    const openLines = input.openDebts.map(
+      (d) => `- ${d.title}: ${money(d.remainingCents, d.currency)} restante${paidSuffix(d)}`,
+    );
+    const closedLines = input.closedDebts.map((d) => `- ${d.title}: quitada${paidSuffix(d)}`);
+    blocks.push(['Dívidas:', ...openLines, ...closedLines]);
   }
 
   if (input.accounts.length > 0) {
