@@ -5,6 +5,7 @@ import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession } from '@/lib/auth/session';
 import { getRateMapSafe } from '@/lib/fx';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
+import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { listCategoriesWithLimits } from '@/lib/finance/category-limits';
 import { LancarForm, type CategoryLimitInfo } from '@/components/finance/lancar-form';
 import { EmptyState } from '@/components/finance/empty-state';
@@ -28,24 +29,18 @@ export default async function LancarPage({ searchParams }: Props) {
   const params = await searchParams;
   const direction = parseDirection(params.direction);
 
-  const [allCategories, accountsRes] = await Promise.all([
+  const [allCategories, allAccounts] = await Promise.all([
     listAllCategoriesForHousehold(supabase, session.householdId),
-    supabase
-      .from('accounts')
-      .select('id, name, currency')
-      .eq('is_archived', false)
-      .order('sort_order', { ascending: true }),
+    listAllAccountsForHousehold(supabase, session.householdId),
   ]);
 
   const categories = allCategories
     .filter((c) => !c.is_archived && c.kind === direction)
     .map((c) => ({ id: c.id, name: c.name, icon: c.icon }));
 
-  const accounts = (accountsRes.data ?? []).map((a) => ({
-    id: a.id,
-    name: a.name,
-    currency: a.currency as 'BRL' | 'EUR',
-  }));
+  const accounts = allAccounts
+    .filter((a) => !a.is_archived)
+    .map((a) => ({ id: a.id, name: a.name, currency: a.currency }));
 
   // Aviso de limite só faz sentido pra despesa. Best-effort: sem fx, gastos
   // em outra moeda ficam fora da conta (listCategoriesWithLimits flagga).

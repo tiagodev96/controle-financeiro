@@ -12,6 +12,7 @@ import {
   loadReserveEnvelopes,
 } from '@/lib/finance/reserva-envelopes';
 import { bandForMonths, monthsCovered } from '@/lib/finance/reserva';
+import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { ReservaHealthGauge } from '@/components/finance/reserva/health-gauge';
 import { ReserveBalanceCard } from '@/components/finance/reserva/reserve-balance-card';
 import { EssentialCategoriesEditor } from '@/components/finance/reserva/essential-categories';
@@ -22,11 +23,8 @@ export default async function ReservaPage() {
   const supabase = await getServerSupabase();
   const targetCurrency = session.preferredDisplayCurrency;
 
-  const { data: accountRows } = await supabase
-    .from('accounts')
-    .select('currency')
-    .eq('is_archived', false);
-  const currencies = new Set((accountRows ?? []).map((a) => a.currency));
+  const allAccounts = await listAllAccountsForHousehold(supabase, session.householdId);
+  const currencies = new Set(allAccounts.filter((a) => !a.is_archived).map((a) => a.currency));
   let fxRateMap: RateMap | null = null;
   if (currencies.has('EUR') && currencies.has('BRL')) {
     fxRateMap = await getRateMapSafe({

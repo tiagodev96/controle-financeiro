@@ -41,6 +41,11 @@ export type ListFilters = {
 
 const DEFAULT_LIMIT = 100;
 
+function one<T>(value: T | T[] | null): T | null {
+  if (Array.isArray(value)) return value[0] ?? null;
+  return value;
+}
+
 /**
  * Lista transações do household. RLS-safe (cliente autenticado).
  * Retorna { transactions, total } — total reflete contagem antes do limit
@@ -89,7 +94,15 @@ export async function listTransactionsForHousehold(
   const { data, count, error } = await query;
   if (error) throw new Error(`listTransactionsForHousehold: ${error.message}`);
 
-  const rows = (data ?? []) as unknown as TxnListRow[];
+  // Relações joined podem inferir como array — normaliza em runtime.
+  const rows: TxnListRow[] = (data ?? []).map((t) => ({
+    ...t,
+    currency: t.currency as Currency,
+    direction: t.direction as Direction,
+    status: t.status as Status,
+    categories: one(t.categories),
+    installment_plans: one(t.installment_plans),
+  }));
   // Reordena pela "data efetiva": paid_on quando pago, senão occurred_on.
   // Dentro do mesmo dia, paid vem antes de pending; final tie por id (estável).
   rows.sort((a, b) => {

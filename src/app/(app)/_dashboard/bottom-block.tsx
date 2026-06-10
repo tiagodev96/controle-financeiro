@@ -4,6 +4,7 @@ import { type Currency } from '@/components/finance/num';
 import { TxnRow } from '@/components/finance/txn-row';
 import { CategoryProgressList } from '@/components/finance/category-progress';
 import { topCategoriesCrossCurrency } from '@/lib/finance/dashboard-stats';
+import { listTransactionsForHousehold } from '@/lib/finance/transactions';
 import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
 import {
   getDashboardSupabase,
@@ -11,7 +12,7 @@ import {
   getDashboardRateMap,
   hasBothCurrencies,
 } from '@/lib/finance/dashboard-data';
-import { MONTHS_PT_SHORT, monthRange, toIsoDate } from '@/lib/dates';
+import { MONTHS_PT_SHORT, monthIso, toIsoDate } from '@/lib/dates';
 
 type Direction = 'expense' | 'income';
 type Status = 'pending' | 'paid';
@@ -45,7 +46,6 @@ export async function BottomBlock({ nowIso, targetDateIso, isFuture }: Props) {
 
   const supabase = await getDashboardSupabase();
   const targetDate = new Date(targetDateIso);
-  const { start: monthStartIso, end: monthEndExclusiveIso } = monthRange(targetDate);
 
   const displayCurrency = session.preferredDisplayCurrency;
   const both = hasBothCurrencies(accounts);
@@ -60,19 +60,27 @@ export async function BottomBlock({ nowIso, targetDateIso, isFuture }: Props) {
       limit: 5,
       now: targetDate,
     }),
-    supabase
-      .from('transactions')
-      .select(
-        'id, description, amount_cents, currency, direction, status, occurred_on, source_recurring_rule_id, source_installment_plan_id, installment_number, categories(name), installment_plans(total_installments)',
-      )
-      .eq('household_id', session.householdId)
-      .gte('occurred_on', monthStartIso)
-      .lt('occurred_on', monthEndExclusiveIso)
-      .order('occurred_on', { ascending: false })
-      .limit(10),
+    listTransactionsForHousehold(supabase, {
+      householdId: session.householdId,
+      monthIso: monthIso(targetDate),
+      limit: 10,
+    }),
   ]);
 
-  const txns = (txnsRes.data ?? []) as unknown as TxnRowData[];
+  const txns: TxnRowData[] = txnsRes.transactions.map((t) => ({
+    id: t.id,
+    description: t.description,
+    amount_cents: t.amount_cents,
+    currency: t.currency,
+    direction: t.direction,
+    status: t.status,
+    occurred_on: t.occurred_on,
+    source_recurring_rule_id: t.source_recurring_rule_id,
+    source_installment_plan_id: t.source_installment_plan_id,
+    installment_number: t.installment_number,
+    categories: t.categories,
+    installment_plans: t.installment_plans,
+  }));
 
   const virtualRows: TxnRowData[] = isFuture
     ? (
