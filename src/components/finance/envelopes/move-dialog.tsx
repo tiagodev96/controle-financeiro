@@ -21,6 +21,8 @@ type Props = {
   currentCents: number;
   currency: Currency;
   mode: 'allocate' | 'withdraw';
+  /** Prefill da alocação — usado pro aporte mensal combinado. */
+  initialCents?: number;
   open: boolean;
   onOpenChange: (next: boolean) => void;
 };
@@ -31,10 +33,11 @@ export function MoveEnvelopeDialog({
   currentCents,
   currency,
   mode,
+  initialCents = 0,
   open,
   onOpenChange,
 }: Props) {
-  const [cents, setCents] = useState(0);
+  const [cents, setCents] = useState(mode === 'allocate' ? initialCents : 0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

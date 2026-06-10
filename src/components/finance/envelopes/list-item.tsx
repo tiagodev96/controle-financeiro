@@ -5,6 +5,9 @@ import { Edit3, Lock, MinusCircle, MoreHorizontal, PlusCircle, Trash2 } from 'lu
 import { toast } from 'sonner';
 import { Num, type Currency } from '@/components/finance/num';
 import { deleteEnvelopeAction } from '@/server/actions/envelopes/actions';
+import { monthsToTarget, projectedTargetMonth } from '@/lib/finance/envelope-projection';
+import { formatDeadlineMonth } from '@/lib/finance/debt-deadline';
+import { monthIso } from '@/lib/dates';
 import { EditEnvelopeDialog } from './edit-dialog';
 import { MoveEnvelopeDialog } from './move-dialog';
 import { cn } from '@/lib/utils';
@@ -15,6 +18,7 @@ type Props = {
   currency: Currency;
   currentCents: number;
   targetCents: number | null;
+  monthlyContributionCents: number | null;
   isReserve?: boolean;
 };
 
@@ -24,6 +28,7 @@ export function EnvelopeListItem({
   currency,
   currentCents,
   targetCents,
+  monthlyContributionCents,
   isReserve = false,
 }: Props) {
   const [editOpen, setEditOpen] = useState(false);
@@ -35,6 +40,10 @@ export function EnvelopeListItem({
   const pct = hasTarget ? Math.min(currentCents / targetCents, 1) : 0;
   const pctLabel = hasTarget ? Math.round(pct * 100) : 0;
   const filled = hasTarget && currentCents >= targetCents;
+
+  const monthsLeft = monthsToTarget(currentCents, targetCents, monthlyContributionCents);
+  const projectedMonth =
+    monthsLeft !== null ? projectedTargetMonth(monthIso(new Date()), monthsLeft) : null;
 
   function handleDelete() {
     setMenuOpen(false);
@@ -121,6 +130,13 @@ export function EnvelopeListItem({
         )}
       </div>
 
+      {projectedMonth && monthlyContributionCents != null && (
+        <p className="mono text-[10px] text-fg4" data-testid={`envelope-projection-${id}`}>
+          aporte <Num cents={monthlyContributionCents} currency={currency} className="text-fg3" />
+          /mês · no ritmo, atinge a meta em {formatDeadlineMonth(projectedMonth)}
+        </p>
+      )}
+
       {hasTarget && (
         <div
           className="h-1.5 overflow-hidden rounded-full bg-bg-inset"
@@ -164,6 +180,7 @@ export function EnvelopeListItem({
           envelopeId={id}
           currentName={name}
           currentTargetCents={targetCents}
+          currentMonthlyContributionCents={monthlyContributionCents}
           open={editOpen}
           onOpenChange={setEditOpen}
         />
@@ -175,6 +192,7 @@ export function EnvelopeListItem({
           currentCents={currentCents}
           currency={currency}
           mode={moveMode}
+          initialCents={monthlyContributionCents ?? 0}
           open={moveMode !== null}
           onOpenChange={(next) => !next && setMoveMode(null)}
         />

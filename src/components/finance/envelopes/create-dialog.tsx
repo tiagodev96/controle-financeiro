@@ -21,6 +21,7 @@ export function CreateEnvelopeDialog() {
   const [name, setName] = useState('');
   const [currency, setCurrency] = useState<Currency>('EUR');
   const [targetCents, setTargetCents] = useState(0);
+  const [contributionCents, setContributionCents] = useState(0);
   const [initialCents, setInitialCents] = useState(0);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export function CreateEnvelopeDialog() {
       name,
       currency,
       targetCents: targetCents > 0 ? targetCents : null,
+      monthlyContributionCents: contributionCents > 0 ? contributionCents : null,
       initialCents,
     });
     setPending(false);
@@ -47,6 +49,7 @@ export function CreateEnvelopeDialog() {
     toast.success('Caixinha criada.');
     setName('');
     setTargetCents(0);
+    setContributionCents(0);
     setInitialCents(0);
     setOpen(false);
   }
@@ -108,6 +111,12 @@ export function CreateEnvelopeDialog() {
             label="Meta (opcional)"
             valueCents={targetCents}
             onChange={setTargetCents}
+          />
+
+          <MoneyInput
+            label="Aporte mensal (opcional)"
+            valueCents={contributionCents}
+            onChange={setContributionCents}
           />
 
           <MoneyInput

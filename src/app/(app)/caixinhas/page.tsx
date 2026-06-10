@@ -112,6 +112,7 @@ function CurrencyGroup({
             currency={e.currency}
             currentCents={e.current_cents}
             targetCents={e.target_cents}
+            monthlyContributionCents={e.monthly_contribution_cents}
             isReserve={e.is_reserve}
           />
         ))}

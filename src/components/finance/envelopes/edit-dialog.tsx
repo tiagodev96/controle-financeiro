@@ -15,6 +15,7 @@ type Props = {
   envelopeId: string;
   currentName: string;
   currentTargetCents: number | null;
+  currentMonthlyContributionCents: number | null;
   open: boolean;
   onOpenChange: (next: boolean) => void;
 };
@@ -23,11 +24,15 @@ export function EditEnvelopeDialog({
   envelopeId,
   currentName,
   currentTargetCents,
+  currentMonthlyContributionCents,
   open,
   onOpenChange,
 }: Props) {
   const [name, setName] = useState(currentName);
   const [targetCents, setTargetCents] = useState(currentTargetCents ?? 0);
+  const [contributionCents, setContributionCents] = useState(
+    currentMonthlyContributionCents ?? 0,
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,6 +47,7 @@ export function EditEnvelopeDialog({
       patch: {
         name,
         targetCents: targetCents > 0 ? targetCents : null,
+        monthlyContributionCents: contributionCents > 0 ? contributionCents : null,
       },
     });
     setPending(false);
@@ -79,6 +85,12 @@ export function EditEnvelopeDialog({
             label="Meta (opcional)"
             valueCents={targetCents}
             onChange={setTargetCents}
+          />
+
+          <MoneyInput
+            label="Aporte mensal (opcional)"
+            valueCents={contributionCents}
+            onChange={setContributionCents}
           />
 
           {error && (

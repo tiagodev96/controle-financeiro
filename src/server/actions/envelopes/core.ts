@@ -17,17 +17,20 @@ const nameSchema = z
   .transform((v) => v.trim())
   .pipe(z.string().min(1, 'Nome obrigatório').max(50, 'Máximo 50 caracteres'));
 
+// Preserva undefined (campo ausente no patch ≠ limpar o valor); só número
+// inválido/zero vira null explícito.
 const targetSchema = z
   .number()
   .int()
   .nullable()
   .optional()
-  .transform((v) => (v == null || v <= 0 ? null : v));
+  .transform((v) => (v === undefined ? undefined : v == null || v <= 0 ? null : v));
 
 const createSchema = z.object({
   name: nameSchema,
   currency: z.enum(['BRL', 'EUR']),
   targetCents: targetSchema,
+  monthlyContributionCents: targetSchema,
   initialCents: z.number().int().nonnegative().optional(),
 });
 
@@ -36,6 +39,7 @@ const updateSchema = z.object({
   patch: z.object({
     name: nameSchema.optional(),
     targetCents: targetSchema,
+    monthlyContributionCents: targetSchema,
   }),
 });
 
@@ -83,6 +87,7 @@ export async function createEnvelopeCore(
       name: data.name,
       currency: data.currency,
       target_cents: data.targetCents ?? null,
+      monthly_contribution_cents: data.monthlyContributionCents ?? null,
       current_cents: data.initialCents ?? 0,
     })
     .select()
@@ -118,6 +123,9 @@ export async function updateEnvelopeCore(
   const update: Database['public']['Tables']['envelopes']['Update'] = {};
   if (patch.name !== undefined) update.name = patch.name;
   if (patch.targetCents !== undefined) update.target_cents = patch.targetCents;
+  if (patch.monthlyContributionCents !== undefined) {
+    update.monthly_contribution_cents = patch.monthlyContributionCents;
+  }
 
   if (Object.keys(update).length === 0) return { ok: true };
 
