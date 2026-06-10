@@ -35,12 +35,44 @@ function convertToLimitCurrency(
   cents: number,
   from: Currency,
   to: Currency,
-  fxRateMap: RateMap | null,
+  fxRateMap: Pick<RateMap, 'EUR_BRL' | 'BRL_EUR'> | null,
 ): number | null {
   if (from === to) return cents;
   if (!fxRateMap) return null;
   const rate = from === 'EUR' ? fxRateMap.EUR_BRL : fxRateMap.BRL_EUR;
   return convertCents(cents, rate);
+}
+
+export type LimitProjectionInput = {
+  limitCents: number;
+  /** Gasto do mês já convertido pra limitCurrency. */
+  spentCents: number;
+  limitCurrency: Currency;
+  amountCents: number;
+  amountCurrency: Currency;
+  fxRateMap: Pick<RateMap, 'EUR_BRL' | 'BRL_EUR'> | null;
+};
+
+export type LimitProjection = {
+  projectedCents: number;
+  exceeds: boolean;
+};
+
+/**
+ * Projeta o uso do limite se o lançamento for confirmado. Retorna null
+ * quando o valor está em moeda diferente do limite e não há fx — sem
+ * conversão não dá pra avisar com honestidade.
+ */
+export function projectLimitUsage(input: LimitProjectionInput): LimitProjection | null {
+  const converted = convertToLimitCurrency(
+    input.amountCents,
+    input.amountCurrency,
+    input.limitCurrency,
+    input.fxRateMap,
+  );
+  if (converted === null) return null;
+  const projectedCents = input.spentCents + converted;
+  return { projectedCents, exceeds: projectedCents > input.limitCents };
 }
 
 /**

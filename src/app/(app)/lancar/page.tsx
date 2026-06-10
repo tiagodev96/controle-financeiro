@@ -1,9 +1,12 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { getServerSupabase } from '@/lib/supabase/server';
+import { getServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { getSession } from '@/lib/auth/session';
+import { getRateMapSafe } from '@/lib/fx';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
-import { LancarForm } from '@/components/finance/lancar-form';
+import { listCategoriesWithLimits } from '@/lib/finance/category-limits';
+import { LancarForm, type CategoryLimitInfo } from '@/components/finance/lancar-form';
 import { EmptyState } from '@/components/finance/empty-state';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { DirectionToggle } from '@/components/finance/direction-toggle';
@@ -43,6 +46,25 @@ export default async function LancarPage({ searchParams }: Props) {
     name: a.name,
     currency: a.currency as 'BRL' | 'EUR',
   }));
+
+  // Aviso de limite só faz sentido pra despesa. Best-effort: sem fx, gastos
+  // em outra moeda ficam fora da conta (listCategoriesWithLimits flagga).
+  let limitByCategoryId: Record<string, CategoryLimitInfo> = {};
+  let fxRates: { EUR_BRL: number; BRL_EUR: number } | null = null;
+  if (direction === 'expense') {
+    const fxRateMap = await getRateMapSafe({
+      supabase,
+      serviceSupabase: getServiceRoleSupabase(),
+    });
+    fxRates = fxRateMap ? { EUR_BRL: fxRateMap.EUR_BRL, BRL_EUR: fxRateMap.BRL_EUR } : null;
+    const limits = await listCategoriesWithLimits(supabase, session.householdId, fxRateMap);
+    limitByCategoryId = Object.fromEntries(
+      limits.map((l) => [
+        l.id,
+        { limitCents: l.limitCents, spentCents: l.spentCents, limitCurrency: l.limitCurrency },
+      ]),
+    );
+  }
 
   const cookieStore = await cookies();
   const lastAccountId = cookieStore.get('cf_last_account_id')?.value ?? null;
@@ -89,6 +111,8 @@ export default async function LancarPage({ searchParams }: Props) {
           accounts={accounts}
           lastAccountId={lastAccountId}
           direction={direction}
+          limitByCategoryId={limitByCategoryId}
+          fxRates={fxRates}
         />
       )}
     </section>

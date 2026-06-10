@@ -14,16 +14,27 @@ import { FormSelect } from './form-select';
 import { Num } from './num';
 import { cn } from '@/lib/utils';
 import { toLocalIsoDate } from '@/lib/dates';
+import { projectLimitUsage } from '@/lib/finance/category-limits';
+import { formatCents } from '@/lib/money/format';
 
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
 type Category = { id: string; name: string; icon: string | null };
 type Direction = 'expense' | 'income';
+
+export type CategoryLimitInfo = {
+  limitCents: number;
+  /** Gasto do mês já na limitCurrency. */
+  spentCents: number;
+  limitCurrency: 'BRL' | 'EUR';
+};
 
 type Props = {
   categories: Category[];
   accounts: Account[];
   lastAccountId: string | null;
   direction?: Direction;
+  limitByCategoryId?: Record<string, CategoryLimitInfo>;
+  fxRates?: { EUR_BRL: number; BRL_EUR: number } | null;
 };
 
 function todayIsoDate(): string {
@@ -41,7 +52,14 @@ const COPY: Record<Direction, { cta: string; toast: string }> = {
   },
 };
 
-export function LancarForm({ categories, accounts, lastAccountId, direction = 'expense' }: Props) {
+export function LancarForm({
+  categories,
+  accounts,
+  lastAccountId,
+  direction = 'expense',
+  limitByCategoryId = {},
+  fxRates = null,
+}: Props) {
   const router = useRouter();
 
   const initialAccountId =
@@ -88,6 +106,25 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
   }
 
   const selectedAccount = accounts.find((a) => a.id === accountId);
+
+  const limitInfo = direction === 'expense' ? limitByCategoryId[categoryId] : undefined;
+  const limitProjection =
+    limitInfo && selectedAccount && amountCents > 0
+      ? projectLimitUsage({
+          ...limitInfo,
+          amountCents,
+          amountCurrency: selectedAccount.currency,
+          fxRateMap: fxRates,
+        })
+      : null;
+  const limitWarning =
+    limitInfo && limitProjection?.exceeds
+      ? {
+          categoryName: categories.find((c) => c.id === categoryId)?.name ?? 'categoria',
+          projected: formatCents(limitProjection.projectedCents, limitInfo.limitCurrency),
+          limit: formatCents(limitInfo.limitCents, limitInfo.limitCurrency),
+        }
+      : null;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -347,6 +384,17 @@ export function LancarForm({ categories, accounts, lastAccountId, direction = 'e
             />
           </span>
         </button>
+      )}
+
+      {limitWarning && (
+        <p
+          role="status"
+          data-testid="limit-warning"
+          className="rounded-md bg-status-pending-bg px-3 py-2 text-[12px] text-status-pending-fg"
+        >
+          Passa do limite de {limitWarning.categoryName}: fica {limitWarning.projected} de{' '}
+          {limitWarning.limit} no mês. Dá pra lançar mesmo assim.
+        </p>
       )}
 
       {error && (
