@@ -17,8 +17,11 @@ import {
   createIsolatedHousehold,
   deleteIsolatedHousehold,
 } from './helpers/db';
+import { toLocalIsoDate } from '@/lib/dates';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+// Dia LOCAL — markPaidCore carimba paid_on local e a cobertura busca o rate
+// por essa data; seedRate com data UTC daria cache miss entre 21h e 0h.
+const TODAY = toLocalIsoDate(new Date());
 
 async function setBalance(accountId: string, balanceCents: number): Promise<void> {
   const admin = getAdminClient();

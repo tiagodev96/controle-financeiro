@@ -15,8 +15,11 @@ import {
   createIsolatedHousehold,
   deleteIsolatedHousehold,
 } from './helpers/db';
+import { toLocalIsoDate } from '@/lib/dates';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+// Dia LOCAL — o core carimba paid_on com o dia local do servidor; usar UTC
+// aqui flake-a entre 21h e 0h em fusos negativos.
+const TODAY = toLocalIsoDate(new Date());
 
 async function seedTxn(overrides: Partial<{ amount_cents: number; status: 'pending' | 'paid' }> = {}): Promise<string> {
   const admin = getAdminClient();

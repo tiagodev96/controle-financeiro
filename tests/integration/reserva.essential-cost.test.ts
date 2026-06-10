@@ -49,6 +49,10 @@ async function seedRule(input: {
       direction: 'expense',
       frequency: input.frequency ?? 'monthly',
       day_of_month: 10,
+      // Explícito: o default (current_date do Postgres, UTC) pode cair em
+      // "amanhã" do ponto de vista local e o filtro active_from excluiria
+      // a regra entre 21h e 0h em fusos negativos.
+      active_from: '2020-01-01',
     })
     .select('id')
     .single();
