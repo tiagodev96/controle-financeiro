@@ -30,6 +30,12 @@ export type ResumoData = {
   /** Soma das contas convertida pra `currency`; fxIncomplete quando alguma ficou fora por falta de fx. */
   accountsTotal: { cents: number; fxIncomplete: boolean };
   stats: CrossCurrencyMonthStats;
+  /**
+   * Fluxo do mês imediatamente anterior, pro comparativo. Null em mês
+   * futuro. Só os campos de fluxo valem — saldoPrevistoFimDoMes do mês
+   * anterior é calculado com total de contas 0 e não deve ser consumido.
+   */
+  previousStats: CrossCurrencyMonthStats | null;
   /** Só pra mês futuro; null caso contrário. */
   projection: MonthProjection | null;
   hasData: boolean;
@@ -89,15 +95,31 @@ export async function loadResumoData(args: LoadResumoDataArgs): Promise<ResumoDa
   }
   const accountsTotal = { cents: totalCents, fxIncomplete: totalFxIncomplete };
 
-  const stats = await calculateCrossCurrencyMonthStats({
-    supabase,
-    householdId,
-    targetCurrency: currency,
-    fxRateMap,
-    accountsTotalInTargetCents: accountsTotal.cents,
-    targetDate,
-    topCategoriesLimit,
-  });
+  // Último dia do mês anterior — mesma semântica de "fim do mês" do targetDate.
+  const previousTargetDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), 0);
+
+  const [stats, previousStats] = await Promise.all([
+    calculateCrossCurrencyMonthStats({
+      supabase,
+      householdId,
+      targetCurrency: currency,
+      fxRateMap,
+      accountsTotalInTargetCents: accountsTotal.cents,
+      targetDate,
+      topCategoriesLimit,
+    }),
+    isFuture
+      ? Promise.resolve(null)
+      : calculateCrossCurrencyMonthStats({
+          supabase,
+          householdId,
+          targetCurrency: currency,
+          fxRateMap,
+          accountsTotalInTargetCents: 0,
+          targetDate: previousTargetDate,
+          topCategoriesLimit,
+        }),
+  ]);
 
   const projection = isFuture
     ? await projectMonth({
@@ -129,6 +151,7 @@ export async function loadResumoData(args: LoadResumoDataArgs): Promise<ResumoDa
     fxRateMap,
     accountsTotal,
     stats,
+    previousStats,
     projection,
     hasData,
   };

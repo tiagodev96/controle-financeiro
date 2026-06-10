@@ -39,7 +39,11 @@ async function seedRateForToday(eurBrl: number): Promise<void> {
   if (error) throw new Error(`seedRateForToday: ${error.message}`);
 }
 
-async function seedExpense(amountCents: number, currency: 'EUR' | 'BRL'): Promise<void> {
+async function seedExpense(
+  amountCents: number,
+  currency: 'EUR' | 'BRL',
+  occurredOn: string = TODAY_LOCAL,
+): Promise<void> {
   const admin = getAdminClient();
   const { error } = await admin.from('transactions').insert({
     household_id: SEED_DEMO_HOUSEHOLD_ID,
@@ -50,11 +54,16 @@ async function seedExpense(amountCents: number, currency: 'EUR' | 'BRL'): Promis
     amount_cents: amountCents,
     currency,
     description: 'RD test txn',
-    occurred_on: TODAY_LOCAL,
-    paid_on: TODAY_LOCAL,
+    occurred_on: occurredOn,
+    paid_on: occurredOn,
     status: 'paid',
   });
   if (error) throw new Error(`seedExpense: ${error.message}`);
+}
+
+function prevMonthDay15(): string {
+  const d = new Date(NOW.getFullYear(), NOW.getMonth() - 1, 15);
+  return toLocalIsoDate(d);
 }
 
 async function seedDebt(input: {
@@ -172,6 +181,37 @@ describe('loadResumoData (integração)', () => {
 
     expect(data.projection).not.toBeNull();
     expect(typeof data.projection?.sobraProjetadaCents).toBe('number');
+  });
+
+  it('I-RD5 — previousStats traz o fluxo do mês anterior; mês futuro não compara', async () => {
+    await seedExpense(5_000, 'EUR');
+    await seedExpense(12_000, 'EUR', prevMonthDay15());
+
+    const supabase = await getAuthedClient();
+    const data = await loadResumoData({
+      supabase,
+      householdId: SEED_SESSION.householdId,
+      currency: 'EUR',
+      targetDate: NOW,
+      now: NOW,
+      isFuture: false,
+      topCategoriesLimit: 3,
+    });
+
+    expect(data.stats.paidExpenseCents).toBe(5_000);
+    expect(data.previousStats?.paidExpenseCents).toBe(12_000);
+
+    const future = new Date(NOW.getFullYear(), NOW.getMonth() + 2, 0);
+    const futureData = await loadResumoData({
+      supabase,
+      householdId: SEED_SESSION.householdId,
+      currency: 'EUR',
+      targetDate: future,
+      now: NOW,
+      isFuture: true,
+      topCategoriesLimit: 3,
+    });
+    expect(futureData.previousStats).toBeNull();
   });
 
   it('I-RD4 — household sem nada → hasData false (RLS isola)', async () => {

@@ -9,6 +9,8 @@ import { MonthPicker } from '@/components/finance/dashboard-month-picker';
 import { ResumoCurrencyToggle } from '@/components/finance/resumo-currency-toggle';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
 import { loadResumoData } from '@/lib/finance/resumo-data';
+import { compareMonths, type Delta } from '@/lib/finance/month-comparison';
+import { formatCents, formatNumberPtBR } from '@/lib/money/format';
 import { buildMonthSummaryText, type FxRateMap } from '@/lib/finance/month-summary';
 import { convertCents } from '@/lib/fx';
 import { monthEyebrow, monthIso as toMonthIso, parseMonthParam, parseMoedaParam } from '@/lib/dates';
@@ -33,6 +35,7 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
     fxRateMap,
     accountsTotal: accountsTotalInPrimary,
     stats,
+    previousStats,
     projection,
     hasData,
   } = await loadResumoData({
@@ -143,6 +146,33 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   const displayDespesas = isFuture
     ? projection!.expenseProjectedCents
     : despesasPaidCents + despesasPendingCents;
+
+  // Comparativo vs mês anterior — só quando o anterior teve movimento.
+  const previousHasFlow =
+    previousStats !== null &&
+    (previousStats.paidIncomeCents > 0 ||
+      previousStats.paidExpenseCents + previousStats.pendingExpenseCents > 0);
+  const comparison =
+    !isFuture && previousStats && previousHasFlow
+      ? compareMonths(
+          {
+            incomeCents: entradasMesCents,
+            expenseCents: despesasPaidCents + despesasPendingCents,
+            topCategories: stats.topCategories.map((c) => ({
+              name: c.name,
+              totalCents: c.totalCents,
+            })),
+          },
+          {
+            incomeCents: previousStats.paidIncomeCents,
+            expenseCents: previousStats.paidExpenseCents + previousStats.pendingExpenseCents,
+            topCategories: previousStats.topCategories.map((c) => ({
+              name: c.name,
+              totalCents: c.totalCents,
+            })),
+          },
+        )
+      : null;
   const displayTopCats = isFuture
     ? projection!.topCategoriesProjected
     : stats.topCategories.map((c) => ({ id: c.id, name: c.name, totalCents: c.totalCents }));
@@ -213,14 +243,23 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
                 cents={displayEntradas}
                 currency={primary}
                 tone="positive"
+                delta={comparison?.income}
+                deltaCurrency={primary}
               />
               <Tile
                 label={isFuture ? 'Despesas previstas' : 'Despesas'}
                 cents={displayDespesas}
                 currency={primary}
                 tone="negative"
+                delta={comparison?.expense}
+                deltaCurrency={primary}
               />
             </div>
+            {comparison && comparison.sobra.direction !== 'neutral' && (
+              <p className="px-1 text-[12px] text-fg4" data-testid="sobra-delta">
+                Sobra do fluxo {deltaPhrase(comparison.sobra, primary)} vs mês anterior
+              </p>
+            )}
             {isFuture ? (
               <p className="px-1 text-[12px] text-fg4">
                 Recorrentes projetadas{' '}
@@ -350,16 +389,39 @@ export default async function ResumoPage({ searchParams }: { searchParams: Searc
   );
 }
 
+/** "+10%" quando há base honesta; senão o delta absoluto ("+€ 50,00"). */
+function deltaPhrase(delta: Delta, currency: Currency): string {
+  const sign = delta.diffCents > 0 ? '+' : '−';
+  if (delta.pct !== null) {
+    return `${sign}${formatNumberPtBR(Math.abs(delta.pct) * 100, 0)}%`;
+  }
+  return `${sign}${formatCents(Math.abs(delta.diffCents), currency)}`;
+}
+
+function DeltaChip({ delta, currency }: { delta: Delta; currency: Currency }) {
+  if (delta.direction === 'neutral') return null;
+  const color = delta.direction === 'good' ? 'text-money-positive' : 'text-money-negative';
+  return (
+    <p className={`mono mt-1 text-[10px] ${color}`}>
+      {deltaPhrase(delta, currency)} <span className="text-fg4">vs mês anterior</span>
+    </p>
+  );
+}
+
 function Tile({
   label,
   cents,
   currency,
   tone,
+  delta,
+  deltaCurrency,
 }: {
   label: string;
   cents: number;
   currency: Currency;
   tone: 'positive' | 'negative';
+  delta?: Delta;
+  deltaCurrency?: Currency;
 }) {
   const color = tone === 'positive' ? 'text-money-positive' : 'text-money-negative';
   return (
@@ -370,6 +432,7 @@ function Tile({
         currency={currency}
         className={`mt-1.5 block text-[17px] sm:text-[20px] font-semibold ${color}`}
       />
+      {delta && deltaCurrency && <DeltaChip delta={delta} currency={deltaCurrency} />}
     </div>
   );
 }
