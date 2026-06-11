@@ -20,10 +20,12 @@ export type CrossCurrencyMonthStats = {
   pendingExpenseCount: number;
   overdueCents: number;
   overdueCount: number;
+  /** Parcela do overdue com occurred_on dentro do mês alvo. */
+  overdueInMonthCents: number;
   /**
-   * `accountsTotalInTargetCents + pendingIncome - pendingExpense`, em
-   * `targetCurrency`. NÃO subtrai overdue (segue convenção do
-   * calculateMonthStats original).
+   * `accountsTotal + pendingIncome - pendingExpense - overdueInMonth`, em
+   * `targetCurrency`. Atrasada do próprio mês conta como saída prevista;
+   * atrasada de mês anterior não.
    */
   saldoPrevistoFimDoMesCents: number;
   topCategories: CrossCurrencyTopCategory[];
@@ -115,6 +117,7 @@ export async function calculateCrossCurrencyMonthStats({
   let pendingExpenseCount = 0;
   let overdueCents = 0;
   let overdueCount = 0;
+  let overdueInMonthCents = 0;
   let fxIncomplete = false;
 
   const byCategory = new Map<string, { name: string; totalCents: number }>();
@@ -144,6 +147,7 @@ export async function calculateCrossCurrencyMonthStats({
       if (t.occurred_on < today) {
         overdueCents += converted;
         overdueCount += 1;
+        if (inMonth) overdueInMonthCents += converted;
       } else if (inMonth) {
         pendingExpenseCents += converted;
         pendingExpenseCount += 1;
@@ -171,8 +175,10 @@ export async function calculateCrossCurrencyMonthStats({
     .sort((a, b) => b.totalCents - a.totalCents)
     .slice(0, topCategoriesLimit);
 
+  // Atrasada DO MÊS ainda vai ser paga no mês — abate a previsão. Atrasada
+  // de mês anterior fica só no aviso de overdue.
   const saldoPrevistoFimDoMesCents =
-    accountsTotalInTargetCents + pendingIncomeCents - pendingExpenseCents;
+    accountsTotalInTargetCents + pendingIncomeCents - pendingExpenseCents - overdueInMonthCents;
 
   return {
     paidIncomeCents,
@@ -184,6 +190,7 @@ export async function calculateCrossCurrencyMonthStats({
     pendingExpenseCount,
     overdueCents,
     overdueCount,
+    overdueInMonthCents,
     saldoPrevistoFimDoMesCents,
     topCategories,
     fxIncomplete,

@@ -131,8 +131,10 @@ export async function projectMonth({
     .slice(0, topCategoriesLimit);
 
   // Paid já está refletido no saldo (accountsTotal) — não recontar. A sobra é
-  // saldo + o que ainda vai entrar/sair: pending real + recorrente virtual.
-  const expenseProjectedCents = stats.pendingExpenseCents + recurringPendingExpenseCents;
+  // saldo + o que ainda vai entrar/sair: pending real (inclusive atrasada do
+  // próprio mês, que ainda vai ser paga) + recorrente virtual.
+  const expenseProjectedCents =
+    stats.pendingExpenseCents + stats.overdueInMonthCents + recurringPendingExpenseCents;
   const incomeProjectedCents = stats.pendingIncomeCents + recurringPendingIncomeCents;
   const sobraProjetadaCents =
     accountsTotalInTargetCents + incomeProjectedCents - expenseProjectedCents;
