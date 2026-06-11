@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Session } from '@/lib/auth/session';
+import { monthIso, monthRange } from '@/lib/dates';
 
 type RecurringRow = Database['public']['Tables']['recurring_rules']['Row'];
 
@@ -183,7 +184,53 @@ export async function updateRecurringCore(
     .update(update)
     .eq('id', ruleId);
   if (error) return { ok: false, error: GENERIC };
+
+  await syncCurrentMonthPendingWithRule(supabase, ruleId);
   return { ok: true };
+}
+
+/**
+ * Espelha a regra na transaction PENDENTE já gerada no mês corrente — quem
+ * edita valor/dia/conta da regra espera ver o lançamento do mês acompanhar.
+ * Pagas e meses anteriores ficam intocados. Best-effort: falha aqui não
+ * desfaz a edição da regra, só loga.
+ */
+async function syncCurrentMonthPendingWithRule(
+  supabase: SupabaseClient<Database>,
+  ruleId: string,
+): Promise<void> {
+  const { data: rule, error: ruleError } = await supabase
+    .from('recurring_rules')
+    .select('title, amount_cents, currency, category_id, account_id, day_of_month')
+    .eq('id', ruleId)
+    .maybeSingle();
+  if (ruleError || !rule) {
+    if (ruleError) console.error(`recurring sync: leitura da regra falhou: ${ruleError.message}`);
+    return;
+  }
+
+  const now = new Date();
+  const { start, end } = monthRange(now);
+  const occurredOn = `${monthIso(now)}-${String(rule.day_of_month).padStart(2, '0')}`;
+
+  const { error: syncError } = await supabase
+    .from('transactions')
+    .update({
+      amount_cents: rule.amount_cents,
+      currency: rule.currency,
+      category_id: rule.category_id,
+      account_id: rule.account_id ?? undefined,
+      description: rule.title,
+      occurred_on: occurredOn,
+    })
+    .eq('source_recurring_rule_id', ruleId)
+    .eq('status', 'pending')
+    .gte('occurred_on', start)
+    .lt('occurred_on', end);
+
+  if (syncError) {
+    console.error(`recurring sync: pendente do mês não atualizada: ${syncError.message}`);
+  }
 }
 
 async function setPaused(
