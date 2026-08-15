@@ -5,8 +5,6 @@ import {
   Wallet,
   Share2,
   CalendarRange,
-  PiggyBank,
-  ShieldCheck,
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
@@ -22,8 +20,6 @@ type Item = {
 const items: Item[] = [
   { href: '/recorrentes', label: 'Recorrentes', description: 'Regras mensais', Icon: Repeat },
   { href: '/parcelados', label: 'Parcelados', description: 'Compras em N×', Icon: CalendarRange },
-  { href: '/caixinhas', label: 'Caixinhas', description: 'Envelopes virtuais', Icon: PiggyBank },
-  { href: '/reserva', label: 'Reserva', description: 'Saúde da reserva', Icon: ShieldCheck },
   { href: '/evolucao', label: 'Evolução', description: 'Tendências mensais', Icon: TrendingUp },
   { href: '/categorias', label: 'Categorias', description: 'Cadastro', Icon: Tags },
   { href: '/contas', label: 'Contas', description: 'Cadastro', Icon: Wallet },

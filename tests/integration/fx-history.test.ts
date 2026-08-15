@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
-import { getRateHistory, getRateOn } from '@/lib/fx';
+import { getRateHistory } from '@/lib/fx';
 import { getAuthedClient } from './helpers/auth';
 import { getAdminClient } from './helpers/db';
 
@@ -116,87 +116,5 @@ describe('getRateHistory (integração + MSW)', () => {
     });
 
     expect(series).toEqual([{ date: '2025-06-15', rate: 6.3 }]);
-  });
-});
-
-describe('getRateOn (integração + MSW)', () => {
-  it('I-FXO1 — cache hit: retorna sem fetch', async () => {
-    let httpCalls = 0;
-    server.use(
-      http.get(SERIES_URL, () => {
-        httpCalls += 1;
-        return HttpResponse.json({ rates: {} });
-      }),
-    );
-
-    const admin = getAdminClient();
-    await admin.from('fx_rates_cache').insert({
-      rate_date: '2025-06-15',
-      base: 'EUR',
-      quote: 'BRL',
-      rate: 6.2,
-    });
-
-    const supabase = await getAuthedClient();
-    const rate = await getRateOn({
-      supabase,
-      serviceSupabase: admin,
-      base: 'EUR',
-      quote: 'BRL',
-      date: '2025-06-15',
-    });
-
-    expect(httpCalls).toBe(0);
-    expect(rate).toBe(6.2);
-  });
-
-  it('I-FXO2 — cache miss: busca data única, faz upsert e retorna', async () => {
-    server.use(
-      http.get(SERIES_URL, () =>
-        HttpResponse.json({
-          amount: 1,
-          base: 'EUR',
-          date: '2025-06-13',
-          rates: { '2025-06-13': { BRL: 6.27 } },
-        }),
-      ),
-    );
-
-    const supabase = await getAuthedClient();
-    const admin = getAdminClient();
-    const rate = await getRateOn({
-      supabase,
-      serviceSupabase: admin,
-      base: 'EUR',
-      quote: 'BRL',
-      date: '2025-06-15',
-    });
-
-    expect(rate).toBe(6.27);
-
-    const { data: cached } = await admin
-      .from('fx_rates_cache')
-      .select('rate')
-      .eq('base', 'EUR')
-      .eq('quote', 'BRL')
-      .eq('rate_date', '2025-06-15')
-      .maybeSingle();
-    expect(cached?.rate).toBe(6.27);
-  });
-
-  it('I-FXO3 — fetch falha: retorna null (best-effort)', async () => {
-    server.use(http.get(SERIES_URL, () => HttpResponse.error()));
-
-    const supabase = await getAuthedClient();
-    const admin = getAdminClient();
-    const rate = await getRateOn({
-      supabase,
-      serviceSupabase: admin,
-      base: 'EUR',
-      quote: 'BRL',
-      date: '2025-06-15',
-    });
-
-    expect(rate).toBeNull();
   });
 });

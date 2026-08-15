@@ -20,7 +20,7 @@ Portal web pessoal para um casal acompanhar as finanças do mês: lançar despes
 8. Lista de transações do mês com filtros.
 9. Export "resumo do mês" em texto pronto pra colar no WhatsApp.
 
-**Fora do MVP** (anotado pra v1.x/v2): metas e caixinhas, limites por categoria, alertas push, gráficos de série temporal, bot de chat, OCR de comprovantes, IA pra insights.
+**Fora do MVP** (anotado pra v1.x/v2): metas, limites por categoria, alertas push, gráficos de série temporal, bot de chat, OCR de comprovantes, IA pra insights.
 
 ---
 
@@ -256,7 +256,6 @@ Cron Vercel `0 12 * * *` (todo dia ao meio-dia UTC) pré-popula cotação do dia
 
 ## 10. Roadmap pós-MVP (v1.x / v2)
 
-- v1.1: Metas e caixinhas (envelopes virtuais sobre o saldo).
 - v1.2: Limites por categoria + alerta quando ultrapassar.
 - v1.3: Gráfico de evolução do saldo (snapshots semanais).
 - v2.x: Insights gerados por LLM ("você gastou 35% mais com Pet este mês porque...").

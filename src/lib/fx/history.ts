@@ -22,14 +22,6 @@ export type GetRateHistoryInput = {
   to: string;
 };
 
-export type GetRateOnInput = {
-  supabase: SupabaseClient<Database>;
-  serviceSupabase: SupabaseClient<Database>;
-  base: Currency;
-  quote: Currency;
-  date: string;
-};
-
 function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
 }
@@ -80,27 +72,6 @@ async function fetchSeries(
   }
 }
 
-async function fetchSingle(
-  base: Currency,
-  quote: Currency,
-  date: string,
-): Promise<number | null> {
-  try {
-    const url = `${SERIES_BASE}/${date}?from=${base}&to=${quote}`;
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return null;
-    const json = (await res.json()) as {
-      rates?: Record<string, Record<string, number>>;
-    };
-    const byDate = json.rates ? Object.values(json.rates)[0] : undefined;
-    const rate = byDate?.[quote];
-    return typeof rate === 'number' && rate > 0 ? rate : null;
-  } catch (err) {
-    console.error(`fx: cotação frankfurter ${base}/${quote} em ${date} falhou`, err);
-    return null;
-  }
-}
-
 async function readCache(
   supabase: SupabaseClient<Database>,
   base: Currency,
@@ -140,27 +111,4 @@ export async function getRateHistory(input: GetRateHistoryInput): Promise<RatePo
   );
 
   return readCache(supabase, base, quote, from, to);
-}
-
-export async function getRateOn(input: GetRateOnInput): Promise<number | null> {
-  const { supabase, serviceSupabase, base, quote, date } = input;
-
-  const { data: cached } = await supabase
-    .from('fx_rates_cache')
-    .select('rate')
-    .eq('base', base)
-    .eq('quote', quote)
-    .eq('rate_date', date)
-    .maybeSingle();
-
-  if (cached) return Number(cached.rate);
-
-  const fetched = await fetchSingle(base, quote, date);
-  if (fetched === null) return null;
-
-  await serviceSupabase
-    .from('fx_rates_cache')
-    .upsert({ rate_date: date, base, quote, rate: fetched }, { onConflict: 'rate_date,base,quote' });
-
-  return fetched;
 }

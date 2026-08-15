@@ -4,7 +4,6 @@ import { signInAsFixtureUser } from '../helpers/auth';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const HOUSEHOLD_ID = '11111111-1111-4111-8111-111111111111';
 
 function admin() {
   return createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -32,16 +31,8 @@ async function seedHistory(): Promise<void> {
   );
 }
 
-async function clearConversions(): Promise<void> {
-  await admin().from('currency_conversions').delete().eq('household_id', HOUSEHOLD_ID);
-}
-
-test.describe('Câmbio histórico + conversões', () => {
-  test.beforeEach(async () => {
-    await seedHistory();
-    await clearConversions();
-  });
-  test.afterEach(clearConversions);
+test.describe('Câmbio histórico', () => {
+  test.beforeEach(seedHistory);
 
   test('E-CONV1 — gráfico do euro no rodapé com seletor de período', async ({ page, context }) => {
     await signInAsFixtureUser(context);
@@ -53,20 +44,5 @@ test.describe('Câmbio histórico + conversões', () => {
       'aria-pressed',
       'true',
     );
-  });
-
-  test('E-CONV2 — registrar conversão aparece na lista e liga o spread', async ({ page, context }) => {
-    await signInAsFixtureUser(context);
-    await page.goto('/');
-
-    await expect(page.getByText(/Registre uma conversão pra eu estimar/i)).toBeVisible();
-
-    await page.getByRole('button', { name: 'Registrar' }).click();
-    await page.getByLabel('Enviado (€)').fill('100000');
-    await page.getByLabel('Recebido (R$)').fill('595000');
-    await page.getByRole('button', { name: 'Registrar conversão' }).click();
-
-    await expect(page.getByText('Euro → Real').first()).toBeVisible();
-    await expect(page.getByText(/spread médio/i)).toBeVisible();
   });
 });

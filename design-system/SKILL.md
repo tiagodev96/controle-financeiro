@@ -12,7 +12,7 @@ Read the `README.md` file within this skill, and explore the other available fil
 - `ui_kits/pwa/*` — React components (Icon, Num, HeroNumber, Eyebrow, StatusPill, Btn, Card, CCY) + 9 screens (Dashboard, Lançar, Dívidas, Transações, Contas, Resumo, Recorrentes, Categorias, Mais). Toggle dark/light/auto persistido.
 
 **Regras invioláveis ao desenhar pra este produto:**
-1. **PT-BR sentence case.** Vocabulário canônico: Saldo atual, Sobra prevista, Pago/Pendente/Em atraso, Recorrente, Parcela N/M, Dívida em aberto, Caixinha, Lançar despesa/entrada, Categoria.
+1. **PT-BR sentence case.** Vocabulário canônico: Saldo atual, Sobra prevista, Pago/Pendente/Em atraso, Recorrente, Parcela N/M, Dívida em aberto, Lançar despesa/entrada, Categoria.
 2. **Sem emoji** na UI. Exceção única e isolada: export de "resumo do mês para WhatsApp" usa 4 emojis funcionais (💰 📊 ✅ ⏳).
 3. **Sem gamificação.** Termos proibidos: XP, League, Streak, Badge, Trophy, Discipline Score, FinCoin, Quest, Real Surplus, Leak, mascote, ilustração 3D.
 4. **Números são herói.** Sempre `tabular-nums` + `lnum`, peso 600–700, tracking negativo. Negativos com `−` (U+2212) + cor `--money-negative`. **Nunca parênteses.** Formato PT-BR: `R$ 1.240,50`, `€ 1.240,50`.

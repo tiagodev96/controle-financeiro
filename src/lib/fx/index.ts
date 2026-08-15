@@ -5,20 +5,10 @@ import { toIsoDate as isoDate } from '@/lib/dates';
 export { convertCents } from './convert';
 export {
   getRateHistory,
-  getRateOn,
   computeFetchRange,
   type RatePoint,
   type GetRateHistoryInput,
-  type GetRateOnInput,
 } from './history';
-export {
-  computeConversionAdvice,
-  type ConversionAdvice,
-  type ConversionAdviceInput,
-  type ConversionRecord,
-  type ConversionSignal,
-  type LastComparison,
-} from './conversion-advice';
 
 const FRANKFURTER_URL = 'https://api.frankfurter.app/latest';
 const STALE_DAYS = 7;

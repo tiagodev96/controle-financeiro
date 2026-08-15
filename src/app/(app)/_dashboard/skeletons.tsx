@@ -36,7 +36,6 @@ export function FxBlockSkeleton() {
         <SkeletonLine width="w-16" height="h-2.5" />
       </div>
       <SkeletonCard height="h-60" />
-      <SkeletonCard height="h-32" />
     </div>
   );
 }

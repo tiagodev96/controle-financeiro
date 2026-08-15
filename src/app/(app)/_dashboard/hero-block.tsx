@@ -7,7 +7,6 @@ import { CurrencyToggle } from '@/components/finance/currency-toggle';
 import { SobraPrevistaCard } from '@/components/finance/sobra-prevista-card';
 import { StatTrio } from '@/components/finance/stat-trio';
 import { convertCents } from '@/lib/fx';
-import { sumEnvelopesByCurrency } from '@/lib/finance/envelopes';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
 import { projectMonth } from '@/lib/finance/month-projection';
 import {
@@ -118,21 +117,6 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast, isFuture }: Pro
     );
   }
 
-  const envelopeAllocations = await sumEnvelopesByCurrency(
-    await getDashboardSupabase(),
-    session.householdId,
-  );
-  const totalAllocatedCents =
-    envelopeAllocations.EUR + envelopeAllocations.BRL;
-  const allocatedInDisplay = rateMap
-    ? envelopeAllocations[displayCurrency] +
-      convertCents(
-        envelopeAllocations[otherCurrency],
-        displayCurrency === 'EUR' ? rateMap.BRL_EUR : rateMap.EUR_BRL,
-      )
-    : envelopeAllocations[displayCurrency];
-  const freeInDisplay = totalInDisplay - allocatedInDisplay;
-
   const accountsTotalInStatsCcy = rateMap
     ? balByCcy.EUR + convertCents(balByCcy.BRL, rateMap.BRL_EUR)
     : balByCcy.EUR;
@@ -178,20 +162,6 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast, isFuture }: Pro
               </span>
             ) : null}
           </div>
-          {totalAllocatedCents > 0 && (
-            <div className="flex items-baseline justify-between gap-2 border-t border-border-soft pt-3 text-[12px]">
-              <span className="text-fg3">Livre (fora das caixinhas)</span>
-              <Num
-                cents={freeInDisplay}
-                currency={displayCurrency}
-                className={
-                  freeInDisplay < 0
-                    ? 'text-[14px] font-semibold text-money-negative'
-                    : 'text-[14px] font-semibold text-fg1'
-                }
-              />
-            </div>
-          )}
         </div>
         <SobraPrevistaCard
           stats={stats}

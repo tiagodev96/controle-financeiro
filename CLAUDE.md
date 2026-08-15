@@ -48,7 +48,7 @@ Não introduzir dependências fora desta lista sem motivo claro.
 
 ## Vocabulário (PT-BR, sentence case)
 
-Saldo atual / Saldo previsto fim do mês / Sobra prevista / Lançar despesa / Lançar entrada / Pago / Pendente / Em atraso / Recorrente / Parcela / Dívida em aberto / Caixinha / Categoria.
+Saldo atual / Saldo previsto fim do mês / Sobra prevista / Lançar despesa / Lançar entrada / Pago / Pendente / Em atraso / Recorrente / Parcela / Dívida em aberto / Categoria.
 
 **Proibido**: termos de gamificação (League, XP, Streak, Badge, Trophy, Discipline Score, FinCoin, Quest, Real Surplus, Leak). Já foram removidos do design system.
 

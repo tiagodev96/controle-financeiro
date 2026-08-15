@@ -178,7 +178,6 @@ Não aplicável — este sistema usa zero imagens. Avatares de Owner/Member são
 | **Recorrente** | Regra mensal automática |
 | **Parcela 3/10** | Compra parcelada |
 | **Dívida em aberto** | Item de `/dividas` |
-| **Caixinha** | Reservado pra v1.1 (envelopes) |
 | **Categoria** | Grupo de despesa |
 
 **Banido** (resíduo de produto gamificado): XP, League, Streak, Badge, Trophy, Discipline Score, FinCoin, Quest, Real Surplus, Leak, mascote, ilustração 3D.
