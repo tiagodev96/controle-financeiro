@@ -24,8 +24,11 @@ export type Transaction = {
   source_recurring_rule_id: string | null;
   source_installment_plan_id: string | null;
   installment_number: number | null;
+  credit_card_id?: string | null;
+  purchased_on?: string | null;
   categories: { name: string } | null;
   installment_plans: { total_installments: number } | null;
+  credit_cards?: { name: string } | null;
   /** Linha virtual de recorrente em mês futuro (não existe no banco). Read-only. */
   previsto?: boolean;
   /** Linha de cobertura (conversão/transferência entre contas). Read-only. */
@@ -114,6 +117,14 @@ export function TransactionsList({ groups, categories, accounts }: Props) {
                       direction={t.direction}
                       status={t.status}
                       source={txnSource(t)}
+                      card={
+                        t.credit_card_id
+                          ? {
+                              name: t.credit_cards?.name ?? 'Cartão',
+                              purchasedOn: t.purchased_on ?? null,
+                            }
+                          : null
+                      }
                       action={
                         <TxnRowMenu
                           transactionId={t.id}

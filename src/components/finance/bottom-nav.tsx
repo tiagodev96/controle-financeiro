@@ -18,7 +18,7 @@ const items: Item[] = [
   { href: '/', label: 'Dashboard', Icon: LayoutDashboard },
   { href: '/lancar', label: 'Lançar', Icon: Plus },
   { href: '/transacoes', label: 'Transações', Icon: Receipt },
-  { href: '/dividas', label: 'Dívidas', Icon: CreditCard },
+  { href: '/cartoes', label: 'Cartões', Icon: CreditCard },
   { href: '/mais', label: 'Mais', Icon: Menu },
 ];
 

@@ -79,6 +79,8 @@ export default async function TransacoesPage({ searchParams }: Props) {
   const status = parseStatus(typeof params.status === 'string' ? params.status : undefined);
   const accountId = typeof params.conta === 'string' && params.conta !== 'all' ? params.conta : undefined;
   const categoryId = parseCategoryParam(typeof params.categoria === 'string' ? params.categoria : undefined);
+  const creditCardId =
+    typeof params.cartao === 'string' && UUID_RE.test(params.cartao) ? params.cartao : undefined;
   const startDate = parseDateParam(typeof params.dataInicio === 'string' ? params.dataInicio : undefined);
   const endDate = parseDateParam(typeof params.dataFim === 'string' ? params.dataFim : undefined);
   const queryStr = typeof params.q === 'string' ? params.q.slice(0, 100) : undefined;
@@ -101,6 +103,7 @@ export default async function TransacoesPage({ searchParams }: Props) {
         status,
         accountId,
         categoryId,
+        creditCardId,
         monthIso,
         startDate,
         endDate,

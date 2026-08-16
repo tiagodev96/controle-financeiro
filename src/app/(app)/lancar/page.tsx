@@ -6,6 +6,7 @@ import { getSession } from '@/lib/auth/session';
 import { getRateMapSafe } from '@/lib/fx';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
+import { listCreditCardsForHousehold } from '@/lib/finance/credit-cards';
 import { listCategoriesWithLimits } from '@/lib/finance/category-limits';
 import { LancarForm, type CategoryLimitInfo } from '@/components/finance/lancar-form';
 import { EmptyState } from '@/components/finance/empty-state';
@@ -29,9 +30,10 @@ export default async function LancarPage({ searchParams }: Props) {
   const params = await searchParams;
   const direction = parseDirection(params.direction);
 
-  const [allCategories, allAccounts] = await Promise.all([
+  const [allCategories, allAccounts, allCards] = await Promise.all([
     listAllCategoriesForHousehold(supabase, session.householdId),
     listAllAccountsForHousehold(supabase, session.householdId),
+    listCreditCardsForHousehold(supabase, session.householdId),
   ]);
 
   const categories = allCategories
@@ -41,6 +43,17 @@ export default async function LancarPage({ searchParams }: Props) {
   const accounts = allAccounts
     .filter((a) => !a.is_archived)
     .map((a) => ({ id: a.id, name: a.name, currency: a.currency }));
+
+  const currencyByAccountId = new Map(allAccounts.map((a) => [a.id, a.currency]));
+  const cards = allCards
+    .filter((c) => !c.is_archived)
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      closingDay: c.closing_day,
+      dueDay: c.due_day,
+      currency: currencyByAccountId.get(c.payment_account_id) ?? ('BRL' as const),
+    }));
 
   // Aviso de limite só faz sentido pra despesa. Best-effort: sem fx, gastos
   // em outra moeda ficam fora da conta (listCategoriesWithLimits flagga).
@@ -104,6 +117,7 @@ export default async function LancarPage({ searchParams }: Props) {
           key={direction}
           categories={categories}
           accounts={accounts}
+          cards={cards}
           lastAccountId={lastAccountId}
           direction={direction}
           limitByCategoryId={limitByCategoryId}

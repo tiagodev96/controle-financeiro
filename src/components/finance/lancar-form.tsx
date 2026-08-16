@@ -5,8 +5,11 @@ import { useRouter } from 'next/navigation';
 import { Calendar, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { createTransaction } from '@/server/actions/transactions/create';
+import { createCardPurchaseAction } from '@/server/actions/credit-cards/actions';
 import { createCategoryAction } from '@/server/actions/categories/actions';
 import { resolveCategoryIcon } from '@/lib/finance/category-icons';
+import { cycleForPurchase } from '@/lib/finance/credit-card';
+import { splitInstallments } from '@/lib/finance/installments';
 import { MoneyInput } from './money-input';
 import { Field } from './field';
 import { CCY } from './ccy';
@@ -18,6 +21,13 @@ import { projectLimitUsage } from '@/lib/finance/category-limits';
 import { formatCents } from '@/lib/money/format';
 
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
+type CardOption = {
+  id: string;
+  name: string;
+  closingDay: number;
+  dueDay: number;
+  currency: 'BRL' | 'EUR';
+};
 type Category = { id: string; name: string; icon: string | null };
 type Direction = 'expense' | 'income';
 
@@ -31,6 +41,8 @@ export type CategoryLimitInfo = {
 type Props = {
   categories: Category[];
   accounts: Account[];
+  /** Cartões ativos — só ofertados em despesa. */
+  cards?: CardOption[];
   lastAccountId: string | null;
   direction?: Direction;
   limitByCategoryId?: Record<string, CategoryLimitInfo>;
@@ -52,9 +64,14 @@ const COPY: Record<Direction, { cta: string; toast: string }> = {
   },
 };
 
+function shortDate(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
 export function LancarForm({
   categories,
   accounts,
+  cards = [],
   lastAccountId,
   direction = 'expense',
   limitByCategoryId = {},
@@ -84,7 +101,9 @@ export function LancarForm({
   const [creatingCategory, setCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [creatingPending, setCreatingPending] = useState(false);
-  const [accountId, setAccountId] = useState(initialAccountId);
+  // "Pagar com": conta (`account:<id>`) ou cartão (`card:<id>`, só despesa).
+  const [payWith, setPayWith] = useState(`account:${initialAccountId}`);
+  const [installments, setInstallments] = useState(1);
   // Entrada é dinheiro recebido — default ON. Despesa é vencimento — default OFF.
   const [paid, setPaid] = useState(direction === 'income');
   const [updateBalance, setUpdateBalance] = useState(true);
@@ -105,15 +124,29 @@ export function LancarForm({
     }
   }
 
-  const selectedAccount = accounts.find((a) => a.id === accountId);
+  const offerCards = direction === 'expense' && cards.length > 0;
+  const selectedCard = offerCards && payWith.startsWith('card:')
+    ? cards.find((c) => `card:${c.id}` === payWith)
+    : undefined;
+  const selectedAccount = selectedCard
+    ? undefined
+    : accounts.find((a) => `account:${a.id}` === payWith);
+  const activeCurrency = selectedCard?.currency ?? selectedAccount?.currency;
+
+  // Preview do vencimento/parcela quando pagando com cartão.
+  const cardCycle = selectedCard ? cycleForPurchase(date, selectedCard.closingDay, selectedCard.dueDay) : null;
+  const installmentPreviewCents =
+    selectedCard && amountCents > 0 && installments > 1
+      ? (splitInstallments(amountCents, installments)[0] ?? 0)
+      : null;
 
   const limitInfo = direction === 'expense' ? limitByCategoryId[categoryId] : undefined;
   const limitProjection =
-    limitInfo && selectedAccount && amountCents > 0
+    limitInfo && activeCurrency && amountCents > 0
       ? projectLimitUsage({
           ...limitInfo,
           amountCents,
-          amountCurrency: selectedAccount.currency,
+          amountCurrency: activeCurrency,
           fxRateMap: fxRates,
         })
       : null;
@@ -132,11 +165,30 @@ export function LancarForm({
     setError(null);
     setPending(true);
 
+    if (selectedCard) {
+      const result = await createCardPurchaseAction({
+        cardId: selectedCard.id,
+        amountCents,
+        description,
+        categoryId,
+        purchasedOn: date,
+        installments,
+      });
+      if (!result.ok) {
+        setError(result.error);
+        setPending(false);
+        return;
+      }
+      toast.success(`Compra no cartão lançada. Vence ${shortDate(result.dueOn)}.`);
+      router.push('/transacoes');
+      return;
+    }
+
     const result = await createTransaction({
       amountCents,
       description,
       categoryId,
-      accountId,
+      accountId: selectedAccount?.id ?? '',
       direction,
       paid,
       updateBalance,
@@ -272,21 +324,26 @@ export function LancarForm({
       </fieldset>
 
       <div className="grid grid-cols-2 gap-2.5">
-        <Field label="Conta">
+        <Field label={offerCards ? 'Pagar com' : 'Conta'}>
           <div className="flex items-center gap-2">
-            {selectedAccount && <CCY code={selectedAccount.currency} />}
+            {activeCurrency && <CCY code={activeCurrency} />}
             <FormSelect
               bare
-              ariaLabel="Conta"
+              ariaLabel={offerCards ? 'Pagar com' : 'Conta'}
               required
-              value={accountId}
-              onChange={setAccountId}
+              value={payWith}
+              onChange={setPayWith}
               triggerClassName="border-0 bg-transparent min-h-0 py-0 px-0 hover:border-0 focus-visible:ring-0 text-sm font-medium"
-              options={accounts.map((acc) => ({ value: acc.id, label: acc.name }))}
+              options={[
+                ...accounts.map((acc) => ({ value: `account:${acc.id}`, label: acc.name })),
+                ...(offerCards
+                  ? cards.map((card) => ({ value: `card:${card.id}`, label: `${card.name} (cartão)` }))
+                  : []),
+              ]}
             />
           </div>
         </Field>
-        <Field label="Data">
+        <Field label={selectedCard ? 'Data da compra' : 'Data'}>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
@@ -309,6 +366,38 @@ export function LancarForm({
         </Field>
       </div>
 
+      {selectedCard && (
+        <div className="space-y-2 rounded-md border border-border-soft bg-bg-surface px-3.5 py-3">
+          <label className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-fg1">Parcelas</span>
+            <FormSelect
+              bare
+              ariaLabel="Parcelas"
+              value={String(installments)}
+              onChange={(v) => setInstallments(Number(v))}
+              triggerClassName="border-0 bg-transparent min-h-0 py-0 px-0 hover:border-0 focus-visible:ring-0 text-sm font-medium"
+              options={Array.from({ length: 24 }, (_, i) => ({
+                value: String(i + 1),
+                label: i === 0 ? 'À vista (1×)' : `${i + 1}×`,
+              }))}
+            />
+          </label>
+          {cardCycle && (
+            <p data-testid="card-due-preview" className="mono text-[10px] text-fg4">
+              {installmentPreviewCents !== null && activeCurrency ? (
+                <>
+                  {installments}× {formatCents(installmentPreviewCents, activeCurrency)} · 1ª vence{' '}
+                  {shortDate(cardCycle.dueOn)}
+                </>
+              ) : (
+                <>vence {shortDate(cardCycle.dueOn)}</>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
+      {!selectedCard && (
       <button
         type="button"
         onClick={() => setPaid(!paid)}
@@ -346,8 +435,9 @@ export function LancarForm({
           />
         </span>
       </button>
+      )}
 
-      {paid && (
+      {!selectedCard && paid && (
         <button
           type="button"
           onClick={() => setUpdateBalance(!updateBalance)}
@@ -409,12 +499,12 @@ export function LancarForm({
         className="flex w-full items-center justify-center gap-2 rounded-md bg-brand px-4 py-3.5 text-[15px] font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
       >
         <span>{pending ? 'Lançando…' : copy.cta}</span>
-        {!pending && amountCents > 0 && selectedAccount && (
+        {!pending && amountCents > 0 && activeCurrency && (
           <>
             <span aria-hidden className="text-fg-on-brand/60">·</span>
             <Num
               cents={amountCents}
-              currency={selectedAccount.currency}
+              currency={activeCurrency}
               className="text-fg-on-brand/90"
             />
           </>

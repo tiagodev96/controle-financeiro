@@ -7,6 +7,7 @@ import {
 } from '@/components/finance/balance-visibility';
 import { HeroBlock } from './_dashboard/hero-block';
 import { InsightsBlock } from './_dashboard/insights-block';
+import { CardBlock } from './_dashboard/card-block';
 import { BottomBlock } from './_dashboard/bottom-block';
 import { FxBlock } from './_dashboard/fx-block';
 import {
@@ -58,6 +59,12 @@ export default async function DashboardPage({
         {!isPast && (
           <Suspense fallback={<InsightsBlockSkeleton />}>
             <InsightsBlock nowIso={nowIso} targetDateIso={targetDateIso} />
+          </Suspense>
+        )}
+
+        {!isPast && !isFuture && (
+          <Suspense fallback={null}>
+            <CardBlock nowIso={nowIso} />
           </Suspense>
         )}
 

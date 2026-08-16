@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LancarForm } from './lancar-form';
 
@@ -13,8 +13,20 @@ vi.mock('@/server/actions/transactions/create', () => ({
   createTransaction: (input: unknown) => createTransaction(input),
 }));
 
+const createCardPurchaseAction = vi.fn();
+vi.mock('@/server/actions/credit-cards/actions', () => ({
+  createCardPurchaseAction: (input: unknown) => createCardPurchaseAction(input),
+}));
+
 type Category = { id: string; name: string; icon: string | null };
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
+type CardOption = {
+  id: string;
+  name: string;
+  closingDay: number;
+  dueDay: number;
+  currency: 'BRL' | 'EUR';
+};
 
 const categories: Category[] = [
   { id: 'cat-mercado', name: 'Mercado', icon: null },
@@ -27,9 +39,14 @@ const accounts: Account[] = [
   { id: 'acc-revolut', name: 'Revolut', currency: 'EUR' },
 ];
 
+const cards: CardOption[] = [
+  { id: 'card-nubank', name: 'Nubank', closingDay: 7, dueDay: 11, currency: 'BRL' },
+];
+
 beforeEach(() => {
   push.mockReset();
   createTransaction.mockReset();
+  createCardPurchaseAction.mockReset();
 });
 
 describe('<LancarForm>', () => {
@@ -171,6 +188,83 @@ describe('<LancarForm>', () => {
       expect.objectContaining({ amountCents: 0 }),
     );
     expect(await screen.findByRole('alert')).toHaveTextContent(/v[áa]lido/i);
+  });
+
+  it('C9 — modo cartão: some o "Já pago", data vira "Data da compra" e preview mostra o vencimento', async () => {
+    const user = userEvent.setup();
+    render(
+      <LancarForm
+        categories={categories}
+        accounts={accounts}
+        cards={cards}
+        lastAccountId={null}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /já pago/i })).toBeInTheDocument();
+    expect(screen.getByText('Data')).toBeInTheDocument();
+
+    await user.click(screen.getByLabelText('Pagar com'));
+    await user.click(await screen.findByRole('option', { name: /Nubank \(cartão\)/ }));
+
+    expect(screen.queryByRole('button', { name: /já pago/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Data da compra')).toBeInTheDocument();
+    expect(screen.getByTestId('card-due-preview')).toHaveTextContent(/vence \d{2}\/\d{2}/);
+  });
+
+  it('C10 — submit no modo cartão chama createCardPurchaseAction com purchasedOn e installments', async () => {
+    createCardPurchaseAction.mockResolvedValue({ ok: true, dueOn: '2026-09-11' });
+
+    const user = userEvent.setup();
+    render(
+      <LancarForm
+        categories={categories}
+        accounts={accounts}
+        cards={cards}
+        lastAccountId={null}
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Valor'), '120,50');
+    await user.type(screen.getByLabelText('Descrição'), 'Mercado no cartão');
+    await user.click(screen.getByLabelText('Pagar com'));
+    await user.click(await screen.findByRole('option', { name: /Nubank \(cartão\)/ }));
+    fireEvent.change(document.querySelector('input[name="data"]')!, {
+      target: { value: '2026-08-08' },
+    });
+    await user.click(screen.getByRole('button', { name: /lançar despesa/i }));
+
+    await waitFor(() => expect(createCardPurchaseAction).toHaveBeenCalledTimes(1));
+    expect(createCardPurchaseAction).toHaveBeenCalledWith({
+      cardId: 'card-nubank',
+      amountCents: 12050,
+      description: 'Mercado no cartão',
+      categoryId: 'cat-mercado',
+      purchasedOn: '2026-08-08',
+      installments: 1,
+    });
+    expect(createTransaction).not.toHaveBeenCalled();
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/transacoes'));
+  });
+
+  it('C11 — escolher 3× atualiza o preview com o valor da parcela', async () => {
+    const user = userEvent.setup();
+    render(
+      <LancarForm
+        categories={categories}
+        accounts={accounts}
+        cards={cards}
+        lastAccountId={null}
+      />,
+    );
+
+    await user.type(screen.getByLabelText('Valor'), '300,00');
+    await user.click(screen.getByLabelText('Pagar com'));
+    await user.click(await screen.findByRole('option', { name: /Nubank \(cartão\)/ }));
+    await user.click(screen.getByLabelText('Parcelas'));
+    await user.click(await screen.findByRole('option', { name: '3×' }));
+
+    expect(screen.getByTestId('card-due-preview')).toHaveTextContent(/3× R\$ 100,00/);
   });
 
   it('C8 — sucesso redireciona pra /transacoes via router.push', async () => {

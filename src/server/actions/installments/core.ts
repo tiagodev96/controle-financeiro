@@ -31,6 +31,13 @@ const createSchema = z.object({
     .nullable()
     .optional()
     .transform((v) => (v == null || v.trim() === '' ? null : v.trim().slice(0, 200))),
+  /** Presente quando o plano é uma compra parcelada no cartão. */
+  card: z
+    .object({
+      creditCardId: z.string().uuid(),
+      purchasedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    })
+    .optional(),
 });
 
 const idSchema = z.object({ planId: z.string().uuid() });
@@ -117,6 +124,7 @@ export async function createInstallmentPlanCore(
       category_id: data.categoryId,
       account_id: data.accountId,
       notes: data.notes,
+      credit_card_id: data.card?.creditCardId ?? null,
     })
     .select()
     .single();
@@ -138,6 +146,8 @@ export async function createInstallmentPlanCore(
     status: 'pending' as const,
     source_installment_plan_id: inserted.id,
     installment_number: idx + 1,
+    credit_card_id: data.card?.creditCardId ?? null,
+    purchased_on: data.card?.purchasedOn ?? null,
   }));
 
   const { error: txnError } = await supabase.from('transactions').insert(rows);
@@ -171,7 +181,7 @@ export async function updateInstallmentPlanCore(
 
   const { data: existing } = await supabase
     .from('installment_plans')
-    .select('id, household_id, currency, total_amount_cents, total_installments, first_due_date, frequency_months, category_id, account_id')
+    .select('id, household_id, currency, total_amount_cents, total_installments, first_due_date, frequency_months, category_id, account_id, credit_card_id')
     .eq('id', data.planId)
     .maybeSingle();
   if (!existing || existing.household_id !== session.householdId) {
@@ -227,6 +237,28 @@ export async function updateInstallmentPlanCore(
       return { ok: false, error: TOTAL_LESS_THAN_PAID };
     }
 
+    // Plano de cartão: preserva a etiqueta nas parcelas regeneradas. O
+    // purchased_on vem de qualquer transaction existente do plano (todas
+    // compartilham a data da compra) — lido ANTES do delete abaixo.
+    let cardPurchasedOn: string | null = null;
+    if (existing.credit_card_id) {
+      const { data: sample } = await supabase
+        .from('transactions')
+        .select('purchased_on')
+        .eq('source_installment_plan_id', data.planId)
+        .not('purchased_on', 'is', null)
+        .limit(1)
+        .maybeSingle();
+      cardPurchasedOn = sample?.purchased_on ?? null;
+      // Sem purchased_on não dá pra recriar a etiqueta (check constraint exige
+      // os dois juntos) — regenera como parcelas avulsas.
+      if (!cardPurchasedOn) {
+        console.error(
+          `installments: plano ${data.planId} tem credit_card_id mas nenhuma transaction com purchased_on`,
+        );
+      }
+    }
+
     // Apaga pendentes existentes — vão ser recriadas com novo cronograma.
     const { error: delError } = await supabase
       .from('transactions')
@@ -271,6 +303,8 @@ export async function updateInstallmentPlanCore(
           status: 'pending' as const,
           source_installment_plan_id: data.planId,
           installment_number: installmentNumber,
+          credit_card_id: cardPurchasedOn ? existing.credit_card_id : null,
+          purchased_on: cardPurchasedOn,
         };
       });
       const { error: insError } = await supabase.from('transactions').insert(rows);

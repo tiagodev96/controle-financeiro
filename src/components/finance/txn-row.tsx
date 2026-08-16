@@ -12,11 +12,17 @@ type Props = {
   direction: 'income' | 'expense';
   status?: Status;
   source?: SourcePill | null;
+  /** Compra no cartão: pill CARTÃO + data real da compra no sublabel. */
+  card?: { name: string; purchasedOn: string | null } | null;
   action?: React.ReactNode;
   /** Linha de mês futuro virtualizada (recorrente ainda não gerada). Read-only. */
   previsto?: boolean;
   className?: string;
 };
+
+function shortDate(iso: string): string {
+  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
 
 const SYMBOL: Record<'BRL' | 'EUR', string> = {
   BRL: 'R$',
@@ -31,6 +37,7 @@ export function TxnRow({
   direction,
   status,
   source,
+  card,
   action,
   previsto,
   className,
@@ -58,6 +65,17 @@ export function TxnRow({
             <span className="mono inline-flex h-4 items-center rounded-xs bg-brand-quiet-bg px-1 text-[9px] font-semibold tabular-nums text-brand-quiet-fg">
               {source.number}/{source.total}
             </span>
+          )}
+          {card && (
+            <span
+              title={card.name}
+              className="mono inline-flex h-4 items-center rounded-xs bg-brand-quiet-bg px-1 text-[9px] font-semibold uppercase tracking-wider text-brand-quiet-fg"
+            >
+              Cartão
+            </span>
+          )}
+          {card?.purchasedOn && (
+            <span className="mono text-[10px] text-fg4">compra {shortDate(card.purchasedOn)}</span>
           )}
         </div>
       </div>

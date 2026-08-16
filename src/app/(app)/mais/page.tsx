@@ -5,6 +5,7 @@ import {
   Wallet,
   Share2,
   CalendarRange,
+  HandCoins,
   TrendingUp,
   type LucideIcon,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ type Item = {
 };
 
 const items: Item[] = [
+  { href: '/dividas', label: 'Dívidas', description: 'Em aberto', Icon: HandCoins },
   { href: '/recorrentes', label: 'Recorrentes', description: 'Regras mensais', Icon: Repeat },
   { href: '/parcelados', label: 'Parcelados', description: 'Compras em N×', Icon: CalendarRange },
   { href: '/evolucao', label: 'Evolução', description: 'Tendências mensais', Icon: TrendingUp },

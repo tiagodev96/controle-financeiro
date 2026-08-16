@@ -20,8 +20,11 @@ export type TxnListRow = {
   source_recurring_rule_id: string | null;
   source_installment_plan_id: string | null;
   installment_number: number | null;
+  credit_card_id: string | null;
+  purchased_on: string | null;
   categories: { name: string } | null;
   installment_plans: { total_installments: number } | null;
+  credit_cards: { name: string } | null;
 };
 
 export type ListFilters = {
@@ -30,6 +33,8 @@ export type ListFilters = {
   accountId?: string;
   /** Filtro por categoria. `'none'` = só sem categoria (orfãs). */
   categoryId?: string | 'none';
+  /** Só compras de um cartão específico. */
+  creditCardId?: string;
   monthIso?: string;
   /** Range customizado (YYYY-MM-DD). Tem precedência sobre monthIso. */
   startDate?: string;
@@ -60,13 +65,14 @@ export async function listTransactionsForHousehold(
   let query = supabase
     .from('transactions')
     .select(
-      'id, description, amount_cents, currency, direction, status, occurred_on, paid_on, account_id, category_id, source_recurring_rule_id, source_installment_plan_id, installment_number, categories(name), installment_plans(total_installments)',
+      'id, description, amount_cents, currency, direction, status, occurred_on, paid_on, account_id, category_id, source_recurring_rule_id, source_installment_plan_id, installment_number, credit_card_id, purchased_on, categories(name), installment_plans(total_installments), credit_cards(name)',
       { count: 'exact' },
     )
     .eq('household_id', filters.householdId);
 
   if (filters.status) query = query.eq('status', filters.status);
   if (filters.accountId) query = query.eq('account_id', filters.accountId);
+  if (filters.creditCardId) query = query.eq('credit_card_id', filters.creditCardId);
 
   if (filters.categoryId === 'none') {
     query = query.is('category_id', null);
@@ -102,6 +108,7 @@ export async function listTransactionsForHousehold(
     status: t.status as Status,
     categories: one(t.categories),
     installment_plans: one(t.installment_plans),
+    credit_cards: one(t.credit_cards),
   }));
   // Reordena pela "data efetiva": paid_on quando pago, senão occurred_on.
   // Dentro do mesmo dia, paid vem antes de pending; final tie por id (estável).
