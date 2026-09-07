@@ -59,7 +59,7 @@ export default async function DashboardPage({
         )}
 
         <Suspense fallback={<BottomBlockSkeleton />}>
-          <BottomBlock nowIso={nowIso} targetDateIso={targetDateIso} isFuture={isFuture} />
+          <BottomBlock nowIso={nowIso} targetDateIso={targetDateIso} />
         </Suspense>
 
         <Suspense fallback={<FxBlockSkeleton />}>

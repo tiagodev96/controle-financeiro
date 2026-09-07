@@ -1,5 +1,4 @@
 import { getSession } from '@/lib/auth/session';
-import { Num } from '@/components/finance/num';
 import { CategoryLimitsCard } from '@/components/finance/category-limits-card';
 import {
   daysUntil,
@@ -11,7 +10,6 @@ import {
   DebtDeadlinesCard,
   type DeadlineCardItem,
 } from '@/components/finance/debt-deadlines-card';
-import { listUpcomingPending } from '@/lib/finance/upcoming';
 import { listCategoriesWithLimits } from '@/lib/finance/category-limits';
 import {
   getDashboardSupabase,
@@ -20,7 +18,6 @@ import {
   getDashboardDebts,
   hasBothCurrencies,
 } from '@/lib/finance/dashboard-data';
-import { toIsoDate } from '@/lib/dates';
 
 type Props = {
   nowIso: string;
@@ -38,11 +35,9 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
   const rateMap = both ? await getDashboardRateMap(nowIso) : null;
 
   const supabase = await getDashboardSupabase();
-  const now = new Date(nowIso);
 
-  const [debts, upcoming, categoryLimits] = await Promise.all([
+  const [debts, categoryLimits] = await Promise.all([
     getDashboardDebts(session.householdId),
-    listUpcomingPending(supabase, session.householdId, now, 7),
     listCategoriesWithLimits(supabase, session.householdId, rateMap, new Date(targetDateIso)),
   ]);
 
@@ -74,49 +69,7 @@ export async function InsightsBlock({ nowIso, targetDateIso }: Props) {
       )}
 
       <DebtDeadlinesCard items={deadlineItems} />
-
-      {upcoming.length > 0 && (
-        <section className="space-y-2">
-          <header className="flex items-baseline justify-between">
-            <h2>Próximos 7 dias</h2>
-            <span className="mono text-[10px] text-fg4">
-              {upcoming.length} venc.
-            </span>
-          </header>
-          <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
-            {upcoming.map((u) => (
-              <div
-                key={u.id}
-                className="flex items-center gap-3 py-2.5 text-[14px]"
-              >
-                <span className="mono inline-flex w-12 shrink-0 text-[10px] text-fg4">
-                  {shortDayLabel(u.occurred_on, now)}
-                </span>
-                <span className="min-w-0 flex-1 truncate text-fg2">
-                  {u.description}
-                </span>
-                <Num
-                  cents={u.amount_cents}
-                  currency={u.currency}
-                  className={
-                    u.direction === 'income'
-                      ? 'shrink-0 font-semibold text-money-positive'
-                      : 'shrink-0 font-semibold text-money-negative'
-                  }
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </>
   );
 }
 
-function shortDayLabel(iso: string, now: Date): string {
-  if (iso === toIsoDate(now)) return 'hoje';
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  if (iso === toIsoDate(tomorrow)) return 'amanhã';
-  return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-}

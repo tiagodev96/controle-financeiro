@@ -44,19 +44,4 @@ test.describe('Preview de recorrentes em mês futuro', () => {
       page.getByTestId('txn-row-previsto').filter({ hasText: title }),
     ).toHaveCount(0);
   });
-
-  test('E-PREV-DASH — recorrente aparece em Transações recentes do dashboard futuro', async ({
-    page,
-    context,
-  }) => {
-    await signInAsFixtureUser(context);
-    const title = `Prev dash ${Date.now()}`;
-    await createRecurringExpense(page, title, '4444');
-
-    await page.goto(`/?mes=${nextMonthIso()}`);
-    await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
-    const row = page.getByTestId('txn-row-previsto').filter({ hasText: title });
-    await expect(row.first()).toBeVisible();
-    await expect(row.first().getByText(/previsto/i)).toBeVisible();
-  });
 });
