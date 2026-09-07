@@ -17,6 +17,7 @@ type Direction = 'expense' | 'income';
 
 type Category = { id: string; name: string; kind: Direction };
 type Account = { id: string; name: string; currency: Currency };
+type Card = { id: string; name: string };
 
 type Props = {
   id: string;
@@ -31,9 +32,11 @@ type Props = {
   paused: boolean;
   categoryId: string | null;
   accountId: string | null;
+  creditCardId: string | null;
   notes: string | null;
   categories: Category[];
   accounts: Account[];
+  cards: Card[];
 };
 
 export function RecurringListItem({
@@ -48,9 +51,11 @@ export function RecurringListItem({
   paused,
   categoryId,
   accountId,
+  creditCardId,
   notes,
   categories,
   accounts,
+  cards,
 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -85,6 +90,7 @@ export function RecurringListItem({
           {frequency === 'yearly' && activeFrom
             ? `anual · ${MONTHS_PT[Number(activeFrom.slice(5, 7)) - 1]}, dia ${dayOfMonth}`
             : `todo dia ${dayOfMonth}`}
+          {creditCardId && ' · na fatura do cartão'}
         </p>
       </div>
 
@@ -169,9 +175,11 @@ export function RecurringListItem({
           currentAnniversaryMonth={activeFrom ? activeFrom.slice(0, 7) : null}
           currentCategoryId={categoryId}
           currentAccountId={accountId}
+          currentCreditCardId={creditCardId}
           currentNotes={notes}
           categories={categories}
           accounts={accounts}
+          cards={cards}
           open={editOpen}
           onOpenChange={setEditOpen}
         />

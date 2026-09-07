@@ -5,7 +5,7 @@ import { TxnRow } from '@/components/finance/txn-row';
 import { CategoryProgressList } from '@/components/finance/category-progress';
 import { topCategoriesCrossCurrency } from '@/lib/finance/dashboard-stats';
 import { listTransactionsForHousehold } from '@/lib/finance/transactions';
-import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
+import { listUngeneratedRecurringDueInMonth } from '@/lib/finance/recurring';
 import {
   getDashboardSupabase,
   getDashboardAccounts,
@@ -84,7 +84,7 @@ export async function BottomBlock({ nowIso, targetDateIso, isFuture }: Props) {
 
   const virtualRows: TxnRowData[] = isFuture
     ? (
-        await listUngeneratedRecurringForMonth({
+        await listUngeneratedRecurringDueInMonth({
           supabase,
           householdId: session.householdId,
           targetDate,

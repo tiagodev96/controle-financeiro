@@ -16,6 +16,11 @@ async function cleanup(): Promise<void> {
   const admin = getAdminClient();
   await truncateHouseholdTransactions(SEED_DEMO_HOUSEHOLD_ID);
   await admin
+    .from('recurring_rules')
+    .delete()
+    .eq('household_id', SEED_DEMO_HOUSEHOLD_ID)
+    .like('title', 'CARD test %');
+  await admin
     .from('credit_cards')
     .delete()
     .eq('household_id', SEED_DEMO_HOUSEHOLD_ID)
@@ -266,5 +271,66 @@ describe('importar fatura (integração)', () => {
       .eq('credit_card_id', card.id)
       .eq('external_ref', 'ECPXHV#2/2');
     expect(count).toBe(1);
+  });
+  it('I-CARD-IMP8 — cobrança de recorrente no cartão deduplica com tolerância de ±3 dias', async () => {
+    const { supabase, card } = await createCard();
+    const admin = getAdminClient();
+    // Compra gerada por recorrente (sem external_ref) em 15/09; o banco posta
+    // a cobrança em 17/09 no arquivo — mesmo valor, 2 dias de diferença.
+    const { data: rule } = await admin
+      .from('recurring_rules')
+      .insert({
+        household_id: SEED_DEMO_HOUSEHOLD_ID,
+        title: 'CARD test assinatura',
+        amount_cents: 4999,
+        currency: 'BRL',
+        direction: 'expense',
+        category_id: SEED_CATEGORY_MERCADO_ID,
+        account_id: SEED_ACCOUNT_BRL_ID,
+        day_of_month: 15,
+        credit_card_id: card.id,
+      })
+      .select('id')
+      .single();
+    await admin.from('transactions').insert({
+      household_id: SEED_DEMO_HOUSEHOLD_ID,
+      profile_id: SEED_SESSION.userId,
+      account_id: SEED_ACCOUNT_BRL_ID,
+      direction: 'expense',
+      amount_cents: 4999,
+      currency: 'BRL',
+      description: 'CARD test assinatura',
+      occurred_on: '2026-10-11',
+      status: 'pending',
+      credit_card_id: card.id,
+      purchased_on: '2026-09-15',
+      source_recurring_rule_id: rule!.id,
+    });
+
+    const statement = {
+      dueOn: '2026-10-11',
+      monthLabel: 'Outubro/2026',
+      ignoredCount: 0,
+      statementTotalCents: 4999,
+      purchases: [
+        {
+          purchasedOn: '2026-09-17',
+          description: 'Google One',
+          amountCents: 4999,
+          externalRef: 'GOOG01',
+          kind: 'avista' as const,
+          installment: null,
+          cardLast4: '1906',
+        },
+      ],
+    };
+    const result = await importCardStatementCore(
+      { supabase, session: SEED_SESSION },
+      { cardId: card.id, statement, categoryId: null },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.imported).toBe(0);
+    expect(result.skippedExisting).toBe(1);
   });
 });

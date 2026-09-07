@@ -5,6 +5,12 @@ import type { Session } from '@/lib/auth/session';
 import type { ParsedPurchase, ParsedStatement } from '@/lib/finance/btg-statement';
 import { addMonthsClamped } from '@/lib/finance/installments';
 
+function shiftDays(isoDate: string, days: number): string {
+  const d = new Date(`${isoDate}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 const GENERIC = 'Não foi possível importar a fatura.';
 const INVALID_CARD = 'Cartão inválido.';
 const INVALID_CATEGORY = 'Categoria inválida.';
@@ -138,19 +144,35 @@ export async function importCardStatementCore(
   if (refError) return { ok: false, error: GENERIC };
   const knownRefs = new Set((existingByRef ?? []).map((t) => t.external_ref));
 
-  // Dedupe 2: compra lançada à mão no cartão (sem ref) com mesma data e valor.
-  const dates = Array.from(new Set(statement.purchases.map((p) => p.purchasedOn)));
+  // Dedupe 2: compra sem ref já no cartão (lançada à mão ou gerada por
+  // recorrente) com mesmo valor. Data exata pra manual; ±3 dias quando veio de
+  // recorrente — o banco às vezes posta a assinatura uns dias depois.
+  const dates = statement.purchases.map((p) => p.purchasedOn).sort();
   const { data: manual, error: manualError } = await supabase
     .from('transactions')
-    .select('purchased_on, amount_cents')
+    .select('purchased_on, amount_cents, source_recurring_rule_id')
     .eq('credit_card_id', cardId)
     .is('external_ref', null)
-    .in('purchased_on', dates);
+    .gte('purchased_on', shiftDays(dates[0]!, -3))
+    .lte('purchased_on', shiftDays(dates[dates.length - 1]!, 3));
   if (manualError) return { ok: false, error: GENERIC };
-  const manualKeys = new Set((manual ?? []).map((t) => `${t.purchased_on}:${t.amount_cents}`));
+  const manualKeys = new Set(
+    (manual ?? []).map((t) => `${t.purchased_on}:${t.amount_cents}`),
+  );
+  const recurringNoRef = (manual ?? []).filter((t) => t.source_recurring_rule_id !== null);
+  const matchesRecurring = (p: { purchasedOn: string; amountCents: number }) =>
+    recurringNoRef.some(
+      (t) =>
+        t.amount_cents === p.amountCents &&
+        t.purchased_on !== null &&
+        Math.abs(Date.parse(t.purchased_on) - Date.parse(p.purchasedOn)) <= 3 * 86_400_000,
+    );
 
   const toImport = statement.purchases.filter(
-    (p) => !knownRefs.has(p.externalRef) && !manualKeys.has(`${p.purchasedOn}:${p.amountCents}`),
+    (p) =>
+      !knownRefs.has(p.externalRef) &&
+      !manualKeys.has(`${p.purchasedOn}:${p.amountCents}`) &&
+      !matchesRecurring(p),
   );
   const skippedExisting = statement.purchases.length - toImport.length;
   const importedCents = toImport.reduce((sum, p) => sum + p.amountCents, 0);

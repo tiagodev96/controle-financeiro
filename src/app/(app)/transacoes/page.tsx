@@ -11,7 +11,7 @@ import {
   type Transaction,
 } from '@/components/finance/transactions-list';
 import { listTransactionsForHousehold, type Status } from '@/lib/finance/transactions';
-import { listUngeneratedRecurringForMonth } from '@/lib/finance/recurring';
+import { listUngeneratedRecurringDueInMonth } from '@/lib/finance/recurring';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { convertCents, getRateMapSafe, type RateMap } from '@/lib/fx';
@@ -132,7 +132,7 @@ export default async function TransacoesPage({ searchParams }: Props) {
   if (showPrevistos && monthIso) {
     const [yy, mm] = monthIso.split('-').map(Number) as [number, number];
     const targetDate = new Date(yy, mm, 0);
-    const occ = await listUngeneratedRecurringForMonth({
+    const occ = await listUngeneratedRecurringDueInMonth({
       supabase,
       householdId: session.householdId,
       targetDate,

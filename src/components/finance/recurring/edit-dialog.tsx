@@ -21,6 +21,7 @@ type Frequency = 'monthly' | 'yearly';
 
 type Category = { id: string; name: string; kind: Direction };
 type Account = { id: string; name: string; currency: Currency };
+type Card = { id: string; name: string };
 
 type Props = {
   ruleId: string;
@@ -32,9 +33,11 @@ type Props = {
   currentAnniversaryMonth: string | null;
   currentCategoryId: string | null;
   currentAccountId: string | null;
+  currentCreditCardId: string | null;
   currentNotes: string | null;
   categories: Category[];
   accounts: Account[];
+  cards?: Card[];
   open: boolean;
   onOpenChange: (next: boolean) => void;
 };
@@ -56,9 +59,11 @@ export function EditRecurringDialog({
   currentAnniversaryMonth,
   currentCategoryId,
   currentAccountId,
+  currentCreditCardId,
   currentNotes,
   categories,
   accounts,
+  cards = [],
   open,
   onOpenChange,
 }: Props) {
@@ -70,12 +75,15 @@ export function EditRecurringDialog({
     currentAnniversaryMonth ?? monthIso(new Date()),
   );
   const [categoryId, setCategoryId] = useState(currentCategoryId ?? '');
-  const [accountId, setAccountId] = useState(currentAccountId ?? '');
+  const [payWith, setPayWith] = useState(
+    currentCreditCardId ? `card:${currentCreditCardId}` : `account:${currentAccountId ?? ''}`,
+  );
   const [notes, setNotes] = useState(currentNotes ?? '');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const visibleCategories = categories.filter((c) => c.kind === direction);
+  const offerCards = direction === 'expense' && cards.length > 0;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -92,7 +100,9 @@ export function EditRecurringDialog({
         frequency,
         ...(frequency === 'yearly' ? { anniversaryMonth } : {}),
         categoryId,
-        accountId,
+        ...(payWith.startsWith('card:')
+          ? { creditCardId: payWith.slice(5) }
+          : { accountId: payWith.slice(8), creditCardId: null }),
         notes: notes.trim() || null,
       },
     });
@@ -143,11 +153,19 @@ export function EditRecurringDialog({
 
           <div className="grid grid-cols-2 gap-2.5">
             <FormSelect
-              label="Conta"
+              label={offerCards ? 'Pagar com' : 'Conta'}
               required
-              value={accountId}
-              onChange={setAccountId}
-              options={accounts.map((a) => ({ value: a.id, label: `${a.name} (${a.currency})` }))}
+              value={payWith}
+              onChange={setPayWith}
+              options={[
+                ...accounts.map((a) => ({
+                  value: `account:${a.id}`,
+                  label: `${a.name} (${a.currency})`,
+                })),
+                ...(offerCards
+                  ? cards.map((c) => ({ value: `card:${c.id}`, label: `${c.name} (cartão)` }))
+                  : []),
+              ]}
             />
             <label className="block space-y-2">
               <span className="eyebrow">Dia do mês</span>
@@ -211,7 +229,7 @@ export function EditRecurringDialog({
 
           <button
             type="submit"
-            disabled={pending || !title.trim() || amountCents === 0 || !categoryId || !accountId}
+            disabled={pending || !title.trim() || amountCents === 0 || !categoryId || payWith.endsWith(':')}
             className="block w-full min-h-11 rounded-md bg-brand px-3 py-2.5 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
           >
             {pending ? 'Salvando…' : 'Salvar alterações'}

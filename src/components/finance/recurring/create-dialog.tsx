@@ -22,13 +22,16 @@ type Frequency = 'monthly' | 'yearly';
 
 type Category = { id: string; name: string; kind: 'expense' | 'income' };
 type Account = { id: string; name: string; currency: 'BRL' | 'EUR' };
+type Card = { id: string; name: string };
 
 type Props = {
   categories: Category[];
   accounts: Account[];
+  /** Cartões ativos — cobrança que cai na fatura (só despesa). */
+  cards?: Card[];
 };
 
-export function CreateRecurringDialog({ categories, accounts }: Props) {
+export function CreateRecurringDialog({ categories, accounts, cards = [] }: Props) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [amountCents, setAmountCents] = useState(0);
@@ -36,7 +39,7 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
   const [categoryId, setCategoryId] = useState<string>(
     categories.find((c) => c.kind === 'expense')?.id ?? '',
   );
-  const [accountId, setAccountId] = useState<string>(accounts[0]?.id ?? '');
+  const [payWith, setPayWith] = useState<string>(`account:${accounts[0]?.id ?? ''}`);
   const [dayOfMonthRaw, setDayOfMonthRaw] = useState('5');
   const [frequency, setFrequency] = useState<Frequency>('monthly');
   const [anniversaryMonth, setAnniversaryMonth] = useState(() => monthIso(new Date()));
@@ -53,10 +56,15 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const visibleCategories = categories.filter((c) => c.kind === direction);
+  const offerCards = direction === 'expense' && cards.length > 0;
 
   function changeDirection(d: Direction) {
     setDirection(d);
     setCategoryId(categories.find((c) => c.kind === d)?.id ?? '');
+    // Entrada não pode cair na fatura — volta pra primeira conta.
+    if (d === 'income' && payWith.startsWith('card:')) {
+      setPayWith(`account:${accounts[0]?.id ?? ''}`);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -70,7 +78,9 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
       amountCents,
       direction,
       categoryId,
-      accountId,
+      ...(payWith.startsWith('card:')
+        ? { creditCardId: payWith.slice(5) }
+        : { accountId: payWith.slice(8) }),
       dayOfMonth,
       frequency,
       ...(frequency === 'yearly' ? { anniversaryMonth } : {}),
@@ -159,11 +169,19 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
 
           <div className="grid grid-cols-2 gap-2.5">
             <FormSelect
-              label="Conta"
+              label={offerCards ? 'Pagar com' : 'Conta'}
               required
-              value={accountId}
-              onChange={setAccountId}
-              options={accounts.map((a) => ({ value: a.id, label: `${a.name} (${a.currency})` }))}
+              value={payWith}
+              onChange={setPayWith}
+              options={[
+                ...accounts.map((a) => ({
+                  value: `account:${a.id}`,
+                  label: `${a.name} (${a.currency})`,
+                })),
+                ...(offerCards
+                  ? cards.map((c) => ({ value: `card:${c.id}`, label: `${c.name} (cartão)` }))
+                  : []),
+              ]}
             />
             <label className="block space-y-2">
               <span className="eyebrow">Dia do mês</span>
@@ -227,7 +245,7 @@ export function CreateRecurringDialog({ categories, accounts }: Props) {
 
           <button
             type="submit"
-            disabled={pending || !title.trim() || amountCents === 0 || !categoryId || !accountId}
+            disabled={pending || !title.trim() || amountCents === 0 || !categoryId || payWith.endsWith(':')}
             className="block w-full min-h-11 rounded-md bg-brand px-3 py-2.5 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
           >
             {pending ? 'Salvando…' : 'Criar regra'}

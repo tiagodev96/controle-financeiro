@@ -6,7 +6,7 @@ import {
   calculateCrossCurrencyMonthStats,
   type CrossCurrencyMonthStats,
 } from './cross-currency-stats';
-import { listUngeneratedRecurringForMonth } from './recurring';
+import { listUngeneratedRecurringDueInMonth } from './recurring';
 
 export type ProjectionTopCategory = {
   id: string;
@@ -84,7 +84,7 @@ export async function projectMonth({
       nowDate: now,
       topCategoriesLimit: 10, // mais larga aqui; recortamos no fim depois de mergear virtuais
     }),
-    listUngeneratedRecurringForMonth({ supabase, householdId, targetDate }),
+    listUngeneratedRecurringDueInMonth({ supabase, householdId, targetDate }),
   ]);
 
   let recurringPendingExpenseCents = 0;

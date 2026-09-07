@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth/session';
 import { listRecurringRulesForHousehold, type RecurringRule } from '@/lib/finance/recurring';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
+import { listCreditCardsForHousehold } from '@/lib/finance/credit-cards';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { CreateRecurringDialog } from '@/components/finance/recurring/create-dialog';
 import { RecurringListItem } from '@/components/finance/recurring/list-item';
@@ -14,11 +15,12 @@ export default async function RecorrentesPage() {
   const supabase = await getServerSupabase();
   const now = new Date();
 
-  const [{ active, paused, notGeneratedThisMonth }, allCategories, allAccounts] =
+  const [{ active, paused, notGeneratedThisMonth }, allCategories, allAccounts, allCards] =
     await Promise.all([
       listRecurringRulesForHousehold(supabase, session.householdId, now),
       listAllCategoriesForHousehold(supabase, session.householdId),
       listAllAccountsForHousehold(supabase, session.householdId),
+      listCreditCardsForHousehold(supabase, session.householdId),
     ]);
 
   const monthIso = toMonthIso(now);
@@ -33,6 +35,9 @@ export default async function RecorrentesPage() {
   // Filtra arquivadas pra não confundir UI da listagem do dialog.
   const categoriesForDialog = allCategories.filter((c) => !c.is_archived);
   const accountsForDialog = allAccounts.filter((a) => !a.is_archived);
+  const cardsForDialog = allCards
+    .filter((c) => !c.is_archived)
+    .map((c) => ({ id: c.id, name: c.name }));
 
   return (
     <section className="space-y-6">
@@ -45,6 +50,7 @@ export default async function RecorrentesPage() {
             <CreateRecurringDialog
               categories={categoriesForDialog}
               accounts={accountsForDialog}
+              cards={cardsForDialog}
             />
           </div>
         }
@@ -62,6 +68,7 @@ export default async function RecorrentesPage() {
               rules={active}
               categories={categoriesForDialog}
               accounts={accountsForDialog}
+              cards={cardsForDialog}
             />
           )}
           {paused.length > 0 && (
@@ -71,6 +78,7 @@ export default async function RecorrentesPage() {
               paused
               categories={categoriesForDialog}
               accounts={accountsForDialog}
+              cards={cardsForDialog}
             />
           )}
         </>
@@ -88,12 +96,14 @@ function Section({
   paused = false,
   categories,
   accounts,
+  cards,
 }: {
   label: string;
   rules: RecurringRule[];
   paused?: boolean;
   categories: SectionCategory[];
   accounts: SectionAccount[];
+  cards: { id: string; name: string }[];
 }) {
   return (
     <section className="space-y-2">
@@ -113,9 +123,11 @@ function Section({
             paused={paused}
             categoryId={r.category_id}
             accountId={r.account_id}
+            creditCardId={r.credit_card_id}
             notes={r.notes}
             categories={categories}
             accounts={accounts}
+            cards={cards}
           />
         ))}
       </div>

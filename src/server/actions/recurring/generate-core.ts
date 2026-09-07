@@ -4,6 +4,7 @@ import type { Database } from '@/types/database';
 import type { Session } from '@/lib/auth/session';
 import { monthRangeFromIso } from '@/lib/dates';
 import { ruleAppliesToMonth } from '@/lib/finance/recurring';
+import { cycleForPurchase } from '@/lib/finance/credit-card';
 
 const GENERIC = 'Não foi possível gerar.';
 
@@ -49,7 +50,7 @@ export async function generateRecurringForMonthCore(
   const { data: rules, error: rulesError } = await supabase
     .from('recurring_rules')
     .select(
-      'id, title, amount_cents, currency, direction, category_id, account_id, day_of_month, frequency, is_paused, active_from, active_until',
+      'id, title, amount_cents, currency, direction, category_id, account_id, day_of_month, frequency, is_paused, active_from, active_until, credit_card_id, credit_cards(closing_day, due_day, payment_account_id, is_archived)',
     )
     .eq('household_id', session.householdId);
   if (rulesError) return { ok: false, error: GENERIC };
@@ -69,24 +70,40 @@ export async function generateRecurringForMonthCore(
   }
 
   const ruleIds = activeRules.map((r) => r.id);
+  // Regra de conta é idempotente por occurred_on no mês; regra de cartão por
+  // purchased_on — o vencimento dela pode cair no mês seguinte e não pode
+  // bloquear a geração do próximo ciclo.
   const { data: existing } = await supabase
     .from('transactions')
-    .select('source_recurring_rule_id')
+    .select('source_recurring_rule_id, occurred_on, purchased_on')
     .eq('household_id', session.householdId)
-    .gte('occurred_on', start)
-    .lt('occurred_on', end)
+    .or(
+      `and(occurred_on.gte.${start},occurred_on.lt.${end}),and(purchased_on.gte.${start},purchased_on.lt.${end})`,
+    )
     .in('source_recurring_rule_id', ruleIds);
 
-  const alreadyGenerated = new Set(
-    (existing ?? []).map((t) => t.source_recurring_rule_id).filter((id): id is string => !!id),
-  );
+  const generatedByOccurred = new Set<string>();
+  const generatedByPurchased = new Set<string>();
+  for (const t of existing ?? []) {
+    if (!t.source_recurring_rule_id) continue;
+    if (t.occurred_on >= start && t.occurred_on < end) {
+      generatedByOccurred.add(t.source_recurring_rule_id);
+    }
+    if (t.purchased_on && t.purchased_on >= start && t.purchased_on < end) {
+      generatedByPurchased.add(t.source_recurring_rule_id);
+    }
+  }
 
   const toInsert: Database['public']['Tables']['transactions']['Insert'][] = [];
   let skipped = 0;
   let failed = 0;
 
   for (const rule of activeRules) {
-    if (alreadyGenerated.has(rule.id)) {
+    const card = Array.isArray(rule.credit_cards) ? rule.credit_cards[0] : rule.credit_cards;
+    const generated = rule.credit_card_id
+      ? generatedByPurchased.has(rule.id)
+      : generatedByOccurred.has(rule.id);
+    if (generated) {
       skipped += 1;
       continue;
     }
@@ -94,6 +111,32 @@ export async function generateRecurringForMonthCore(
       failed += 1;
       continue;
     }
+    const chargeOn = dateOfRule(monthIso, rule.day_of_month, lastDay);
+
+    if (rule.credit_card_id) {
+      // Cobrança na fatura: compra de cartão vencendo no ciclo da cobrança.
+      if (!card || card.is_archived) {
+        failed += 1;
+        continue;
+      }
+      toInsert.push({
+        household_id: session.householdId,
+        profile_id: session.userId,
+        account_id: card.payment_account_id,
+        category_id: rule.category_id,
+        direction: rule.direction,
+        amount_cents: rule.amount_cents,
+        currency: rule.currency,
+        description: rule.title,
+        occurred_on: cycleForPurchase(chargeOn, card.closing_day, card.due_day).dueOn,
+        purchased_on: chargeOn,
+        credit_card_id: rule.credit_card_id,
+        status: 'pending',
+        source_recurring_rule_id: rule.id,
+      });
+      continue;
+    }
+
     toInsert.push({
       household_id: session.householdId,
       profile_id: session.userId,
@@ -103,7 +146,7 @@ export async function generateRecurringForMonthCore(
       amount_cents: rule.amount_cents,
       currency: rule.currency,
       description: rule.title,
-      occurred_on: dateOfRule(monthIso, rule.day_of_month, lastDay),
+      occurred_on: chargeOn,
       status: 'pending',
       source_recurring_rule_id: rule.id,
     });
