@@ -66,8 +66,6 @@ test.describe('Câmbio', () => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
 
-    // Dashboard nasce com valores ocultos — revela antes de conferir.
-    await page.getByRole('button', { name: /mostrar valores/i }).click();
 
     await expect(page.getByText(/saldo total/i).first()).toBeVisible();
     // Total convertido EUR = € 2.000 + (R$ 6.000 / 6) = € 3.000
@@ -83,16 +81,12 @@ test.describe('Câmbio', () => {
     await page.goto('/');
     await expect(page.getByRole('button', { name: /trocar moeda principal/i }).first()).toBeVisible();
 
-    // Dashboard nasce com valores ocultos — revela antes de conferir.
-    await page.getByRole('button', { name: /mostrar valores/i }).click();
     await page.getByRole('button', { name: /trocar moeda principal/i }).first().click();
 
     // Total convertido BRL = R$ 6.000 + (€ 2.000 * 6) = R$ 18.000
     await expect(page.getByText('18.000', { exact: false }).first()).toBeVisible();
 
     await page.reload();
-    // Visibilidade é estado client de sessão — reload volta mascarado.
-    await page.getByRole('button', { name: /mostrar valores/i }).click();
     await expect(page.getByText('18.000', { exact: false }).first()).toBeVisible();
   });
 });

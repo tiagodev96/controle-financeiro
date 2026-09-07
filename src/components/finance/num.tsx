@@ -2,10 +2,8 @@
 
 import { cn } from '@/lib/utils';
 import { formatCentsToBRL } from '@/lib/money/format';
-import { useBalanceVisibility } from './balance-visibility';
 
 const SYMBOL = { BRL: 'R$', EUR: '€' } as const;
-const MASK = '••••';
 export type Currency = 'BRL' | 'EUR';
 
 type NumProps = {
@@ -26,22 +24,7 @@ type NumProps = {
  *   <Num cents={1250} sign />     → "+€ 12,50"
  */
 export function Num({ cents, currency = 'EUR', sign = false, className }: NumProps) {
-  const { hidden } = useBalanceVisibility();
   const symbol = SYMBOL[currency];
-
-  if (hidden) {
-    return (
-      <span
-        aria-label="Valor oculto"
-        className={cn('num whitespace-nowrap select-none', className, 'text-fg3')}
-      >
-        {symbol}
-        &nbsp;
-        {MASK}
-      </span>
-    );
-  }
-
   const abs = Math.abs(cents);
   const isNegative = cents < 0;
   const prefix = isNegative ? '−' : sign && cents > 0 ? '+' : '';
@@ -77,7 +60,6 @@ type HeroProps = {
  * pra casos extremos.
  */
 export function HeroNumber({ cents, currency = 'EUR', className }: HeroProps) {
-  const { hidden } = useBalanceVisibility();
   const symbol = SYMBOL[currency];
 
   const intClass =
@@ -86,18 +68,6 @@ export function HeroNumber({ cents, currency = 'EUR', className }: HeroProps) {
     'num text-[22px] sm:text-[28px] font-medium leading-none tracking-tight';
   const symbolClass =
     'text-[20px] sm:text-2xl font-medium leading-none tracking-tight';
-
-  if (hidden) {
-    return (
-      <div
-        aria-label="Saldo oculto"
-        className={cn('flex flex-wrap items-baseline gap-x-1.5 select-none', className)}
-      >
-        <span className={cn(symbolClass, 'text-fg3')}>{symbol}</span>
-        <span className={cn(intClass, 'text-fg3')}>{MASK}</span>
-      </div>
-    );
-  }
 
   const [intPart, fracPart] = formatCentsToBRL(Math.abs(cents)).split(',');
   const isNegative = cents < 0;

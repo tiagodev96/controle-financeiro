@@ -1,10 +1,6 @@
 import { Suspense } from 'react';
 import { AppTopBar } from '@/components/finance/app-top-bar';
 import { DashboardMonthPicker } from '@/components/finance/dashboard-month-picker';
-import {
-  BalanceVisibilityProvider,
-  BalanceVisibilityToggle,
-} from '@/components/finance/balance-visibility';
 import { HeroBlock } from './_dashboard/hero-block';
 import { InsightsBlock } from './_dashboard/insights-block';
 import { CardBlock } from './_dashboard/card-block';
@@ -34,17 +30,11 @@ export default async function DashboardPage({
   const targetDateIso = targetDate.toISOString();
 
   return (
-    <BalanceVisibilityProvider>
-      <section className="space-y-6 cf-fade-up">
+    <section className="space-y-6 cf-fade-up">
         <AppTopBar
           eyebrow={isPast ? `visualizando ${monthEyebrow(targetDate)}` : monthEyebrow(now)}
           title="Dashboard"
-          trailing={
-            <>
-              <BalanceVisibilityToggle />
-              <DashboardMonthPicker value={monthIso} currentMonth={currentMonthIso} />
-            </>
-          }
+          trailing={<DashboardMonthPicker value={monthIso} currentMonth={currentMonthIso} />}
         />
 
         <Suspense fallback={<HeroBlockSkeleton />}>
@@ -75,7 +65,6 @@ export default async function DashboardPage({
         <Suspense fallback={<FxBlockSkeleton />}>
           <FxBlock nowIso={nowIso} />
         </Suspense>
-      </section>
-    </BalanceVisibilityProvider>
+    </section>
   );
 }
