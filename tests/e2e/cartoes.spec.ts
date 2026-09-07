@@ -188,10 +188,11 @@ test.describe('Cartão de crédito', () => {
     const ws = wb.addWorksheet('Titular');
     ws.getRow(3).values = [null, null, 'Fatura Cartão de Crédito', null, null, null, null, 'Dezembro/2026'];
     ws.getRow(8).values = [null, null, 'Vencimento', null, '11/12'];
-    ws.getRow(14).values = [null, null, 'Total de compras e despesas', null, null, 150.5];
+    ws.getRow(14).values = [null, null, 'Total de compras e despesas', null, null, 180.5];
     ws.getRow(16).values = [null, null, 'Data', 'Descrição', '', 'Valor', 'Tipo de compra', 'Código de autorização', 'Final Cartão'];
     ws.getRow(17).values = [null, null, new Date(Date.UTC(2026, 10, 15)), 'E2E import loja A', null, 100.5, 'Compra à vista', 'E2EAAA', '1906'];
     ws.getRow(18).values = [null, null, new Date(Date.UTC(2026, 10, 20)), 'E2E import loja B', null, 50.0, 'Compra à vista', 'E2EBBB', '1906'];
+    ws.getRow(19).values = [null, null, new Date(Date.UTC(2026, 10, 22)), 'E2E import parcelada (1/3)', null, 30.0, 'Parcela sem juros', 'E2EPPP', '1906'];
     const plain = Buffer.from(await wb.xlsx.writeBuffer());
     const encrypted = await office.encrypt(plain, { password: '12345' });
     const filePath = path.join(os.tmpdir(), `e2e-fatura-${Date.now()}.xlsx`);
@@ -205,11 +206,12 @@ test.describe('Cartão de crédito', () => {
 
     const preview = page.getByTestId('import-preview');
     await expect(preview).toContainText('Dezembro/2026');
-    await expect(preview).toContainText('2 compras novas');
-    await expect(preview).toContainText('R$ 150,50');
+    await expect(preview).toContainText('3 compras novas');
+    await expect(preview).toContainText('R$ 180,50');
+    await expect(preview).toContainText('2 parcelas futuras projetadas');
 
-    await page.getByRole('button', { name: 'Importar 2 compras' }).click();
-    await expect(page.getByText('Fatura importada: 2 compras.')).toBeVisible();
+    await page.getByRole('button', { name: 'Importar 3 compras' }).click();
+    await expect(page.getByText('Fatura importada: 3 compras + 2 parcelas futuras.')).toBeVisible();
 
     const db = admin();
     const { data: imported } = await db
@@ -217,7 +219,15 @@ test.describe('Cartão de crédito', () => {
       .select('description, amount_cents, occurred_on, purchased_on, external_ref, status')
       .like('description', 'E2E import %')
       .order('purchased_on', { ascending: true });
-    expect(imported).toHaveLength(2);
+    expect(imported).toHaveLength(5);
+
+    // Parcelas futuras projetadas nas faturas de jan e fev.
+    const futures = imported!.filter((t) => t.external_ref?.startsWith('E2EPPP#'));
+    expect(futures.map((t) => [t.external_ref, t.occurred_on])).toEqual([
+      ['E2EPPP#1/3', '2026-12-11'],
+      ['E2EPPP#2/3', '2027-01-11'],
+      ['E2EPPP#3/3', '2027-02-11'],
+    ]);
     expect(imported![0]).toMatchObject({
       description: 'E2E import loja A',
       amount_cents: 10050,
@@ -234,7 +244,7 @@ test.describe('Cartão de crédito', () => {
     await page.locator('input[type="file"]').setInputFiles(filePath);
     await page.getByRole('button', { name: 'Pré-visualizar' }).click();
     await expect(page.getByTestId('import-preview')).toContainText('0 compras novas');
-    await expect(page.getByTestId('import-preview')).toContainText('2 já no app');
+    await expect(page.getByTestId('import-preview')).toContainText('3 já no app');
 
     fs.rmSync(filePath, { force: true });
   });

@@ -19,6 +19,8 @@ export type ParsedPurchase = {
   /** Código de autorização; parcela ganha sufixo #n/m (o código repete todo mês). */
   externalRef: string;
   kind: 'avista' | 'internacional' | 'parcela';
+  /** Presente quando a descrição termina em (n/m). */
+  installment: { number: number; total: number } | null;
   cardLast4: string | null;
 };
 
@@ -172,6 +174,9 @@ export function parseBtgStatement(sheets: StatementSheet[]): ParseStatementResul
           amountCents: Math.round(valor * 100),
           externalRef: installment ? `${auth}#${installment[1]}/${installment[2]}` : auth,
           kind,
+          installment: installment
+            ? { number: Number(installment[1]), total: Number(installment[2]) }
+            : null,
           cardLast4: asTrimmedString(row[colLast4]) ?? null,
         });
       }

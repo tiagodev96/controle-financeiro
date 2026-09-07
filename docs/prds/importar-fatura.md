@@ -29,8 +29,10 @@ fatura real de setembro/2026 (~100 compras) sem edição manual.
 - Cada linha vira compra pendente do cartão: `purchased_on` = data da linha, `occurred_on` =
   vencimento LIDO do arquivo (não recalculado — o banco inclui compras postadas fora do
   período), moeda BRL obrigatória (conta de pagamento do cartão precisa ser BRL).
-- "Parcela sem juros" entra como linha individual da fatura do mês (sem criar plano em
-  /parcelados) — cada arquivo mensal traz a parcela do mês.
+- "Parcela sem juros" (n/m) entra como linha da fatura do mês E projeta as parcelas futuras
+  (n+1..m) nas faturas seguintes — mesmo valor (sem juros), refs `auth#k/m`. Quando a fatura
+  real do mês seguinte for importada, as linhas projetadas já existem e são puladas. Sem criar
+  plano em /parcelados.
 - Idempotência: `transactions.external_ref` = código de autorização (+ `#n/m` em parcela,
   que repete o código nos meses seguintes), índice único por cartão. Reimportar não duplica.
 - Compra lançada à mão com mesma data+valor no cartão é pulada e reportada.
@@ -62,6 +64,8 @@ justificadas: são o único par mantido no npm que abre xlsx criptografado.
   segunda; aceito (aparece no contador de "já existentes").
 - Ano do vencimento não vem no "11/09": derivado do "Mês/Ano" do cabeçalho com wrap de
   virada de ano (fatura Dezembro/2026 vencendo em janeiro → 2027), com teste dedicado.
+- Vencimento real de mês futuro pode divergir do projetado (feriado etc.): a linha projetada
+  fica na data projetada e a real é pulada pelo ref — drift de poucos dias, aceito.
 
 ## Open questions
 

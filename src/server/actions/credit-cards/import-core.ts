@@ -2,7 +2,8 @@ import { z } from 'zod';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 import type { Session } from '@/lib/auth/session';
-import type { ParsedStatement } from '@/lib/finance/btg-statement';
+import type { ParsedPurchase, ParsedStatement } from '@/lib/finance/btg-statement';
+import { addMonthsClamped } from '@/lib/finance/installments';
 
 const GENERIC = 'Não foi possível importar a fatura.';
 const INVALID_CARD = 'Cartão inválido.';
@@ -15,6 +16,9 @@ const purchaseSchema = z.object({
   amountCents: z.number().int().positive(),
   externalRef: z.string().min(1).max(40),
   kind: z.enum(['avista', 'internacional', 'parcela']),
+  installment: z
+    .object({ number: z.number().int().min(1), total: z.number().int().min(1).max(60) })
+    .nullable(),
   cardLast4: z.string().nullable(),
 });
 
@@ -39,6 +43,9 @@ export type ImportCardStatementResult =
   | {
       ok: true;
       imported: number;
+      /** Parcelas futuras (n+1..m) projetadas nas faturas seguintes. */
+      importedFuture: number;
+      futureCents: number;
       skippedExisting: number;
       ignoredCount: number;
       importedCents: number;
@@ -57,8 +64,11 @@ type Deps = {
 /**
  * Importa as compras de uma fatura já parseada. occurred_on = vencimento LIDO
  * do arquivo (o banco inclui compras postadas fora do período — não recalcular
- * pelo ciclo). Idempotente em duas camadas: filtro por external_ref/duplicata
- * manual aqui, índice único (credit_card_id, external_ref) no banco.
+ * pelo ciclo). Parcela n/m também projeta as futuras (n+1..m) nas faturas
+ * seguintes, com mesmo valor e ref auth#k/m — quando a fatura real do mês
+ * seguinte chegar, essas linhas já existem e são puladas. Idempotente em duas
+ * camadas: filtro por external_ref/duplicata manual aqui, índice único
+ * (credit_card_id, external_ref) no banco.
  */
 export async function importCardStatementCore(
   { supabase, session }: Deps,
@@ -98,8 +108,28 @@ export async function importCardStatementCore(
     }
   }
 
-  // Dedupe 1: compras já importadas (external_ref do arquivo).
-  const refs = statement.purchases.map((p) => p.externalRef);
+  // Parcelas futuras derivadas das parcelas do arquivo: mesma compra, valor
+  // igual (BTG "sem juros"), vencendo nas faturas seguintes.
+  type FuturePurchase = Pick<ParsedPurchase, 'purchasedOn' | 'description' | 'amountCents' | 'externalRef'> & {
+    occurredOn: string;
+  };
+  const futures: FuturePurchase[] = [];
+  for (const p of statement.purchases) {
+    if (!p.installment || p.installment.number >= p.installment.total) continue;
+    const auth = p.externalRef.split('#')[0]!;
+    for (let k = p.installment.number + 1; k <= p.installment.total; k++) {
+      futures.push({
+        purchasedOn: p.purchasedOn,
+        description: p.description.replace(/\(\d+\/\d+\)\s*$/, `(${k}/${p.installment.total})`),
+        amountCents: p.amountCents,
+        externalRef: `${auth}#${k}/${p.installment.total}`,
+        occurredOn: addMonthsClamped(statement.dueOn, k - p.installment.number),
+      });
+    }
+  }
+
+  // Dedupe 1: refs já no banco (compras do arquivo + futuras já projetadas).
+  const refs = [...statement.purchases.map((p) => p.externalRef), ...futures.map((f) => f.externalRef)];
   const { data: existingByRef, error: refError } = await supabase
     .from('transactions')
     .select('external_ref')
@@ -124,9 +154,11 @@ export async function importCardStatementCore(
   );
   const skippedExisting = statement.purchases.length - toImport.length;
   const importedCents = toImport.reduce((sum, p) => sum + p.amountCents, 0);
+  const futuresToImport = futures.filter((f) => !knownRefs.has(f.externalRef));
+  const futureCents = futuresToImport.reduce((sum, f) => sum + f.amountCents, 0);
 
-  if (!dryRun && toImport.length > 0) {
-    const rows = toImport.map((p) => ({
+  if (!dryRun && (toImport.length > 0 || futuresToImport.length > 0)) {
+    const baseRow = (p: { amountCents: number; description: string; purchasedOn: string; externalRef: string }, occurredOn: string) => ({
       household_id: session.householdId,
       profile_id: session.userId,
       account_id: card.payment_account_id,
@@ -135,13 +167,17 @@ export async function importCardStatementCore(
       amount_cents: p.amountCents,
       currency: 'BRL' as const,
       description: p.description,
-      occurred_on: statement.dueOn,
+      occurred_on: occurredOn,
       paid_on: null,
       status: 'pending' as const,
       credit_card_id: cardId,
       purchased_on: p.purchasedOn,
       external_ref: p.externalRef,
-    }));
+    });
+    const rows = [
+      ...toImport.map((p) => baseRow(p, statement.dueOn)),
+      ...futuresToImport.map((f) => baseRow(f, f.occurredOn)),
+    ];
     const { error: insertError } = await supabase.from('transactions').insert(rows);
     if (insertError) {
       // 23505 = corrida com outro import simultâneo; o índice único segurou.
@@ -155,6 +191,8 @@ export async function importCardStatementCore(
   return {
     ok: true,
     imported: toImport.length,
+    importedFuture: futuresToImport.length,
+    futureCents,
     skippedExisting,
     ignoredCount: statement.ignoredCount,
     importedCents,

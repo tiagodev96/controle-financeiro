@@ -64,6 +64,7 @@ describe('parseBtgStatement', () => {
       amountCents: 6799,
       externalRef: 'ZHIGHW',
       kind: 'avista',
+      installment: null,
       cardLast4: '1906',
     });
     expect(s.purchases[1]!.kind).toBe('internacional');
@@ -85,6 +86,7 @@ describe('parseBtgStatement', () => {
     const p = result.statement.purchases[0]!;
     expect(p.kind).toBe('parcela');
     expect(p.externalRef).toBe('0KNVYK#1/10');
+    expect(p.installment).toEqual({ number: 1, total: 10 });
     expect(p.amountCents).toBe(5890);
   });
 

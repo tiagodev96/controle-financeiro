@@ -50,6 +50,7 @@ const STATEMENT: ParsedStatement = {
       amountCents: 6799,
       externalRef: 'ZHIGHW',
       kind: 'avista',
+      installment: null,
       cardLast4: '1906',
     },
     {
@@ -58,6 +59,7 @@ const STATEMENT: ParsedStatement = {
       amountCents: 3918,
       externalRef: 'U61QUR',
       kind: 'internacional',
+      installment: null,
       cardLast4: '7386',
     },
     {
@@ -66,6 +68,7 @@ const STATEMENT: ParsedStatement = {
       amountCents: 3971,
       externalRef: 'ECPXHV#1/2',
       kind: 'parcela',
+      installment: { number: 1, total: 2 },
       cardLast4: '1906',
     },
   ],
@@ -86,6 +89,8 @@ describe('importar fatura (integração)', () => {
     expect(result.imported).toBe(3);
     expect(result.skippedExisting).toBe(0);
     expect(result.importedCents).toBe(14688);
+    expect(result.importedFuture).toBe(1);
+    expect(result.futureCents).toBe(3971);
     expect(result.dueOn).toBe('2026-09-11');
 
     const admin = getAdminClient();
@@ -96,9 +101,8 @@ describe('importar fatura (integração)', () => {
       )
       .eq('credit_card_id', card.id)
       .order('purchased_on', { ascending: true });
-    expect(txns).toHaveLength(3);
+    expect(txns).toHaveLength(4);
     expect(txns!.every((t) => t.status === 'pending')).toBe(true);
-    expect(txns!.every((t) => t.occurred_on === '2026-09-11')).toBe(true);
     expect(txns!.every((t) => t.currency === 'BRL')).toBe(true);
     expect(txns!.every((t) => t.category_id === SEED_CATEGORY_MERCADO_ID)).toBe(true);
     expect(txns!.every((t) => t.account_id === SEED_ACCOUNT_BRL_ID)).toBe(true);
@@ -109,6 +113,19 @@ describe('importar fatura (integração)', () => {
       external_ref: 'ZHIGHW',
     });
     expect(txns![2]!.external_ref).toBe('ECPXHV#1/2');
+
+    // Parcela futura projetada: 2/2 na fatura seguinte, mesmo valor e data de compra.
+    const future = txns!.find((t) => t.external_ref === 'ECPXHV#2/2');
+    expect(future).toMatchObject({
+      description: 'Vestindo Essencia (2/2)',
+      amount_cents: 3971,
+      occurred_on: '2026-10-11',
+      purchased_on: '2026-09-05',
+      status: 'pending',
+      category_id: SEED_CATEGORY_MERCADO_ID,
+    });
+    const current = txns!.filter((t) => t.external_ref !== 'ECPXHV#2/2');
+    expect(current.every((t) => t.occurred_on === '2026-09-11')).toBe(true);
   });
 
   it('I-CARD-IMP2 — reimportar o mesmo arquivo não duplica nada', async () => {
@@ -127,13 +144,14 @@ describe('importar fatura (integração)', () => {
     if (!second.ok) return;
     expect(second.imported).toBe(0);
     expect(second.skippedExisting).toBe(3);
+    expect(second.importedFuture).toBe(0);
 
     const admin = getAdminClient();
     const { count } = await admin
       .from('transactions')
       .select('id', { count: 'exact', head: true })
       .eq('credit_card_id', card.id);
-    expect(count).toBe(3);
+    expect(count).toBe(4);
   });
 
   it('I-CARD-IMP3 — compra lançada à mão com mesma data e valor é pulada', async () => {
@@ -173,6 +191,7 @@ describe('importar fatura (integração)', () => {
     if (!result.ok) return;
     expect(result.imported).toBe(3);
     expect(result.importedCents).toBe(14688);
+    expect(result.importedFuture).toBe(1);
 
     const admin = getAdminClient();
     const { count } = await admin
@@ -204,5 +223,48 @@ describe('importar fatura (integração)', () => {
       },
     );
     expect(result.ok).toBe(false);
+  });
+  it('I-CARD-IMP7 — fatura do mês seguinte com a parcela 2/2 real é pulada (já projetada)', async () => {
+    const { supabase, card } = await createCard();
+    const first = await importCardStatementCore(
+      { supabase, session: SEED_SESSION },
+      { cardId: card.id, statement: STATEMENT, categoryId: null },
+    );
+    expect(first.ok).toBe(true);
+
+    const octoberStatement = {
+      dueOn: '2026-10-11',
+      monthLabel: 'Outubro/2026',
+      ignoredCount: 0,
+      statementTotalCents: 3971,
+      purchases: [
+        {
+          purchasedOn: '2026-09-05',
+          description: 'Vestindo Essencia (2/2)',
+          amountCents: 3971,
+          externalRef: 'ECPXHV#2/2',
+          kind: 'parcela' as const,
+          installment: { number: 2, total: 2 },
+          cardLast4: '1906',
+        },
+      ],
+    };
+    const second = await importCardStatementCore(
+      { supabase, session: SEED_SESSION },
+      { cardId: card.id, statement: octoberStatement, categoryId: null },
+    );
+    expect(second.ok).toBe(true);
+    if (!second.ok) return;
+    expect(second.imported).toBe(0);
+    expect(second.skippedExisting).toBe(1);
+    expect(second.importedFuture).toBe(0);
+
+    const admin = getAdminClient();
+    const { count } = await admin
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('credit_card_id', card.id)
+      .eq('external_ref', 'ECPXHV#2/2');
+    expect(count).toBe(1);
   });
 });

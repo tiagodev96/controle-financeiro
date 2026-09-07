@@ -25,6 +25,8 @@ type Props = {
 
 type Preview = {
   imported: number;
+  importedFuture: number;
+  futureCents: number;
   skippedExisting: number;
   ignoredCount: number;
   importedCents: number;
@@ -93,8 +95,8 @@ export function ImportStatementDialog({ cardId, cardName, hasSavedPassword, cate
       return;
     }
     toast.success(
-      result.imported > 0
-        ? `Fatura importada: ${result.imported} ${result.imported === 1 ? 'compra' : 'compras'}.`
+      result.imported > 0 || result.importedFuture > 0
+        ? `Fatura importada: ${result.imported} ${result.imported === 1 ? 'compra' : 'compras'}${result.importedFuture > 0 ? ` + ${result.importedFuture} ${result.importedFuture === 1 ? 'parcela futura' : 'parcelas futuras'}` : ''}.`
         : 'Nada novo pra importar — fatura já estava no app.',
     );
     setOpen(false);
@@ -190,6 +192,13 @@ export function ImportStatementDialog({ cardId, cardName, hasSavedPassword, cate
                 {preview.imported} {preview.imported === 1 ? 'compra nova' : 'compras novas'} ·{' '}
                 {formatCents(preview.importedCents, 'BRL')}
               </p>
+              {preview.importedFuture > 0 && (
+                <p>
+                  + {preview.importedFuture}{' '}
+                  {preview.importedFuture === 1 ? 'parcela futura projetada' : 'parcelas futuras projetadas'} ·{' '}
+                  {formatCents(preview.futureCents, 'BRL')}
+                </p>
+              )}
               {preview.skippedExisting > 0 && (
                 <p className="text-fg3">{preview.skippedExisting} já no app (serão puladas)</p>
               )}
@@ -224,12 +233,12 @@ export function ImportStatementDialog({ cardId, cardName, hasSavedPassword, cate
             <button
               type="button"
               onClick={handleImport}
-              disabled={pending || preview.imported === 0}
+              disabled={pending || (preview.imported === 0 && preview.importedFuture === 0)}
               className="block w-full min-h-11 rounded-md bg-brand px-3 py-2.5 text-sm font-semibold text-fg-on-brand transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
             >
               {pending
                 ? 'Importando…'
-                : preview.imported === 0
+                : preview.imported === 0 && preview.importedFuture === 0
                   ? 'Nada novo pra importar'
                   : `Importar ${preview.imported} ${preview.imported === 1 ? 'compra' : 'compras'}`}
             </button>
