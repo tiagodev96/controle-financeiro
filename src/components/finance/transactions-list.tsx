@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { TxnRow } from './txn-row';
+import { Num } from './num';
+import { sumDayTotals } from '@/lib/finance/day-totals';
 import { TxnRowMenu } from './txn-row-menu';
 import { TransferRow } from './transfer-row';
 import { EditTransactionDialog } from './edit-transaction-dialog';
@@ -82,9 +84,33 @@ export function TransactionsList({ groups, categories, accounts }: Props) {
   return (
     <>
       <section className="space-y-4">
-        {groups.map(({ label, rows }) => (
+        {groups.map(({ label, rows }) => {
+          const totals = sumDayTotals(rows);
+          return (
           <div key={label} className="space-y-1.5">
-            <p className="eyebrow px-1">{label}</p>
+            <div className="flex items-baseline justify-between gap-2 px-1">
+              <p className="eyebrow">{label}</p>
+              <p className="flex items-baseline gap-2.5">
+                {totals.map((t) => (
+                  <span key={t.currency} className="flex items-baseline gap-1.5">
+                    {t.expenseCents > 0 && (
+                      <Num
+                        cents={-t.expenseCents}
+                        currency={t.currency}
+                        className="text-[11px] font-semibold text-money-negative"
+                      />
+                    )}
+                    {t.incomeCents > 0 && (
+                      <Num
+                        cents={t.incomeCents}
+                        currency={t.currency}
+                        className="text-[11px] font-semibold text-money-positive"
+                      />
+                    )}
+                  </span>
+                ))}
+              </p>
+            </div>
             <div className="divide-y divide-border-soft rounded-md border border-border-soft bg-bg-surface px-3">
               {rows.map((t) =>
                 t.transfer ? (
@@ -138,7 +164,8 @@ export function TransactionsList({ groups, categories, accounts }: Props) {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </section>
 
       <EditTransactionDialog
