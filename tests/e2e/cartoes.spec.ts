@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { createClient } from '@supabase/supabase-js';
 import { signInAsFixtureUser } from '../helpers/auth';
@@ -171,5 +174,68 @@ test.describe('Cartão de crédito', () => {
     await expect(block).toBeVisible();
     await expect(block.getByText('E2E Cartão Nubank')).toBeVisible();
     await expect(block.getByText('Fatura aberta')).toBeVisible();
+  });
+  test('E-CARD5 — importa fatura xlsx criptografada com preview, e a senha fica salva', async ({
+    page,
+    context,
+  }) => {
+    await signInAsFixtureUser(context);
+
+    // Gera um xlsx no formato BTG, criptografado com senha, em arquivo temporário.
+    const ExcelJS = (await import('exceljs')).default;
+    const office = await import('officecrypto-tool');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Titular');
+    ws.getRow(3).values = [null, null, 'Fatura Cartão de Crédito', null, null, null, null, 'Dezembro/2026'];
+    ws.getRow(8).values = [null, null, 'Vencimento', null, '11/12'];
+    ws.getRow(14).values = [null, null, 'Total de compras e despesas', null, null, 150.5];
+    ws.getRow(16).values = [null, null, 'Data', 'Descrição', '', 'Valor', 'Tipo de compra', 'Código de autorização', 'Final Cartão'];
+    ws.getRow(17).values = [null, null, new Date(Date.UTC(2026, 10, 15)), 'E2E import loja A', null, 100.5, 'Compra à vista', 'E2EAAA', '1906'];
+    ws.getRow(18).values = [null, null, new Date(Date.UTC(2026, 10, 20)), 'E2E import loja B', null, 50.0, 'Compra à vista', 'E2EBBB', '1906'];
+    const plain = Buffer.from(await wb.xlsx.writeBuffer());
+    const encrypted = await office.encrypt(plain, { password: '12345' });
+    const filePath = path.join(os.tmpdir(), `e2e-fatura-${Date.now()}.xlsx`);
+    fs.writeFileSync(filePath, encrypted);
+
+    await page.goto('/cartoes');
+    await page.getByRole('button', { name: /Importar fatura/ }).click();
+    await page.locator('input[type="file"]').setInputFiles(filePath);
+    await page.getByPlaceholder('Senha do arquivo').fill('12345');
+    await page.getByRole('button', { name: 'Pré-visualizar' }).click();
+
+    const preview = page.getByTestId('import-preview');
+    await expect(preview).toContainText('Dezembro/2026');
+    await expect(preview).toContainText('2 compras novas');
+    await expect(preview).toContainText('R$ 150,50');
+
+    await page.getByRole('button', { name: 'Importar 2 compras' }).click();
+    await expect(page.getByText('Fatura importada: 2 compras.')).toBeVisible();
+
+    const db = admin();
+    const { data: imported } = await db
+      .from('transactions')
+      .select('description, amount_cents, occurred_on, purchased_on, external_ref, status')
+      .like('description', 'E2E import %')
+      .order('purchased_on', { ascending: true });
+    expect(imported).toHaveLength(2);
+    expect(imported![0]).toMatchObject({
+      description: 'E2E import loja A',
+      amount_cents: 10050,
+      occurred_on: '2026-12-11',
+      purchased_on: '2026-11-15',
+      external_ref: 'E2EAAA',
+      status: 'pending',
+    });
+
+    // Senha ficou salva no cartão: reimportar sem digitar senha detecta duplicatas.
+    await page.goto('/cartoes');
+    await page.getByRole('button', { name: /Importar fatura/ }).click();
+    await expect(page.getByPlaceholder('Salva — deixe em branco pra usar')).toBeVisible();
+    await page.locator('input[type="file"]').setInputFiles(filePath);
+    await page.getByRole('button', { name: 'Pré-visualizar' }).click();
+    await expect(page.getByTestId('import-preview')).toContainText('0 compras novas');
+    await expect(page.getByTestId('import-preview')).toContainText('2 já no app');
+
+    fs.rmSync(filePath, { force: true });
   });
 });

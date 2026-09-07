@@ -23,6 +23,11 @@ import {
   type PayCardInvoiceInput,
   type PayCardInvoiceResult,
 } from './pay-invoice-core';
+import {
+  importCardStatementCore,
+  type ImportCardStatementResult,
+} from './import-core';
+import { readBtgStatementFile } from './statement-file';
 
 function revalidateAll(): void {
   revalidatePath('/cartoes');
@@ -78,5 +83,73 @@ export async function payCardInvoiceAction(
   const supabase = await getServerSupabase();
   const result = await payCardInvoiceCore({ supabase, session }, input);
   if (result.ok) revalidateAll();
+  return result;
+}
+
+const MAX_STATEMENT_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Importa (ou pré-visualiza, mode=preview) a fatura xlsx do banco. FormData:
+ * cardId, file, mode, password (opcional se já salva no cartão), categoryId
+ * (opcional). Sucesso de import salva/atualiza a senha no cartão.
+ */
+export async function importCardStatementAction(
+  formData: FormData,
+): Promise<ImportCardStatementResult> {
+  const session = await getSession();
+  const supabase = await getServerSupabase();
+
+  const cardId = formData.get('cardId');
+  const mode = formData.get('mode');
+  const file = formData.get('file');
+  const passwordRaw = formData.get('password');
+  const categoryRaw = formData.get('categoryId');
+
+  if (typeof cardId !== 'string' || !(file instanceof File) || (mode !== 'preview' && mode !== 'import')) {
+    return { ok: false, error: 'Dados inválidos.' };
+  }
+  if (file.size === 0 || file.size > MAX_STATEMENT_BYTES) {
+    return { ok: false, error: 'Arquivo vazio ou grande demais (máx 2 MB).' };
+  }
+
+  const { data: card } = await supabase
+    .from('credit_cards')
+    .select('id, household_id, statement_password')
+    .eq('id', cardId)
+    .maybeSingle();
+  if (!card || card.household_id !== session.householdId) {
+    return { ok: false, error: 'Cartão inválido.' };
+  }
+
+  const typedPassword = typeof passwordRaw === 'string' ? passwordRaw.trim() : '';
+  const password = typedPassword || card.statement_password || '';
+  if (!password) {
+    return { ok: false, error: 'Informe a senha da fatura.' };
+  }
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const parsed = await readBtgStatementFile(buffer, password);
+  if (!parsed.ok) return parsed;
+
+  const result = await importCardStatementCore(
+    { supabase, session },
+    {
+      cardId,
+      statement: parsed.statement,
+      categoryId: typeof categoryRaw === 'string' && categoryRaw !== '' ? categoryRaw : null,
+      dryRun: mode === 'preview',
+    },
+  );
+
+  if (result.ok && mode === 'import') {
+    if (typedPassword && typedPassword !== card.statement_password) {
+      // Best-effort: falha aqui não desfaz o import — só não memoriza a senha.
+      await supabase
+        .from('credit_cards')
+        .update({ statement_password: typedPassword })
+        .eq('id', cardId);
+    }
+    revalidateAll();
+  }
   return result;
 }

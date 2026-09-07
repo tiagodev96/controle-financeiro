@@ -6,6 +6,7 @@ import { Num } from '@/components/finance/num';
 import { StatusPill } from '@/components/finance/status-pill';
 import { CreateCreditCardDialog } from '@/components/finance/credit-cards/create-dialog';
 import { EditCreditCardDialog } from '@/components/finance/credit-cards/edit-dialog';
+import { ImportStatementDialog } from '@/components/finance/credit-cards/import-statement-dialog';
 import { PayInvoiceDialog } from '@/components/finance/credit-cards/pay-invoice-dialog';
 import { listAllAccountsForHousehold } from '@/lib/finance/accounts';
 import { listAllCategoriesForHousehold } from '@/lib/finance/categories';
@@ -49,6 +50,9 @@ export default async function CartoesPage() {
     .map((a) => ({ id: a.id, name: a.name, currency: a.currency }));
   const currencyByAccountId = new Map(allAccounts.map((a) => [a.id, a.currency]));
   const categoryNameById = new Map(allCategories.map((c) => [c.id, c.name]));
+  const expenseCategories = allCategories
+    .filter((c) => !c.is_archived && c.kind === 'expense')
+    .map((c) => ({ id: c.id, name: c.name }));
 
   const active = cards.filter((c) => !c.is_archived);
   const archived = cards.filter((c) => c.is_archived);
@@ -80,6 +84,7 @@ export default async function CartoesPage() {
               currency={currencyByAccountId.get(card.payment_account_id) ?? 'BRL'}
               accounts={accounts}
               categoryNameById={categoryNameById}
+              expenseCategories={expenseCategories}
               todayIso={todayIso}
             />
           ))}
@@ -117,12 +122,14 @@ async function CardSection({
   currency,
   accounts,
   categoryNameById,
+  expenseCategories,
   todayIso,
 }: {
   card: CreditCardFull;
   currency: 'EUR' | 'BRL';
   accounts: { id: string; name: string; currency: 'EUR' | 'BRL' }[];
   categoryNameById: Map<string, string>;
+  expenseCategories: { id: string; name: string }[];
   todayIso: string;
 }) {
   const supabase = await getServerSupabase();
@@ -161,16 +168,24 @@ async function CardSection({
             {bestPurchaseDay(card.closing_day)}
           </p>
         </div>
-        <EditCreditCardDialog
-          cardId={card.id}
-          name={card.name}
-          closingDay={card.closing_day}
-          dueDay={card.due_day}
-          creditLimitCents={card.credit_limit_cents}
-          paymentAccountId={card.payment_account_id}
-          isArchived={card.is_archived}
-          accounts={accounts}
-        />
+        <div className="flex items-center gap-1.5">
+          <ImportStatementDialog
+            cardId={card.id}
+            cardName={card.name}
+            hasSavedPassword={card.has_statement_password}
+            categories={expenseCategories}
+          />
+          <EditCreditCardDialog
+            cardId={card.id}
+            name={card.name}
+            closingDay={card.closing_day}
+            dueDay={card.due_day}
+            creditLimitCents={card.credit_limit_cents}
+            paymentAccountId={card.payment_account_id}
+            isArchived={card.is_archived}
+            accounts={accounts}
+          />
+        </div>
       </header>
 
       <div className="grid grid-cols-2 gap-3">

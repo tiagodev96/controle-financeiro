@@ -12,6 +12,8 @@ export type CreditCardFull = {
   payment_account_id: string;
   is_archived: boolean;
   sort_order: number;
+  /** Derivado no servidor — a senha em si nunca sai da query. */
+  has_statement_password: boolean;
 };
 
 export type InvoiceState = 'open' | 'closed' | 'paid' | 'future';
@@ -33,13 +35,16 @@ export async function listCreditCardsForHousehold(
 ): Promise<CreditCardFull[]> {
   const { data, error } = await supabase
     .from('credit_cards')
-    .select('id, name, closing_day, due_day, credit_limit_cents, payment_account_id, is_archived, sort_order')
+    .select('id, name, closing_day, due_day, credit_limit_cents, payment_account_id, is_archived, sort_order, statement_password')
     .eq('household_id', householdId)
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
 
   if (error) throw new Error(`listCreditCardsForHousehold: ${error.message}`);
-  return (data ?? []) as CreditCardFull[];
+  return (data ?? []).map(({ statement_password, ...card }) => ({
+    ...card,
+    has_statement_password: statement_password !== null,
+  })) as CreditCardFull[];
 }
 
 export type CardPurchaseRow = {
