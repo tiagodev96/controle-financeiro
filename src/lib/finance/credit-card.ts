@@ -2,14 +2,15 @@
  * Ciclo de fatura do cartão de crédito. Puro: datas entram e saem como ISO
  * (YYYY-MM-DD), sem Date exposta na API — evita drama de timezone.
  *
- * Regra: compra no dia d do mês M com d <= closingDay cai no ciclo que fecha
- * em M; d > closingDay cai no ciclo que fecha em M+1. O vencimento fica no mês
- * do fechamento quando dueDay >= closingDay, senão no mês seguinte. Dias 29-31
- * são clampados ao último dia do mês (fecha dia 31 → 28/fev).
+ * Regra: o dia do fechamento é EXCLUSIVO. Compra no dia d do mês M com
+ * d < closingDay cai no ciclo que fecha em M; d >= closingDay já cai na
+ * fatura seguinte (fecha em M+1). O vencimento fica no mês do fechamento
+ * quando dueDay >= closingDay, senão no mês seguinte. Dias 29-31 são
+ * clampados ao último dia do mês (fecha dia 31 → 28/fev).
  */
 
 export type CardCycle = {
-  /** Primeiro dia do ciclo (dia seguinte ao fechamento anterior). */
+  /** Primeiro dia do ciclo — o próprio dia do fechamento anterior. */
   opensOn: string;
   closesOn: string;
   dueOn: string;
@@ -27,12 +28,6 @@ function clampedIsoDate(year: number, monthIndex0: number, day: number): string 
   return `${y}-${pad2(m + 1)}-${pad2(Math.min(day, lastDay))}`;
 }
 
-function dayAfter(isoDate: string): string {
-  const [y, m, d] = isoDate.split('-').map(Number) as [number, number, number];
-  const next = new Date(Date.UTC(y, m - 1, d + 1));
-  return `${next.getUTCFullYear()}-${pad2(next.getUTCMonth() + 1)}-${pad2(next.getUTCDate())}`;
-}
-
 /** Ciclo (abertura, fechamento e vencimento) em que uma compra cai. */
 export function cycleForPurchase(
   purchasedOn: string,
@@ -43,13 +38,13 @@ export function cycleForPurchase(
   const monthIndex0 = m - 1;
 
   // Compara contra o fechamento CLAMPADO do mês da compra: em fevereiro, um
-  // cartão que fecha dia 31 fecha no dia 28 — compra do dia 28 ainda entra.
+  // cartão que fecha dia 31 fecha no dia 28 — compra do dia 28 já cai em março.
   const closingThisMonth = clampedIsoDate(y, monthIndex0, closingDay);
   const closingDayThisMonth = Number(closingThisMonth.slice(8, 10));
-  const closeMonthIndex0 = monthIndex0 + (d <= closingDayThisMonth ? 0 : 1);
+  const closeMonthIndex0 = monthIndex0 + (d < closingDayThisMonth ? 0 : 1);
 
   const closesOn = clampedIsoDate(y, closeMonthIndex0, closingDay);
-  const opensOn = dayAfter(clampedIsoDate(y, closeMonthIndex0 - 1, closingDay));
+  const opensOn = clampedIsoDate(y, closeMonthIndex0 - 1, closingDay);
   const dueOn = clampedIsoDate(y, closeMonthIndex0 + (dueDay >= closingDay ? 0 : 1), dueDay);
 
   return { opensOn, closesOn, dueOn };
@@ -65,11 +60,11 @@ export function cycleForDueDate(dueOn: string, closingDay: number, dueDay: numbe
   const [y, m] = dueOn.split('-').map(Number) as [number, number];
   const closeMonthIndex0 = m - 1 - (dueDay >= closingDay ? 0 : 1);
   const closesOn = clampedIsoDate(y, closeMonthIndex0, closingDay);
-  const opensOn = dayAfter(clampedIsoDate(y, closeMonthIndex0 - 1, closingDay));
+  const opensOn = clampedIsoDate(y, closeMonthIndex0 - 1, closingDay);
   return { opensOn, closesOn, dueOn };
 }
 
-/** Dia do mês com o maior prazo até o vencimento: o seguinte ao fechamento. */
+/** Dia do mês com o maior prazo até o vencimento: o próprio dia do fechamento. */
 export function bestPurchaseDay(closingDay: number): number {
-  return closingDay >= 31 ? 1 : closingDay + 1;
+  return closingDay;
 }

@@ -45,8 +45,9 @@ ajuste manual.
 **Cadastro do cartão**:
 - `/cartoes` com CRUD: nome, dia de fechamento, dia de vencimento, conta que paga a fatura,
   limite (opcional), arquivar.
-- Cartão do owner: fecha dia 7, vence dia 11. Consequência: **dia 8 é o melhor dia pra
-  comprar** (34 dias até pagar) — a UI mostra isso.
+- Cartão do owner: fecha dia 7, vence dia 11. O dia do fechamento é exclusivo: compra a
+  partir do dia 7 já cai na fatura seguinte. Consequência: **dia 7 é o melhor dia pra
+  comprar** (35 dias até pagar) — a UI mostra isso.
 
 **Lançar compra** (dentro do `/lancar` existente):
 - O campo "Conta" vira "Pagar com" e lista contas e cartões juntos.

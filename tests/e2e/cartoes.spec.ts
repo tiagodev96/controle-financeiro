@@ -51,7 +51,7 @@ test.describe('Cartão de crédito', () => {
     await page.getByRole('option', { name: /Conta principal BRL/ }).click();
     await page.getByRole('button', { name: 'Criar cartão' }).click();
     await expect(page.getByText('Cartão criado.')).toBeVisible();
-    await expect(page.getByText(/melhor dia pra comprar: 8/i).first()).toBeVisible();
+    await expect(page.getByText(/melhor dia pra comprar: 7/i).first()).toBeVisible();
 
     // Lança compra de R$ 120,50 em 08/08 → deve vencer 11/09.
     await page.goto('/lancar');
@@ -113,7 +113,7 @@ test.describe('Cartão de crédito', () => {
     const db = admin();
     await db.from('accounts').update({ balance_cents: 100000 }).eq('id', ACCOUNT_BRL_ID);
 
-    // Compra que cai na fatura de 11/08 (já fechada em 16/08, data dos testes).
+    // Compra que cai na fatura de 11/08 (sempre fechada — o seed compra em agosto/2026).
     const { data: card } = await db
       .from('credit_cards')
       .select('id')
@@ -136,7 +136,12 @@ test.describe('Cartão de crédito', () => {
     });
 
     await page.goto('/cartoes');
-    await page.getByRole('button', { name: 'Pagar fatura' }).click();
+    // Mais de uma fatura pode estar fechada dependendo da data real do run —
+    // mira o botão da fatura de 11/08 especificamente.
+    await page
+      .getByTestId('invoice-due-2026-08-11')
+      .getByRole('button', { name: 'Pagar fatura' })
+      .click();
     await page.getByRole('button', { name: 'Confirmar pagamento' }).click();
     await expect(page.getByText('Fatura paga.')).toBeVisible();
 

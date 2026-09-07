@@ -45,7 +45,7 @@ describe('compra no cartão (integração)', () => {
   beforeEach(cleanup);
   afterEach(cleanup);
 
-  it('I-CARD-BUY1 — compra à vista dia 08/08 vira pending com vencimento 11/09 e moeda da conta', async () => {
+  it('I-CARD-BUY1 — compra à vista no dia do fechamento (07/08) já vence 11/09, com moeda da conta', async () => {
     const { supabase, card } = await createCard();
     const result = await createCardPurchaseCore(
       { supabase, session: SEED_SESSION },
@@ -54,7 +54,7 @@ describe('compra no cartão (integração)', () => {
         amountCents: 12050,
         description: 'CARD test mercado',
         categoryId: SEED_CATEGORY_MERCADO_ID,
-        purchasedOn: '2026-08-08',
+        purchasedOn: '2026-08-07',
         installments: 1,
       },
     );
@@ -76,7 +76,7 @@ describe('compra no cartão (integração)', () => {
     expect(txn.status).toBe('pending');
     expect(txn.paid_on).toBeNull();
     expect(txn.occurred_on).toBe('2026-09-11');
-    expect(txn.purchased_on).toBe('2026-08-08');
+    expect(txn.purchased_on).toBe('2026-08-07');
     expect(txn.account_id).toBe(SEED_ACCOUNT_BRL_ID);
     expect(txn.direction).toBe('expense');
   });

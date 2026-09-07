@@ -21,8 +21,8 @@ create table credit_cards (
   id uuid primary key default gen_random_uuid(),
   household_id uuid not null references households(id) on delete cascade,
   name text not null,
-  -- Dia em que o ciclo fecha; compras a partir do dia seguinte caem na fatura
-  -- seguinte. Com closing_day = 7, o melhor dia pra comprar é 8.
+  -- Dia em que o ciclo fecha (exclusivo): compras a partir dele caem na fatura
+  -- seguinte. Com closing_day = 7, o melhor dia pra comprar é o próprio dia 7.
   closing_day int not null check (closing_day between 1 and 31),
   due_day int not null check (due_day between 1 and 31),
   credit_limit_cents bigint check (credit_limit_cents is null or credit_limit_cents > 0),

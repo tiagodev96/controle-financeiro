@@ -45,10 +45,11 @@ async function setupCardWithTwoInvoices() {
   if (!created.ok) throw new Error(`setup: ${created.error}`);
   const card = created.card;
 
-  // Fatura de agosto (compras até 07/08) e fatura de setembro (compras de 08/08 em diante).
+  // Fatura de agosto (compras até 06/08) e fatura de setembro (compras de 07/08 em diante —
+  // o dia do fechamento é exclusivo).
   const buys = [
     { amountCents: 10000, purchasedOn: '2026-08-05', description: 'CARD test ago 1' },
-    { amountCents: 2500, purchasedOn: '2026-08-07', description: 'CARD test ago 2' },
+    { amountCents: 2500, purchasedOn: '2026-08-06', description: 'CARD test ago 2' },
     { amountCents: 7000, purchasedOn: '2026-08-08', description: 'CARD test set 1' },
   ];
   for (const buy of buys) {
@@ -97,7 +98,7 @@ describe('fatura do cartão (integração)', () => {
       dueOn: '2026-08-11',
     });
     expect(purchases).toHaveLength(2);
-    expect(purchases.map((p) => p.purchased_on)).toEqual(['2026-08-07', '2026-08-05']);
+    expect(purchases.map((p) => p.purchased_on)).toEqual(['2026-08-06', '2026-08-05']);
     expect(purchases.every((p) => p.status === 'pending')).toBe(true);
   });
 
