@@ -174,6 +174,10 @@ test.describe('Cartão de crédito', () => {
     await expect(block).toBeVisible();
     await expect(block.getByText('E2E Cartão Nubank')).toBeVisible();
     await expect(block.getByText('Fatura aberta')).toBeVisible();
+
+    // Gráfico de faturas por mês, com a legenda de estados.
+    await expect(block.getByTestId('invoice-bar-chart')).toBeVisible();
+    await expect(block.getByText('Faturas por mês')).toBeVisible();
   });
   test('E-CARD5 — importa fatura xlsx criptografada com preview, e a senha fica salva', async ({
     page,

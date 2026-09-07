@@ -6,6 +6,9 @@ import {
   listCreditCardsForHousehold,
   listInvoicesForCard,
 } from '@/lib/finance/credit-cards';
+import { openCycleOn } from '@/lib/finance/credit-card';
+import { buildInvoiceChartMonths } from '@/lib/finance/invoice-chart';
+import { InvoiceBarChart } from '@/components/finance/charts/invoice-bar-chart';
 import { toLocalIsoDate } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +52,7 @@ export async function CardBlock({ nowIso }: { nowIso: string }) {
       return {
         card,
         currency: (currencyByAccountId.get(card.payment_account_id) ?? 'BRL') as 'EUR' | 'BRL',
+        invoices,
         openInvoice,
         closedPendingCents,
         closedNext,
@@ -58,6 +62,25 @@ export async function CardBlock({ nowIso }: { nowIso: string }) {
       };
     }),
   );
+
+  // Gráfico: soma as faturas por mês dos cartões na moeda do primeiro (na
+  // prática há um cartão; misturar moedas numa barra estaria errado).
+  const chartCurrency = sections[0]?.currency ?? 'BRL';
+  const first = sections[0];
+  const chartMonths = first
+    ? buildInvoiceChartMonths(
+        sections
+          .filter((s) => s.currency === chartCurrency)
+          .flatMap((s) => s.invoices.map((i) => ({ dueOn: i.dueOn, totalCents: i.totalCents }))),
+        {
+          openMonthIso: openCycleOn(
+            todayIso,
+            first.card.closing_day,
+            first.card.due_day,
+          ).dueOn.slice(0, 7),
+        },
+      )
+    : [];
 
   return (
     <section className="space-y-3" data-testid="dashboard-card-block">
@@ -137,6 +160,13 @@ export async function CardBlock({ nowIso }: { nowIso: string }) {
           )}
         </div>
       ))}
+
+      {chartMonths.length >= 2 && (
+        <div className="rounded-md border border-border-soft bg-bg-surface p-4">
+          <p className="eyebrow pb-2">Faturas por mês</p>
+          <InvoiceBarChart months={chartMonths} currency={chartCurrency} />
+        </div>
+      )}
     </section>
   );
 }
