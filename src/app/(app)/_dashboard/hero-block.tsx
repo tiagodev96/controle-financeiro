@@ -8,7 +8,7 @@ import { SobraPrevistaCard } from '@/components/finance/sobra-prevista-card';
 import { StatTrio } from '@/components/finance/stat-trio';
 import { convertCents } from '@/lib/fx';
 import { getBalanceByAccountOn } from '@/lib/finance/balance-history';
-import { projectMonth } from '@/lib/finance/month-projection';
+import { projectMonthChained } from '@/lib/finance/month-projection';
 import {
   getDashboardSupabase,
   getDashboardAccounts,
@@ -122,9 +122,9 @@ export async function HeroBlock({ nowIso, targetDateIso, isPast, isFuture }: Pro
     : balByCcy.EUR;
 
   // Projeção pro mês corrente e futuro: saldo + pending real + recorrente
-  // virtual (não gerada). No corrente, captura recorrentes que o cron ainda
-  // não materializou (ex: salário do dia 5 quando estamos no dia 2).
-  const projection = await projectMonth({
+  // virtual (não gerada). Mês futuro é ENCADEADO: a base é a sobra projetada
+  // do mês anterior, não o saldo de hoje.
+  const projection = await projectMonthChained({
     supabase: await getDashboardSupabase(),
     householdId: session.householdId,
     targetCurrency: STATS_CURRENCY,

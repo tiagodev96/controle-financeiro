@@ -7,6 +7,7 @@ import {
   type CrossCurrencyMonthStats,
 } from './cross-currency-stats';
 import { listUngeneratedRecurringDueInMonth } from './recurring';
+import { addMonths, monthIso } from '@/lib/dates';
 
 export type ProjectionTopCategory = {
   id: string;
@@ -149,4 +150,84 @@ export async function projectMonth({
     topCategoriesProjected,
     fxIncomplete: stats.fxIncomplete || recurringFxIncomplete,
   };
+}
+
+/** Teto de iteração da cadeia — mês além disso volta pro cálculo plano. */
+const MAX_CHAIN_MONTHS = 12;
+
+/**
+ * Projeção ENCADEADA: pra mês futuro, a base não é o saldo de hoje — é a
+ * sobra projetada do mês anterior, mês a mês, a partir do corrente. Assim
+ * "outubro" já desconta o que ainda vai entrar/sair de setembro. No mês
+ * corrente (ou passado) delega direto pro projectMonth.
+ */
+export async function projectMonthChained({
+  supabase,
+  householdId,
+  targetCurrency,
+  fxRateMap,
+  accountsTotalInTargetCents,
+  targetDate,
+  now,
+  topCategoriesLimit,
+}: {
+  supabase: SupabaseClient<Database>;
+  householdId: string;
+  targetCurrency: Currency;
+  fxRateMap: RateMap | null;
+  accountsTotalInTargetCents: number;
+  targetDate: Date;
+  now: Date;
+  topCategoriesLimit?: number;
+}): Promise<MonthProjection> {
+  const currentYm = monthIso(now);
+  const targetYm = monthIso(targetDate);
+
+  let monthsAhead = 0;
+  for (let ym = currentYm; ym < targetYm && monthsAhead <= MAX_CHAIN_MONTHS; ym = addMonths(ym, 1)) {
+    monthsAhead += 1;
+  }
+
+  if (targetYm <= currentYm || monthsAhead > MAX_CHAIN_MONTHS) {
+    return projectMonth({
+      supabase,
+      householdId,
+      targetCurrency,
+      fxRateMap,
+      accountsTotalInTargetCents,
+      targetDate,
+      now,
+      topCategoriesLimit,
+    });
+  }
+
+  // Percorre do mês corrente até o anterior ao alvo; cada sobra vira a base
+  // do mês seguinte.
+  let baseCents = accountsTotalInTargetCents;
+  for (let ym = currentYm; ym < targetYm; ym = addMonths(ym, 1)) {
+    const [y, m] = ym.split('-').map(Number) as [number, number];
+    const endOfThatMonth = new Date(y, m, 0);
+    const step = await projectMonth({
+      supabase,
+      householdId,
+      targetCurrency,
+      fxRateMap,
+      accountsTotalInTargetCents: baseCents,
+      targetDate: endOfThatMonth,
+      now,
+      topCategoriesLimit: 1,
+    });
+    baseCents = step.sobraProjetadaCents;
+  }
+
+  return projectMonth({
+    supabase,
+    householdId,
+    targetCurrency,
+    fxRateMap,
+    accountsTotalInTargetCents: baseCents,
+    targetDate,
+    now,
+    topCategoriesLimit,
+  });
 }
