@@ -18,14 +18,20 @@ import {
   type CardPurchaseRow,
   type CreditCardFull,
 } from '@/lib/finance/credit-cards';
-import { bestPurchaseDay } from '@/lib/finance/credit-card';
-import { toLocalIsoDate } from '@/lib/dates';
+import { bestPurchaseDay, openCycleOn } from '@/lib/finance/credit-card';
+import { MONTHS_PT_SHORT, addMonths, toLocalIsoDate } from '@/lib/dates';
 import { cn } from '@/lib/utils';
 
 const INVOICES_SHOWN = 6;
+const INVOICE_MONTHS_BACK = 2;
 
 function shortDate(iso: string): string {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
+}
+
+/** "2026-10-11" → "out/26" — rótulo da fatura é o MÊS, não a data. */
+function invoiceMonthLabel(dueOn: string): string {
+  return `${MONTHS_PT_SHORT[Number(dueOn.slice(5, 7)) - 1]}/${dueOn.slice(2, 4)}`;
 }
 
 const STATE_LABEL: Record<CardInvoice['state'], string> = {
@@ -149,7 +155,13 @@ async function CardSection({
   const limitAvailableCents =
     card.credit_limit_cents !== null ? card.credit_limit_cents - totalPendingCents : null;
 
-  const shown = invoices.slice(-INVOICES_SHOWN).reverse();
+  // Janela em ordem CRESCENTE: de 2 meses antes do mês da fatura aberta em
+  // diante (faturas velhas somem; as futuras aparecem até o teto da lista).
+  const openMonth = openCycleOn(todayIso, card.closing_day, card.due_day).dueOn.slice(0, 7);
+  const windowStart = addMonths(openMonth, -INVOICE_MONTHS_BACK);
+  const shown = invoices
+    .filter((i) => i.dueOn.slice(0, 7) >= windowStart)
+    .slice(0, INVOICES_SHOWN);
   const purchasesByInvoice = new Map<string, CardPurchaseRow[]>();
   for (const invoice of shown) {
     purchasesByInvoice.set(
@@ -231,7 +243,7 @@ async function CardSection({
         >
           <div>
             <p className="text-sm font-medium text-fg1">
-              Fatura {shortDate(invoice.dueOn)}
+              Fatura {invoiceMonthLabel(invoice.dueOn)} · vence {shortDate(invoice.dueOn)}
               {invoice.dueOn < todayIso && (
                 <span className="ml-2 mono text-[10px] uppercase tracking-wider text-status-overdue-fg">
                   em atraso
@@ -266,9 +278,9 @@ async function CardSection({
             >
               <summary className="flex cursor-pointer select-none items-baseline justify-between gap-2 px-4 py-3">
                 <span className="text-sm font-medium text-fg1">
-                  Fatura {shortDate(invoice.dueOn)}
+                  Fatura {invoiceMonthLabel(invoice.dueOn)}
                   <span className="ml-2 mono text-[10px] uppercase tracking-wider text-fg4">
-                    {STATE_LABEL[invoice.state]}
+                    {STATE_LABEL[invoice.state]} · vence {shortDate(invoice.dueOn)}
                   </span>
                 </span>
                 <Num

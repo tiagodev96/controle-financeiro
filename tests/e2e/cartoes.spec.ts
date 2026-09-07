@@ -74,9 +74,9 @@ test.describe('Cartão de crédito', () => {
     await expect(page.getByText('E2E card mercado')).toBeVisible();
     await expect(page.getByText('Cartão', { exact: true }).first()).toBeVisible();
 
-    // E na fatura de 11/09 em /cartoes.
+    // E na fatura de setembro em /cartoes.
     await page.goto('/cartoes');
-    await expect(page.getByText('Fatura 11/09').first()).toBeVisible();
+    await expect(page.getByText('Fatura set/26').first()).toBeVisible();
     await expect(page.getByText('E2E card mercado')).toBeVisible();
   });
 
