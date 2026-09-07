@@ -44,7 +44,9 @@ export type ListFilters = {
   limit?: number;
 };
 
-const DEFAULT_LIMIT = 100;
+// Teto alto o bastante pra "todos os meses" não amputar a lista (fatura de
+// cartão importada = ~100 linhas/mês); "mostrando N de M" cobre o excesso.
+const DEFAULT_LIMIT = 1000;
 
 function one<T>(value: T | T[] | null): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
